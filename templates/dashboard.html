@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>プロジェクト管理</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .past-date { background-color: #f0f0f0 !important; }
+        .highlight-date { background-color: yellow !important; color: red !important; }
+        /* Increase width of 案件名 column and prevent wrapping */
+        th:nth-child(3), td:nth-child(3) {
+            width: 300px; /* Adjust width as needed */
+            white-space: nowrap;
+        }
+        /* Increase width of 備考 column and prevent wrapping */
+        th:nth-child(17), td:nth-child(17) {
+            width: 200px; /* Adjust width as needed */
+            white-space: nowrap;
+        }
+        /* Increase width of SE column and prevent wrapping */
+        th:nth-child(2), td:nth-child(2) {
+            width: 100px; /* Adjust width as needed */
+            white-space: nowrap;
+        }
+        /* Increase width of 案件番号 column and prevent wrapping */
+        th:nth-child(15), td:nth-child(15) {
+            width: 150px; /* Adjust width as needed */
+            white-space: nowrap;
+        }
+        /* Increase width of 操作 column and prevent wrapping */
+        th:nth-child(1), td:nth-child(1) {
+            width: 100px; /* Adjust width as needed */
+            white-space: nowrap;
+        }
+        /* Increase width of 開発工数(h) column and prevent wrapping */
+        th:nth-child(5), td:nth-child(5) {
+            width: 120px; /* Adjust width as needed */
+            white-space: nowrap;
+        }
+        /* Increase width of 設計工数(h) column and prevent wrapping */
+        th:nth-child(6), td:nth-child(6) {
+            width: 120px; /* Adjust width as needed */
+            white-space: nowrap;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-4">
+        <div class="d-flex justify-content-between mb-3">
+            <h2>プロジェクト管理</h2>
+            <a href="{{ url_for('logout') }}" class="btn btn-danger">ログアウト</a>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>操作</th>
+                    {% for col in display_columns %}
+                        <th>{{ col }}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for project in projects %}
+                    <tr>
+                        <td>
+                            <button class="btn btn-primary btn-sm"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#editModal"
+                                    onclick='fillEditModal({{ project.id }}, {{ project | tojson | safe }})'>
+                                編集
+                            </button>
+                        </td>
+                        {% for col in display_columns %}
+                            <td class="{% if project.highlight_column == col %}highlight-date{% elif project[col + '_past'] %}past-date{% endif %}">
+                                {{ project[col] }}
+                            </td>
+                        {% endfor %}
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Edit Modal -->
+    <div class="modal fade" id="editModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form method="POST">
+                    <div class="modal-header">
+                        <h5 class="modal-title">プロジェクト編集</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <input type="hidden" name="index" id="editIndex">
+                        {% for col in display_columns %}
+                            <div class="mb-3">
+                                <label class="form-label">{{ col }}</label>
+                                {% if col in date_columns %}
+                                    <input type="date" name="{{ col }}"
+                                           id="edit_{{ col|replace(' ', '_') }}"
+                                           class="form-control">
+                                {% else %}
+                                    <input type="text" name="{{ col }}"
+                                           id="edit_{{ col|replace(' ', '_') }}"
+                                           class="form-control">
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">閉じる</button>
+                        <button type="submit" class="btn btn-primary">保存</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function fillEditModal(index, project) {
+            document.getElementById('editIndex').value = index;
+            {% for col in display_columns %}
+                {% if col in date_columns %}
+                    // For date columns, convert yyyy/mm/dd(aaa) back to yyyy-mm-dd for input type="date"
+                    let dateValue_{{ col|replace(' ', '_') }} = project['{{ col }}'];
+                    if (dateValue_{{ col|replace(' ', '_') }} && dateValue_{{ col|replace(' ', '_') }} !== '') {
+                        // Extract yyyy/mm/dd part (remove the (aaa))
+                        dateValue_{{ col|replace(' ', '_') }} = dateValue_{{ col|replace(' ', '_') }}.split('(')[0].replace(/\//g, '-');
+                    } else {
+                        dateValue_{{ col|replace(' ', '_') }} = '';
+                    }
+                    document.getElementById('edit_{{ col|replace(' ', '_') }}').value = dateValue_{{ col|replace(' ', '_') }};
+                {% else %}
+                    // For non-date columns, handle null values safely
+                    document.getElementById('edit_{{ col|replace(' ', '_') }}').value = project['{{ col }}'] != null ? project['{{ col }}'] : '';
+                {% endif %}
+            {% endfor %}
+        }
+    </script>
+</body>
+</html>
