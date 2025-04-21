@@ -7,18 +7,42 @@
     <style>
         .past-date { background-color: #f0f0f0 !important; }
         .highlight-date { background-color: yellow !important; color: red !important; }
-        /* Apply nowrap to all table cells */
         th, td { white-space: nowrap; }
-        /* Specific column widths adjusted for new order */
-        th:nth-child(1), td:nth-child(1) { width: 100px; } /* 操作 */
-        th:nth-child(2), td:nth-child(2) { width: 150px; } /* タスク */
-        th:nth-child(3), td:nth-child(3) { width: 300px; } /* 案件名 */
-        th:nth-child(17), td:nth-child(17) { width: 100px; } /* SE */
-        th:nth-child(19), td:nth-child(19) { width: 150px; } /* 案件番号 */
-        th:nth-child(5), td:nth-child(5) { width: 120px; } /* 開発工数(h) */
-        th:nth-child(6), td:nth-child(6) { width: 120px; } /* 設計工数(h) */
-        th:nth-child(21), td:nth-child(21) { width: 100px; } /* ページ数 */
-        th:nth-child(22), td:nth-child(22) { width: 200px; } /* 備考 */
+        th:nth-child(1), td:nth-child(1) { width: 100px; }
+        th:nth-child(2), td:nth-child(2) { width: 150px; }
+        th:nth-child(3), td:nth-child(3) { width: 300px; }
+        th:nth-child(17), td:nth-child(17) { width: 100px; }
+        th:nth-child(19), td:nth-child(19) { width: 150px; }
+        th:nth-child(5), td:nth-child(5) { width: 120px; }
+        th:nth-child(6), td:nth-child(6) { width: 120px; }
+        th:nth-child(21), td:nth-child(21) { width: 100px; }
+        th:nth-child(22), td:nth-child(22) { width: 200px; }
+        .modal-body .row { margin-left: -10px; margin-right: -10px; }
+        .modal-body .col-md-3 { padding-left: 10px; padding-right: 10px; }
+        .task-checkboxes .form-check { margin-right: 10px; }
+        .form-label { font-size: 0.9rem; }
+        .form-control, .form-check-input { font-size: 0.9rem; }
+        textarea.form-control { resize: vertical; min-height: 60px; }
+
+        @media (min-width: 768px) { /* md以上の画面サイズに適用 */
+            .modal-body .col-md-3:nth-child(1) {
+                flex: 0 0 auto;
+                width: 30%; /* 幅を30%に広げる例 */
+            }
+            .modal-body .col-md-3:nth-child(2) {
+                flex: 0 0 auto;
+                width: 23.333333%; /* 他の列とのバランスを見て調整 */
+            }
+            .modal-body .col-md-3:nth-child(3) {
+                flex: 0 0 auto;
+                width: 23.333333%; /* 他の列とのバランスを見て調整 */
+            }
+            .modal-body .col-md-3:nth-child(4) {
+                flex: 0 0 auto;
+                width: 23.333333%; /* 他の列とのバランスを見て調整 */
+            }
+        }
+
     </style>
 </head>
 <body>
@@ -69,7 +93,7 @@
 
     <!-- Edit Modal -->
     <div class="modal fade" id="editModal" tabindex="-1">
-        <div class="modal-dialog">
+        <div class="modal-dialog modal-xl">
             <div class="modal-content">
                 <form method="POST">
                     <div class="modal-header">
@@ -78,51 +102,170 @@
                     </div>
                     <div class="modal-body">
                         <input type="hidden" name="index" id="editIndex">
-                        {% for col in display_columns %}
-                            <div class="mb-3">
-                                <label class="form-label">{{ col }}</label>
-                                {% if col in date_columns %}
-                                    <input type="date" name="{{ col }}"
-                                           id="edit_{{ col|replace(' ', '_') }}"
-                                           class="form-control">
-                                {% elif col == 'ページ数' %}
-                                    <input type="number" name="{{ col }}"
-                                           id="edit_{{ col|replace(' ', '_') }}"
-                                           class="form-control" min="1">
-                                {% elif col == 'タスク' %}
-                                    <div>
+                        <div class="row">
+                            <!-- Column 1 -->
+                            <div class="col-md-3">
+                                <!-- タスク -->
+                                <div class="mb-3">
+                                    <label class="form-label">タスク</label>
+                                    <div class="task-checkboxes d-flex">
                                         <div class="form-check">
-                                            <input type="checkbox" name="{{ col }}"
+                                            <input type="checkbox" name="タスク"
                                                    id="task_設計" value="設計"
                                                    class="form-check-input" checked>
                                             <label class="form-check-label" for="task_設計">設計</label>
                                         </div>
                                         <div class="form-check">
-                                            <input type="checkbox" name="{{ col }}"
+                                            <input type="checkbox" name="タスク"
                                                    id="task_Brse" value="Brse"
                                                    class="form-check-input">
                                             <label class="form-check-label" for="task_Brse">Brse</label>
                                         </div>
                                         <div class="form-check">
-                                            <input type="checkbox" name="{{ col }}"
+                                            <input type="checkbox" name="タスク"
                                                    id="task_テスト" value="テスト"
                                                    class="form-check-input">
                                             <label class="form-check-label" for="task_テスト">テスト</label>
                                         </div>
                                         <div class="form-check">
-                                            <input type="checkbox" name="{{ col }}"
+                                            <input type="checkbox" name="タスク"
                                                    id="task_FB" value="FB"
                                                    class="form-check-input">
                                             <label class="form-check-label" for="task_FB">FB</label>
                                         </div>
                                     </div>
-                                {% else %}
-                                    <input type="text" name="{{ col }}"
-                                           id="edit_{{ col|replace(' ', '_') }}"
-                                           class="form-control">
-                                {% endif %}
+                                </div>
+                                <!-- 案件名 -->
+                                <div class="mb-3">
+                                    <label class="form-label">案件名</label>
+                                    <input type="text" name="案件名"
+                                           id="edit_案件名" class="form-control">
+                                </div>
+                                <!-- 案件番号 -->
+                                <div class="mb-3">
+                                    <label class="form-label">案件番号</label>
+                                    <input type="text" name="案件番号"
+                                           id="edit_案件番号" class="form-control">
+                                </div>
+                                <!-- PJNo. -->
+                                <div class="mb-3">
+                                    <label class="form-label">PJNo.</label>
+                                    <input type="text" name="PJNo."
+                                           id="edit_PJNo." class="form-control">
+                                </div>
+                                <!-- PH -->
+                                <div class="mb-3">
+                                    <label class="form-label">PH</label>
+                                    <input type="text" name="PH"
+                                           id="edit_PH" class="form-control">
+                                </div>
+                                <!-- SE -->
+                                <div class="mb-3">
+                                    <label class="form-label">SE</label>
+                                    <input type="text" name="SE"
+                                           id="edit_SE" class="form-control">
+                                </div>
+                                <!-- BSE -->
+                                <div class="mb-3">
+                                    <label class="form-label">BSE</label>
+                                    <input type="text" name="BSE"
+                                           id="edit_BSE" class="form-control">
+                                </div>
                             </div>
-                        {% endfor %}
+                            <!-- Column 2 -->
+                            <div class="col-md-3">
+                                <!-- 開発工数（h） -->
+                                <div class="mb-3">
+                                    <label class="form-label">開発工数（h）</label>
+                                    <input type="text" name="開発工数（h）"
+                                           id="edit_開発工数（h）" class="form-control">
+                                </div>
+                                <!-- 設計工数（h） -->
+                                <div class="mb-3">
+                                    <label class="form-label">設計工数（h）</label>
+                                    <input type="text" name="設計工数（h）"
+                                           id="edit_設計工数（h）" class="form-control">
+                                </div>
+                                <!-- ページ数 -->
+                                <div class="mb-3">
+                                    <label class="form-label">ページ数</label>
+                                    <input type="number" name="ページ数"
+                                           id="edit_ページ数" class="form-control" min="1">
+                                </div>
+                            </div>
+                            <!-- Column 3 -->
+                            <div class="col-md-3">
+                                <!-- 要件引継 -->
+                                <div class="mb-3">
+                                    <label class="form-label">要件引継</label>
+                                    <input type="date" name="要件引継"
+                                           id="edit_要件引継" class="form-control">
+                                </div>
+                                <!-- 設計開始 -->
+                                <div class="mb-3">
+                                    <label class="form-label">設計開始</label>
+                                    <input type="date" name="設計開始"
+                                           id="edit_設計開始" class="form-control">
+                                </div>
+                                <!-- 設計完了 -->
+                                <div class="mb-3">
+                                    <label class="form-label">設計完了</label>
+                                    <input type="date" name="設計完了"
+                                           id="edit_設計完了" class="form-control">
+                                </div>
+                                <!-- 設計書送付 -->
+                                <div class="mb-3">
+                                    <label class="form-label">設計書送付</label>
+                                    <input type="date" name="設計書送付"
+                                           id="edit_設計書送付" class="form-control">
+                                </div>
+                                <!-- 開発開始 -->
+                                <div class="mb-3">
+                                    <label class="form-label">開発開始</label>
+                                    <input type="date" name="開発開始"
+                                           id="edit_開発開始" class="form-control">
+                                </div>
+                                <!-- 開発完了 -->
+                                <div class="mb-3">
+                                    <label class="form-label">開発完了</label>
+                                    <input type="date" name="開発完了"
+                                           id="edit_開発完了" class="form-control">
+                                </div>
+                            </div>
+                            <!-- Column 4 -->
+                            <div class="col-md-3">
+                                <!-- テスト開始日 -->
+                                <div class="mb-3">
+                                    <label class="form-label">テスト開始日</label>
+                                    <input type="date" name="テスト開始日"
+                                           id="edit_テスト開始日" class="form-control">
+                                </div>
+                                <!-- テスト完了日 -->
+                                <div class="mb-3">
+                                    <label class="form-label">テスト完了日</label>
+                                    <input type="date" name="テスト完了日"
+                                           id="edit_テスト完了日" class="form-control" readonly>
+                                </div>
+                                <!-- FB完了予定日 -->
+                                <div class="mb-3">
+                                    <label class="form-label">FB完了予定日</label>
+                                    <input type="date" name="FB完了予定日"
+                                           id="edit_FB完了予定日" class="form-control">
+                                </div>
+                                <!-- SE納品 -->
+                                <div class="mb-3">
+                                    <label class="form-label">SE納品</label>
+                                    <input type="date" name="SE納品"
+                                           id="edit_SE納品" class="form-control">
+                                </div>
+                                <!-- 備考 -->
+                                <div class="mb-3">
+                                    <label class="form-label">備考</label>
+                                    <textarea name="備考" id="edit_備考"
+                                              class="form-control"></textarea>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">閉じる</button>
@@ -135,10 +278,16 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        // Dynamically inject ranges from server
+        const ranges = [
+            {% for from_page, to_page, days in ranges %}
+                { from: {{ from_page }}, to: {{ to_page }}, days: {{ days }} }{% if not loop.last %},{% endif %}
+            {% endfor %}
+        ];
+
         function fillEditModal(index, project) {
             document.getElementById('editIndex').value = index;
 
-            // Handle all columns
             {% for col in display_columns %}
                 {% if col in date_columns %}
                     let dateValue_{{ col|replace(' ', '_') }} = project['{{ col }}'];
@@ -150,7 +299,7 @@
                     document.getElementById('edit_{{ col|replace(' ', '_') }}').value = dateValue_{{ col|replace(' ', '_') }};
                 {% elif col == 'タスク' %}
                     let tasks = project['{{ col }}'] ? project['{{ col }}'].split(',') : [];
-                    document.getElementById('task_設計').checked = tasks.includes('設計') || !project['{{ col }}']; // Default to checked if empty
+                    document.getElementById('task_設計').checked = tasks.includes('設計') || !project['{{ col }}'];
                     document.getElementById('task_Brse').checked = tasks.includes('Brse');
                     document.getElementById('task_テスト').checked = tasks.includes('テスト');
                     document.getElementById('task_FB').checked = tasks.includes('FB');
@@ -159,11 +308,10 @@
                 {% endif %}
             {% endfor %}
 
-            // Initialize テスト開始日 based on 開発完了
             updateTestStartDate();
+            updateTestCompletionDate();
         }
 
-        // Function to update テスト開始日 based on 開発完了
         function updateTestStartDate() {
             const devCompleteInput = document.getElementById('edit_開発完了');
             const testStartInput = document.getElementById('edit_テスト開始日');
@@ -187,10 +335,55 @@
             } else {
                 testStartInput.value = '';
             }
+            updateTestCompletionDate();
         }
 
-        // Add event listener to 開発完了 to update テスト開始日 dynamically
+        function updateTestCompletionDate() {
+            const pageCountInput = document.getElementById('edit_ページ数');
+            const testStartInput = document.getElementById('edit_テスト開始日');
+            const testCompleteInput = document.getElementById('edit_テスト完了日');
+            const pageCount = parseInt(pageCountInput.value);
+            const testStartDate = testStartInput.value;
+
+            if (!pageCount || !testStartDate) {
+                testCompleteInput.value = '';
+                return;
+            }
+
+            let workingDays = 0;
+            for (let range of ranges) {
+                if (pageCount >= range.from && pageCount <= range.to) {
+                    workingDays = range.days;
+                    break;
+                }
+            }
+
+            if (workingDays === 0) {
+                testCompleteInput.value = '';
+                return;
+            }
+
+            try {
+                let currentDate = new Date(testStartDate);
+                let daysAdded = 0;
+                while (daysAdded < workingDays) {
+                    currentDate.setDate(currentDate.getDate() + 1);
+                    if (currentDate.getDay() !== 0 && currentDate.getDay() !== 6) {
+                        daysAdded++;
+                    }
+                }
+                const year = currentDate.getFullYear();
+                const month = String(currentDate.getMonth() + 1).padStart(2, '0');
+                const day = String(currentDate.getDate()).padStart(2, '0');
+                testCompleteInput.value = `${year}-${month}-${day}`;
+            } catch (e) {
+                testCompleteInput.value = '';
+            }
+        }
+
         document.getElementById('edit_開発完了').addEventListener('change', updateTestStartDate);
+        document.getElementById('edit_テスト開始日').addEventListener('change', updateTestCompletionDate);
+        document.getElementById('edit_ページ数').addEventListener('change', updateTestCompletionDate);
     </script>
 </body>
 </html>

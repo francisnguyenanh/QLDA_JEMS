@@ -23,6 +23,7 @@ DATE_COLUMNS_DB = [
 ]
 DATE_COLUMNS_DISPLAY = DATE_COLUMNS_DB.copy()
 
+
 def init_db():
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
@@ -55,6 +56,7 @@ def init_db():
     conn.commit()
     conn.close()
 
+
 def read_users():
     users = {}
     try:
@@ -68,12 +70,14 @@ def read_users():
         users['admin'] = 'admin123'
     return users
 
+
 def project_exists(cursor, project):
     cursor.execute('''
         SELECT COUNT(*) FROM projects
         WHERE 案件名 = ? AND PH = ? AND "PJNo." = ? AND 案件番号 = ?
     ''', (project.get('案件名', ''), project.get('PH', ''), project.get('PJNo.', ''), project.get('案件番号', '')))
     return cursor.fetchone()[0] > 0
+
 
 def import_excel_to_sqlite():
     if not os.path.exists('projects.xlsx'):
@@ -145,11 +149,62 @@ def import_excel_to_sqlite():
         os.makedirs('old')
     shutil.move('projects.xlsx', os.path.join('old', 'projects.xlsx'))
 
+
+def read_pages_ranges():
+    ranges = []
+    try:
+        with open('pages.txt', 'r', encoding='utf-8') as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    range_part, days = line.split(':')
+                    days = int(days.strip())
+                    from_page, to_page = map(int, range_part.split('-'))
+                    ranges.append((from_page, to_page, days))
+                except ValueError:
+                    continue
+    except FileNotFoundError:
+        pass
+
+    return ranges
+
+
+def add_working_days(start_date, working_days):
+    if not start_date or working_days <= 0:
+        return ''
+    current_date = start_date
+    days_added = 0
+    while days_added < working_days:
+        current_date += timedelta(days=1)
+        if current_date.weekday() < 5:  # Monday to Friday
+            days_added += 1
+    return current_date.strftime('%Y-%m-%d')
+
+
+def calculate_test_completion_date(page_count, test_start_date):
+    if not page_count or not test_start_date:
+        return ''
+    try:
+        page_count = int(page_count)
+        test_start_date = datetime.strptime(test_start_date, '%Y-%m-%d')
+    except (ValueError, TypeError):
+        return ''
+
+    ranges = read_pages_ranges()
+    for from_page, to_page, days in ranges:
+        if from_page <= page_count <= to_page:
+            return add_working_days(test_start_date, days)
+    return ''
+
+
 def read_projects():
     conn = sqlite3.connect(DB_FILE)
     df = pd.read_sql_query('SELECT * FROM projects', conn)
     conn.close()
     return df
+
 
 def update_project(project_id, updates):
     conn = sqlite3.connect(DB_FILE)
@@ -173,7 +228,7 @@ def update_project(project_id, updates):
         tasks = [task.strip() for task in tasks if task.strip() in valid_tasks]
         updates['タスク'] = ','.join(tasks) if tasks else ''
     else:
-        updates['タスク'] = ''  # Handle case where no tasks are selected
+        updates['タスク'] = ''
 
     # Handle テスト開始日 logic: set to 開発完了 + 1 day if 開発完了 is set, else blank
     if '開発完了' in updates and updates['開発完了']:
@@ -184,6 +239,11 @@ def update_project(project_id, updates):
             updates['テスト開始日'] = ''
     elif '開発完了' in updates and not updates['開発完了']:
         updates['テスト開始日'] = ''
+
+    # Calculate テスト完了日 based on ページ数 and テスト開始日
+    page_count = updates.get('ページ数')
+    test_start_date = updates.get('テスト開始日')
+    updates['テスト完了日'] = calculate_test_completion_date(page_count, test_start_date)
 
     set_clause_parts = []
     values = []
@@ -203,6 +263,7 @@ def update_project(project_id, updates):
     conn.commit()
     conn.close()
 
+
 def parse_date_from_db(date_str):
     if isna(date_str) or date_str is None or date_str == '':
         return None
@@ -210,6 +271,7 @@ def parse_date_from_db(date_str):
         return datetime.strptime(date_str, '%Y-%m-%d')
     except (ValueError, TypeError):
         return None
+
 
 def parse_date_for_comparison(date_str):
     if isna(date_str) or date_str is None or date_str == '':
@@ -224,12 +286,14 @@ def parse_date_for_comparison(date_str):
         except (ValueError, TypeError):
             return None
 
+
 def format_date_jp(date):
     if date is None:
         return ''
     weekdays = ['月', '火', '水', '木', '金', '土', '日']
     weekday = weekdays[date.weekday()]
     return date.strftime('%Y/%m/%d') + f'({weekday})'
+
 
 def convert_nat_to_none(project_dict):
     for key, value in project_dict.items():
@@ -239,11 +303,13 @@ def convert_nat_to_none(project_dict):
             project_dict[key] = str(value)
     return project_dict
 
+
 @app.route('/')
 def index():
     if 'username' in session:
         return redirect(url_for('dashboard'))
     return redirect(url_for('login'))
+
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -260,6 +326,7 @@ def login():
             flash('無効な認証情報', 'danger')
 
     return render_template('login.html')
+
 
 @app.route('/dashboard', methods=['GET', 'POST'])
 def dashboard():
@@ -304,7 +371,6 @@ def dashboard():
         for col in df.columns:
             if col in request.form and col != 'id':
                 if col == 'タスク':
-                    # Handle multiple checkbox values
                     updates[col] = ','.join(request.form.getlist(col))
                 else:
                     updates[col] = request.form[col]
@@ -312,15 +378,21 @@ def dashboard():
         flash('プロジェクトが正常に更新されました', 'success')
         return redirect(url_for('dashboard'))
 
+    # Read ranges from pages.txt
+    ranges = read_pages_ranges()
+
     return render_template('dashboard.html',
                            projects=filtered_projects,
                            display_columns=DISPLAY_COLUMNS,
-                           date_columns=DATE_COLUMNS_DISPLAY)
+                           date_columns=DATE_COLUMNS_DISPLAY,
+                           ranges=ranges)  # Pass ranges to the template
+
 
 @app.route('/logout')
 def logout():
     session.pop('username', None)
     return redirect(url_for('login'))
+
 
 if __name__ == '__main__':
     app.run(debug=True)
