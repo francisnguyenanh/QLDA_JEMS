@@ -7,41 +7,18 @@
     <style>
         .past-date { background-color: #f0f0f0 !important; }
         .highlight-date { background-color: yellow !important; color: red !important; }
-        /* Increase width of 案件名 column and prevent wrapping */
-        th:nth-child(3), td:nth-child(3) {
-            width: 300px; /* Adjust width as needed */
-            white-space: nowrap;
-        }
-        /* Increase width of 備考 column and prevent wrapping */
-        th:nth-child(17), td:nth-child(17) {
-            width: 200px; /* Adjust width as needed */
-            white-space: nowrap;
-        }
-        /* Increase width of SE column and prevent wrapping */
-        th:nth-child(2), td:nth-child(2) {
-            width: 100px; /* Adjust width as needed */
-            white-space: nowrap;
-        }
-        /* Increase width of 案件番号 column and prevent wrapping */
-        th:nth-child(15), td:nth-child(15) {
-            width: 150px; /* Adjust width as needed */
-            white-space: nowrap;
-        }
-        /* Increase width of 操作 column and prevent wrapping */
-        th:nth-child(1), td:nth-child(1) {
-            width: 100px; /* Adjust width as needed */
-            white-space: nowrap;
-        }
-        /* Increase width of 開発工数(h) column and prevent wrapping */
-        th:nth-child(5), td:nth-child(5) {
-            width: 120px; /* Adjust width as needed */
-            white-space: nowrap;
-        }
-        /* Increase width of 設計工数(h) column and prevent wrapping */
-        th:nth-child(6), td:nth-child(6) {
-            width: 120px; /* Adjust width as needed */
-            white-space: nowrap;
-        }
+        /* Apply nowrap to all table cells */
+        th, td { white-space: nowrap; }
+        /* Specific column widths adjusted for new order */
+        th:nth-child(1), td:nth-child(1) { width: 100px; } /* 操作 */
+        th:nth-child(2), td:nth-child(2) { width: 150px; } /* タスク */
+        th:nth-child(3), td:nth-child(3) { width: 300px; } /* 案件名 */
+        th:nth-child(17), td:nth-child(17) { width: 100px; } /* SE */
+        th:nth-child(19), td:nth-child(19) { width: 150px; } /* 案件番号 */
+        th:nth-child(5), td:nth-child(5) { width: 120px; } /* 開発工数(h) */
+        th:nth-child(6), td:nth-child(6) { width: 120px; } /* 設計工数(h) */
+        th:nth-child(21), td:nth-child(21) { width: 100px; } /* ページ数 */
+        th:nth-child(22), td:nth-child(22) { width: 200px; } /* 備考 */
     </style>
 </head>
 <body>
@@ -108,6 +85,37 @@
                                     <input type="date" name="{{ col }}"
                                            id="edit_{{ col|replace(' ', '_') }}"
                                            class="form-control">
+                                {% elif col == 'ページ数' %}
+                                    <input type="number" name="{{ col }}"
+                                           id="edit_{{ col|replace(' ', '_') }}"
+                                           class="form-control" min="1">
+                                {% elif col == 'タスク' %}
+                                    <div>
+                                        <div class="form-check">
+                                            <input type="checkbox" name="{{ col }}"
+                                                   id="task_設計" value="設計"
+                                                   class="form-check-input" checked>
+                                            <label class="form-check-label" for="task_設計">設計</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input type="checkbox" name="{{ col }}"
+                                                   id="task_Brse" value="Brse"
+                                                   class="form-check-input">
+                                            <label class="form-check-label" for="task_Brse">Brse</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input type="checkbox" name="{{ col }}"
+                                                   id="task_テスト" value="テスト"
+                                                   class="form-check-input">
+                                            <label class="form-check-label" for="task_テスト">テスト</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input type="checkbox" name="{{ col }}"
+                                                   id="task_FB" value="FB"
+                                                   class="form-check-input">
+                                            <label class="form-check-label" for="task_FB">FB</label>
+                                        </div>
+                                    </div>
                                 {% else %}
                                     <input type="text" name="{{ col }}"
                                            id="edit_{{ col|replace(' ', '_') }}"
@@ -129,23 +137,60 @@
     <script>
         function fillEditModal(index, project) {
             document.getElementById('editIndex').value = index;
+
+            // Handle all columns
             {% for col in display_columns %}
                 {% if col in date_columns %}
-                    // For date columns, convert yyyy/mm/dd(aaa) back to yyyy-mm-dd for input type="date"
                     let dateValue_{{ col|replace(' ', '_') }} = project['{{ col }}'];
                     if (dateValue_{{ col|replace(' ', '_') }} && dateValue_{{ col|replace(' ', '_') }} !== '') {
-                        // Extract yyyy/mm/dd part (remove the (aaa))
                         dateValue_{{ col|replace(' ', '_') }} = dateValue_{{ col|replace(' ', '_') }}.split('(')[0].replace(/\//g, '-');
                     } else {
                         dateValue_{{ col|replace(' ', '_') }} = '';
                     }
                     document.getElementById('edit_{{ col|replace(' ', '_') }}').value = dateValue_{{ col|replace(' ', '_') }};
+                {% elif col == 'タスク' %}
+                    let tasks = project['{{ col }}'] ? project['{{ col }}'].split(',') : [];
+                    document.getElementById('task_設計').checked = tasks.includes('設計') || !project['{{ col }}']; // Default to checked if empty
+                    document.getElementById('task_Brse').checked = tasks.includes('Brse');
+                    document.getElementById('task_テスト').checked = tasks.includes('テスト');
+                    document.getElementById('task_FB').checked = tasks.includes('FB');
                 {% else %}
-                    // For non-date columns, handle null values safely
                     document.getElementById('edit_{{ col|replace(' ', '_') }}').value = project['{{ col }}'] != null ? project['{{ col }}'] : '';
                 {% endif %}
             {% endfor %}
+
+            // Initialize テスト開始日 based on 開発完了
+            updateTestStartDate();
         }
+
+        // Function to update テスト開始日 based on 開発完了
+        function updateTestStartDate() {
+            const devCompleteInput = document.getElementById('edit_開発完了');
+            const testStartInput = document.getElementById('edit_テスト開始日');
+            const devCompleteValue = devCompleteInput.value;
+
+            if (devCompleteValue) {
+                try {
+                    const devCompleteDate = new Date(devCompleteValue);
+                    if (!isNaN(devCompleteDate)) {
+                        devCompleteDate.setDate(devCompleteDate.getDate() + 1);
+                        const year = devCompleteDate.getFullYear();
+                        const month = String(devCompleteDate.getMonth() + 1).padStart(2, '0');
+                        const day = String(devCompleteDate.getDate()).padStart(2, '0');
+                        testStartInput.value = `${year}-${month}-${day}`;
+                    } else {
+                        testStartInput.value = '';
+                    }
+                } catch (e) {
+                    testStartInput.value = '';
+                }
+            } else {
+                testStartInput.value = '';
+            }
+        }
+
+        // Add event listener to 開発完了 to update テスト開始日 dynamically
+        document.getElementById('edit_開発完了').addEventListener('change', updateTestStartDate);
     </script>
 </body>
 </html>
