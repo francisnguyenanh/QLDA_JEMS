@@ -7,6 +7,7 @@
     <style>
         .past-date { background-color: #f0f0f0 !important; }
         .highlight-date { background-color: yellow !important; color: red !important; }
+        .fb-late { background-color: red !important; color: white !important; }
         th, td { white-space: nowrap; }
         th:nth-child(1), td:nth-child(1) { width: 100px; }
         th:nth-child(2), td:nth-child(2) { width: 150px; }
@@ -42,7 +43,6 @@
                 width: 23.333333%; /* 他の列とのバランスを見て調整 */
             }
         }
-
     </style>
 </head>
 <body>
@@ -81,7 +81,17 @@
                             </button>
                         </td>
                         {% for col in display_columns %}
-                            <td class="{% if project.highlight_column == col %}highlight-date{% elif project[col + '_past'] %}past-date{% endif %}">
+                            {% set classes = [] %}
+                            {% if project.highlight_column == col %}
+                                {% set _ = classes.append('highlight-date') %}
+                            {% endif %}
+                            {% if project[col + '_past'] %}
+                                {% set _ = classes.append('past-date') %}
+                            {% endif %}
+                            {% if col == 'FB完了予定日' and project.fb_late is sameas true %}
+                                {% set _ = classes.append('fb-late') %}
+                            {% endif %}
+                            <td class="{{ ' '.join(classes) }}" data-fb-late="{{ project.fb_late }}">
                                 {{ project[col] }}
                             </td>
                         {% endfor %}
@@ -250,7 +260,7 @@
                                 <div class="mb-3">
                                     <label class="form-label">FB完了予定日</label>
                                     <input type="date" name="FB完了予定日"
-                                           id="edit_FB完了予定日" class="form-control">
+                                           id="edit_FB完了予定日" class="form-control" readonly>
                                 </div>
                                 <!-- SE納品 -->
                                 <div class="mb-3">
@@ -286,6 +296,7 @@
         ];
 
         function fillEditModal(index, project) {
+            console.log('Project ID:', index, 'fb_late:', project.fb_late, 'type:', typeof project.fb_late);
             document.getElementById('editIndex').value = index;
 
             {% for col in display_columns %}
@@ -310,6 +321,7 @@
 
             updateTestStartDate();
             updateTestCompletionDate();
+            updateFBCompletionDate();
         }
 
         function updateTestStartDate() {
@@ -347,6 +359,7 @@
 
             if (!pageCount || !testStartDate) {
                 testCompleteInput.value = '';
+                updateFBCompletionDate();
                 return;
             }
 
@@ -360,6 +373,7 @@
 
             if (workingDays === 0) {
                 testCompleteInput.value = '';
+                updateFBCompletionDate();
                 return;
             }
 
@@ -379,11 +393,42 @@
             } catch (e) {
                 testCompleteInput.value = '';
             }
+            updateFBCompletionDate();
+        }
+
+        function updateFBCompletionDate() {
+            const testCompleteInput = document.getElementById('edit_テスト完了日');
+            const fbCompleteInput = document.getElementById('edit_FB完了予定日');
+            const testCompleteDate = testCompleteInput.value;
+
+            if (!testCompleteDate) {
+                fbCompleteInput.value = '';
+                return;
+            }
+
+            try {
+                let currentDate = new Date(testCompleteDate);
+                let daysAdded = 0;
+                const workingDays = 9; // Fixed 9 working days for FB
+                while (daysAdded < workingDays) {
+                    currentDate.setDate(currentDate.getDate() + 1);
+                    if (currentDate.getDay() !== 0 && currentDate.getDay() !== 6) {
+                        daysAdded++;
+                    }
+                }
+                const year = currentDate.getFullYear();
+                const month = String(currentDate.getMonth() + 1).padStart(2, '0');
+                const day = String(currentDate.getDate()).padStart(2, '0');
+                fbCompleteInput.value = `${year}-${month}-${day}`;
+            } catch (e) {
+                fbCompleteInput.value = '';
+            }
         }
 
         document.getElementById('edit_開発完了').addEventListener('change', updateTestStartDate);
         document.getElementById('edit_テスト開始日').addEventListener('change', updateTestCompletionDate);
         document.getElementById('edit_ページ数').addEventListener('change', updateTestCompletionDate);
+        document.getElementById('edit_テスト完了日').addEventListener('change', updateFBCompletionDate);
     </script>
 </body>
 </html>

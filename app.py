@@ -6,6 +6,10 @@ from flask import Flask, render_template, request, redirect, url_for, session, f
 import pandas as pd
 import openpyxl
 from pandas import isna
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'
@@ -167,7 +171,6 @@ def read_pages_ranges():
                     continue
     except FileNotFoundError:
         pass
-
     return ranges
 
 
@@ -197,6 +200,16 @@ def calculate_test_completion_date(page_count, test_start_date):
         if from_page <= page_count <= to_page:
             return add_working_days(test_start_date, days)
     return ''
+
+
+def calculate_fb_completion_date(test_completion_date):
+    if not test_completion_date:
+        return ''
+    try:
+        test_completion_date = datetime.strptime(test_completion_date, '%Y-%m-%d')
+        return add_working_days(test_completion_date, 9)  # Add 9 working days
+    except (ValueError, TypeError):
+        return ''
 
 
 def read_projects():
@@ -245,6 +258,10 @@ def update_project(project_id, updates):
     test_start_date = updates.get('テスト開始日')
     updates['テスト完了日'] = calculate_test_completion_date(page_count, test_start_date)
 
+    # Calculate FB完了予定日 based on テスト完了日 + 9 working days
+    test_completion_date = updates.get('テスト完了日')
+    updates['FB完了予定日'] = calculate_fb_completion_date(test_completion_date)
+
     set_clause_parts = []
     values = []
     for key, value in updates.items():
@@ -266,24 +283,34 @@ def update_project(project_id, updates):
 
 def parse_date_from_db(date_str):
     if isna(date_str) or date_str is None or date_str == '':
+        logging.debug(f"Date string is empty or None: {date_str}")
         return None
     try:
-        return datetime.strptime(date_str, '%Y-%m-%d')
-    except (ValueError, TypeError):
+        parsed_date = datetime.strptime(date_str, '%Y-%m-%d')
+        logging.debug(f"Successfully parsed date: {date_str} -> {parsed_date}")
+        return parsed_date
+    except (ValueError, TypeError) as e:
+        logging.error(f"Failed to parse date: {date_str}, error: {e}")
         return None
 
 
 def parse_date_for_comparison(date_str):
     if isna(date_str) or date_str is None or date_str == '':
+        logging.debug(f"Date string for comparison is empty or None: {date_str}")
         return None
     try:
         if isinstance(date_str, datetime):
             return date_str
-        return datetime.strptime(date_str, '%Y/%m/%d(%a)')
+        parsed_date = datetime.strptime(date_str, '%Y/%m/%d(%a)')
+        logging.debug(f"Successfully parsed date for comparison: {date_str} -> {parsed_date}")
+        return parsed_date
     except ValueError:
         try:
-            return datetime.strptime(date_str, '%Y-%m-%d')
-        except (ValueError, TypeError):
+            parsed_date = datetime.strptime(date_str, '%Y-%m-%d')
+            logging.debug(f"Successfully parsed date for comparison: {date_str} -> {parsed_date}")
+            return parsed_date
+        except (ValueError, TypeError) as e:
+            logging.error(f"Failed to parse date for comparison: {date_str}, error: {e}")
             return None
 
 
@@ -301,6 +328,9 @@ def convert_nat_to_none(project_dict):
             project_dict[key] = ''
         elif isinstance(value, (float, int)):
             project_dict[key] = str(value)
+        # Ensure fb_late remains a boolean
+        if key == 'fb_late':
+            project_dict[key] = bool(value)
     return project_dict
 
 
@@ -362,7 +392,18 @@ def dashboard():
                 project[col] = format_date_jp(date_obj)
 
             project['highlight_column'] = closest_date if closest_date else None
+
+            # Check if FB完了予定日 is later than SE納品
+            fb_completion_date = parse_date_from_db(row['FB完了予定日'])
+            project['fb_late'] = False
+            if fb_completion_date and se_delivery_date:
+                project['fb_late'] = fb_completion_date.date() > se_delivery_date.date()
+            logging.debug(f"Project ID: {row['id']}, 案件名: {row['案件名']}, "
+                         f"FB完了予定日: {row['FB完了予定日']}, SE納品: {row['SE納品']}, "
+                         f"fb_late: {project['fb_late']}, type: {type(project['fb_late'])}")
+
             project = convert_nat_to_none(project)
+            logging.debug(f"After convert_nat_to_none, Project ID: {row['id']}, fb_late: {project['fb_late']}, type: {type(project['fb_late'])}")
             filtered_projects.append(project)
 
     if request.method == 'POST':
@@ -385,7 +426,7 @@ def dashboard():
                            projects=filtered_projects,
                            display_columns=DISPLAY_COLUMNS,
                            date_columns=DATE_COLUMNS_DISPLAY,
-                           ranges=ranges)  # Pass ranges to the template
+                           ranges=ranges)
 
 
 @app.route('/logout')
