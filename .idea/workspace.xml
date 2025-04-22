@@ -5,22 +5,8 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="64eee58c-2e7e-4880-8bbe-77c2d3583eee" name="Changes" comment="update">
-      <change afterPath="$PROJECT_DIR$/TODO.txt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/mail/1.【SE宛設計書送付】.txt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/mail/2-1.【開発宛：新規】.txt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/mail/2-2.【開発宛：修正】.txt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/mail/6-0.【納品予定連絡】.txt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/mail/6-1.【(並行テスト)納品予定連絡】.txt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/mail/6-2.【(結合テスト後)納品予定連絡】.txt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/mail/7-1.FB依頼用(納品時刻有).txt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/mail/7-2.FB依頼用(納品時刻無).txt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/mail/8-1.【(FB有)結合テスト完了済みPG】.txt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/mail/8-2.【(FB無)結合テスト完了済みPG】.txt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/mail/8-3.【並行テスト用PG納品】.txt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app.py" beforeDir="false" afterPath="$PROJECT_DIR$/app.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/old/projects.xlsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/projects.db" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/templates/dashboard.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/dashboard.html" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -113,7 +99,23 @@
       <option name="project" value="LOCAL" />
       <updated>1745304977547</updated>
     </task>
-    <option name="localTasksCounter" value="3" />
+    <task id="LOCAL-00003" summary="update">
+      <option name="closed" value="true" />
+      <created>1745311591276</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1745311591276</updated>
+    </task>
+    <task id="LOCAL-00004" summary="update">
+      <option name="closed" value="true" />
+      <created>1745311605838</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1745311605838</updated>
+    </task>
+    <option name="localTasksCounter" value="5" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">

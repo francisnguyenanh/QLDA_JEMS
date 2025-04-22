@@ -2,7 +2,7 @@ import os
 import shutil
 import sqlite3
 from datetime import datetime, timedelta
-from flask import Flask, render_template, request, redirect, url_for, session, flash
+from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
 import pandas as pd
 import openpyxl
 from pandas import isna
@@ -16,6 +16,7 @@ app.secret_key = 'your_secret_key'
 
 # SQLite database setup
 DB_FILE = 'projects.db'
+MAIL_DIR = 'mail'
 DISPLAY_COLUMNS = [
     'ステータス', 'タスク', '案件名', 'PH', '開発工数（h）', '設計工数（h）', '要件引継', '設計開始',
     '設計完了', '設計書送付', '開発開始', '開発完了', 'テスト開始日', 'テスト完了日',
@@ -230,6 +231,13 @@ def read_projects():
     return df
 
 
+def get_mail_templates():
+    if not os.path.exists(MAIL_DIR):
+        os.makedirs(MAIL_DIR)
+    templates = [f for f in os.listdir(MAIL_DIR) if f.endswith('.txt')]
+    return templates
+
+
 def update_project(project_id, updates):
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
@@ -434,6 +442,9 @@ def dashboard():
         flash('プロジェクトが正常に更新されました', 'success')
         return redirect(url_for('dashboard'))
 
+    # Read mail templates
+    mail_templates = get_mail_templates()
+
     # Read ranges from pages.txt
     ranges = read_pages_ranges()
 
@@ -442,7 +453,69 @@ def dashboard():
                            display_columns=DISPLAY_COLUMNS,
                            date_columns=DATE_COLUMNS_DISPLAY,
                            ranges=ranges,
-                           valid_statuses=VALID_STATUSES)
+                           valid_statuses=VALID_STATUSES,
+                           mail_templates=mail_templates)
+
+
+@app.route('/get_mail_content/<int:project_id>/<filename>', methods=['GET'])
+def get_mail_content(project_id, filename):
+    logging.debug(f"Request for get_mail_content: project_id={project_id}, filename={filename}")
+
+    # Security check to prevent directory traversal
+    if '..' in filename or filename.startswith('/') or filename.startswith('\\'):
+        logging.error(f"Invalid filename detected: {filename}")
+        return jsonify({'error': 'Invalid filename'}), 400
+
+    file_path = os.path.join(MAIL_DIR, filename)
+    logging.debug(f"Checking file path: {file_path}")
+
+    if not os.path.exists(file_path) or not filename.endswith('.txt'):
+        logging.error(f"File not found or invalid: {file_path}")
+        return jsonify({'error': 'File not found or not a .txt file'}), 404
+
+    # Read project data
+    try:
+        conn = sqlite3.connect(DB_FILE)
+        cursor = conn.cursor()
+        cursor.execute('SELECT * FROM projects WHERE id = ?', (project_id,))
+        project = cursor.fetchone()
+        conn.close()
+    except sqlite3.Error as e:
+        logging.error(f"Database error: {e}")
+        return jsonify({'error': 'Database error'}), 500
+
+    if not project:
+        logging.error(f"Project not found for ID: {project_id}")
+        return jsonify({'error': 'Project not found'}), 404
+
+    # Convert project to dict
+    project_dict = {col: project[i] for i, col in enumerate(['id'] + DISPLAY_COLUMNS + ['テスト開始日', 'テスト完了日', 'FB完了予定日'])}
+    project_dict = convert_nat_to_none(project_dict)
+    logging.debug(f"Project data: {project_dict}")
+
+    # Read file content
+    try:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+        logging.debug(f"File content read successfully: {file_path}")
+    except Exception as e:
+        logging.error(f"Failed to read file {file_path}: {e}")
+        return jsonify({'error': f'Failed to read file: {str(e)}'}), 500
+
+    # Replace placeholders
+    placeholders = {
+        '{案件名}': project_dict.get('案件名', ''),
+        '{se名}': project_dict.get('SE', ''),
+        '{pj}': project_dict.get('PJNo.', ''),
+        '{開発完了}': project_dict.get('開発完了', ''),
+        '{SE納品}': project_dict.get('SE納品', ''),
+        '{開発工数}': project_dict.get('開発工数（h）', '')
+    }
+    for key, value in placeholders.items():
+        content = content.replace(key, value)
+    logging.debug(f"Content after placeholder replacement: {content[:100]}...")
+
+    return jsonify({'content': content})
 
 
 @app.route('/logout')
