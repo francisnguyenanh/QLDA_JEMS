@@ -17,7 +17,7 @@ app.secret_key = 'your_secret_key'
 # SQLite database setup
 DB_FILE = 'projects.db'
 DISPLAY_COLUMNS = [
-    'タスク', '案件名', 'PH', '開発工数（h）', '設計工数（h）', '要件引継', '設計開始',
+    'ステータス', 'タスク', '案件名', 'PH', '開発工数（h）', '設計工数（h）', '要件引継', '設計開始',
     '設計完了', '設計書送付', '開発開始', '開発完了', 'テスト開始日', 'テスト完了日',
     'FB完了予定日', 'SE納品', 'SE', 'BSE', '案件番号', 'PJNo.', 'ページ数', '備考'
 ]
@@ -26,6 +26,9 @@ DATE_COLUMNS_DB = [
     'テスト開始日', 'テスト完了日', 'FB完了予定日', 'SE納品'
 ]
 DATE_COLUMNS_DISPLAY = DATE_COLUMNS_DB.copy()
+VALID_STATUSES = [
+    '要件引継待ち', '設計中', 'SE送付済', '開発中', 'テスト中', 'FB対応中', 'SE納品済'
+]
 
 
 def init_db():
@@ -54,9 +57,16 @@ def init_db():
             テスト完了日 TEXT,
             FB完了予定日 TEXT,
             ページ数 INTEGER,
-            タスク TEXT
+            タスク TEXT,
+            ステータス TEXT
         )
     ''')
+    # Migration: Add ステータス column if it doesn't exist
+    cursor.execute("PRAGMA table_info(projects)")
+    columns = [col[1] for col in cursor.fetchall()]
+    if 'ステータス' not in columns:
+        cursor.execute('ALTER TABLE projects ADD COLUMN ステータス TEXT')
+        cursor.execute("UPDATE projects SET ステータス = '要件引継待ち' WHERE ステータス IS NULL")
     conn.commit()
     conn.close()
 
@@ -106,9 +116,9 @@ def import_excel_to_sqlite():
         )
 
     # Initialize other columns if missing
-    for col in ['ページ数', 'タスク']:
+    for col in ['ページ数', 'タスク', 'ステータス']:
         if col not in df.columns:
-            df[col] = ''
+            df[col] = '' if col != 'ステータス' else '要件引継待ち'
 
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
@@ -120,8 +130,8 @@ def import_excel_to_sqlite():
                 INSERT INTO projects (
                     SE, 案件名, PH, "開発工数（h）", "設計工数（h）", 要件引継, 設計開始,
                     設計完了, 設計書送付, 開発開始, 開発完了, SE納品, BSE, 案件番号, "PJNo.",
-                    備考, テスト開始日, テスト完了日, FB完了予定日, ページ数, タスク
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    備考, テスト開始日, テスト完了日, FB完了予定日, ページ数, タスク, ステータス
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (
                 project.get('SE', ''),
                 project.get('案件名', ''),
@@ -143,7 +153,8 @@ def import_excel_to_sqlite():
                 project.get('テスト完了日', ''),
                 project.get('FB完了予定日', ''),
                 project.get('ページ数', None),
-                project.get('タスク', '')
+                project.get('タスク', ''),
+                project.get('ステータス', '要件引継待ち')
             ))
 
     conn.commit()
@@ -242,6 +253,10 @@ def update_project(project_id, updates):
         updates['タスク'] = ','.join(tasks) if tasks else ''
     else:
         updates['タスク'] = ''
+
+    if 'ステータス' in updates:
+        if updates['ステータス'] not in VALID_STATUSES:
+            updates['ステータス'] = '要件引継待ち'
 
     # Handle テスト開始日 logic: set to 開発完了 + 1 day if 開発完了 is set, else blank
     if '開発完了' in updates and updates['開発完了']:
@@ -426,7 +441,8 @@ def dashboard():
                            projects=filtered_projects,
                            display_columns=DISPLAY_COLUMNS,
                            date_columns=DATE_COLUMNS_DISPLAY,
-                           ranges=ranges)
+                           ranges=ranges,
+                           valid_statuses=VALID_STATUSES)
 
 
 @app.route('/logout')

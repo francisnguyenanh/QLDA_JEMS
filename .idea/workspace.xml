@@ -4,10 +4,23 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="64eee58c-2e7e-4880-8bbe-77c2d3583eee" name="Changes" comment="first time">
+    <list default="true" id="64eee58c-2e7e-4880-8bbe-77c2d3583eee" name="Changes" comment="update">
+      <change afterPath="$PROJECT_DIR$/TODO.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/mail/1.【SE宛設計書送付】.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/mail/2-1.【開発宛：新規】.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/mail/2-2.【開発宛：修正】.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/mail/6-0.【納品予定連絡】.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/mail/6-1.【(並行テスト)納品予定連絡】.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/mail/6-2.【(結合テスト後)納品予定連絡】.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/mail/7-1.FB依頼用(納品時刻有).txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/mail/7-2.FB依頼用(納品時刻無).txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/mail/8-1.【(FB有)結合テスト完了済みPG】.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/mail/8-2.【(FB無)結合テスト完了済みPG】.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/mail/8-3.【並行テスト用PG納品】.txt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app.py" beforeDir="false" afterPath="$PROJECT_DIR$/app.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/projects.db" beforeDir="false" afterPath="$PROJECT_DIR$/projects.db" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/old/projects.xlsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/projects.db" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/templates/dashboard.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/dashboard.html" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -63,8 +76,9 @@
 }</component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
-      <recent name="$PROJECT_DIR$" />
+      <recent name="C:\8. Private\Tool\QLDA_JEMS\mail" />
       <recent name="C:\8. Private\Tool\QLDA_JEMS" />
+      <recent name="$PROJECT_DIR$" />
     </key>
   </component>
   <component name="SharedIndexes">
@@ -91,7 +105,15 @@
       <option name="project" value="LOCAL" />
       <updated>1745141467905</updated>
     </task>
-    <option name="localTasksCounter" value="2" />
+    <task id="LOCAL-00002" summary="update">
+      <option name="closed" value="true" />
+      <created>1745304977547</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1745304977547</updated>
+    </task>
+    <option name="localTasksCounter" value="3" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -108,6 +130,7 @@
   <component name="VcsManagerConfiguration">
     <option name="ADD_EXTERNAL_FILES_SILENTLY" value="true" />
     <MESSAGE value="first time" />
-    <option name="LAST_COMMIT_MESSAGE" value="first time" />
+    <MESSAGE value="update" />
+    <option name="LAST_COMMIT_MESSAGE" value="update" />
   </component>
 </project>

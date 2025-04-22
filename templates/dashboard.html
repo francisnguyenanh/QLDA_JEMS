@@ -10,19 +10,20 @@
         .fb-late { background-color: red !important; color: white !important; }
         th, td { white-space: nowrap; }
         th:nth-child(1), td:nth-child(1) { width: 100px; }
-        th:nth-child(2), td:nth-child(2) { width: 150px; }
-        th:nth-child(3), td:nth-child(3) { width: 300px; }
-        th:nth-child(17), td:nth-child(17) { width: 100px; }
-        th:nth-child(19), td:nth-child(19) { width: 150px; }
-        th:nth-child(5), td:nth-child(5) { width: 120px; }
+        th:nth-child(2), td:nth-child(2) { width: 120px; } /* ステータス */
+        th:nth-child(3), td:nth-child(3) { width: 150px; } /* タスク */
+        th:nth-child(4), td:nth-child(4) { width: 300px; } /* 案件名 */
+        th:nth-child(18), td:nth-child(18) { width: 100px; }
+        th:nth-child(20), td:nth-child(20) { width: 150px; }
         th:nth-child(6), td:nth-child(6) { width: 120px; }
-        th:nth-child(21), td:nth-child(21) { width: 100px; }
-        th:nth-child(22), td:nth-child(22) { width: 200px; }
+        th:nth-child(7), td:nth-child(7) { width: 120px; }
+        th:nth-child(22), td:nth-child(22) { width: 100px; }
+        th:nth-child(23), td:nth-child(23) { width: 200px; }
         .modal-body .row { margin-left: -10px; margin-right: -10px; }
         .modal-body .col-md-3 { padding-left: 10px; padding-right: 10px; }
         .task-checkboxes .form-check { margin-right: 10px; }
         .form-label { font-size: 0.9rem; }
-        .form-control, .form-check-input { font-size: 0.9rem; }
+        .form-control, .form-check-input, .form-select { font-size: 0.9rem; }
         textarea.form-control { resize: vertical; min-height: 60px; }
 
         @media (min-width: 768px) { /* md以上の画面サイズに適用 */
@@ -184,6 +185,15 @@
                             </div>
                             <!-- Column 2 -->
                             <div class="col-md-3">
+                                <!-- ステータス -->
+                                <div class="mb-3">
+                                    <label class="form-label">ステータス</label>
+                                    <select name="ステータス" id="edit_ステータス" class="form-select">
+                                        {% for status in valid_statuses %}
+                                            <option value="{{ status }}">{{ status }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
                                 <!-- 開発工数（h） -->
                                 <div class="mb-3">
                                     <label class="form-label">開発工数（h）</label>
@@ -314,6 +324,8 @@
                     document.getElementById('task_Brse').checked = tasks.includes('Brse');
                     document.getElementById('task_テスト').checked = tasks.includes('テスト');
                     document.getElementById('task_FB').checked = tasks.includes('FB');
+                {% elif col == 'ステータス' %}
+                    document.getElementById('edit_ステータス').value = project['{{ col }}'] || '要件引継待ち';
                 {% else %}
                     document.getElementById('edit_{{ col|replace(' ', '_') }}').value = project['{{ col }}'] != null ? project['{{ col }}'] : '';
                 {% endif %}
