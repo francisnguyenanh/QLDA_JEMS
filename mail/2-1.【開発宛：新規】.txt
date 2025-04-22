@@ -1,40 +1,38 @@
-����Fbse_hcm@j-ems.jp
-CC�F�݌v�`�[�� <pjpromotion@j-ems.jp> �S��SE�̃��[���A�h���X
-�^�C�g���F�y�V�K�zPJNo.{pj} {anken}�l�F�J�X�^�}�C�Y�݌v�����t
+宛先：bse_hcm@j-ems.jp
+CC：設計チーム <pjpromotion@j-ems.jp> 担当SEのメールアドレス
+タイトル：【新規】PJNo.{pj} {案件名}様：カスタマイズ設計書送付
+ 
+ 
+本文
+ 
+ 
+開発ご担当者様
+ 
+お疲れ様です。設計課のLocです。
+ 
+表題の件、
+開発依頼をお送りいたします。
+以下ご確認いただき、対応よろしくお願いいたします。
+ 
+ 
+【保存先】
+http://〇●●●
 
-
-
-�{��
-
-
-�J�����S���җl
-
-�����l�ł��B�݌v�ۂ�Loc�ł��B
-
-�\��̌��A
-�J���˗��������肢�����܂��B
-�ȉ����m�F���������A�Ή���낵�����肢�������܂��B
-
-
-�y�ۑ���z
-http://�Z������		
-	
-�y�������z	
-YYYYMMDD_�J�X�^�}�C�Y�݌v���i������Ё������l�j_Ver1.XX.XX.xls	
-
-�y�݌v���󋵁z
-�S�Ċ���/�ꕔ������(yyyy/mm/dd �c�著�t�\��j/���i��F3�������t�E�E�E�j	
-
-�y�W���x�[�X�o�[�W�����z
-x.xx.xx�i��F2.26.6�j
-�i�V�K�J�X�^�}�C�Y�̏ꍇ�̂݋L�ڂ��A�ǉ��J�X�^�}�C�Y�̏ꍇ�́u�w��Ȃ��v�j
-�i�u�ŐV�v�Ƃ����L�ڂ�NG�A�ԍ����w�肷�邱�Ɓj
-�i���o�C�����R���Ώۂ̏ꍇ�A���o�C���̃o�[�W�������L�ڂ��邱�Ɓj
-
-�y�J���H���z
-{�J���H��}
-
-�y���l�z
-
-
+【資料名】	
+YYYYMMDD_カスタマイズ設計書（株式会社●●●様）_Ver1.XX.XX.xls	
+ 
+【設計書状況】
+全て完了/一部未完了(yyyy/mm/dd 残り送付予定）/他（例：3分割送付・・・）	
+ 
+【標準ベースバージョン】
+x.xx.xx（例：2.26.6）
+（新規カスタマイズの場合のみ記載し、追加カスタマイズの場合は「指定なし」）
+（「最新」という記載はNG、番号を指定すること）
+（モバイル将軍も対象の場合、モバイルのバージョンも記載すること）
+ 
+【開発工数】
+{開発工数}h
+ 
+【備考】
+ 
 Loc
