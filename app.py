@@ -22,7 +22,7 @@ OLD_DIR = 'old'
 DISPLAY_COLUMNS = [
     'ステータス', '案件名', '要件引継', '設計開始',
     '設計完了', '設計書送付', '開発開始', '開発完了', 'テスト開始日', 'テスト完了日',
-    'FB完了予定日', 'SE納品', 'タスク','SE', 'BSE', '案件番号', 'PJNo.','PH', '開発工数（h）', '設計工数（h）', 'ページ数', '備考'
+    'FB完了予定日', 'SE納品', 'タスク', 'SE', 'BSE', '案件番号', 'PJNo.', 'PH', '開発工数（h）', '設計工数（h）', 'ページ数', '備考'
 ]
 DATE_COLUMNS_DB = [
     '要件引継', '設計開始', '設計完了', '設計書送付', '開発開始', '開発完了',
@@ -32,7 +32,6 @@ DATE_COLUMNS_DISPLAY = DATE_COLUMNS_DB.copy()
 VALID_STATUSES = [
     '要件引継待ち', '設計中', 'SE送付済', '開発中', 'テスト中', 'FB対応中', 'SE納品済'
 ]
-
 
 def init_db():
     """Initialize SQLite database with projects and copied_templates tables."""
@@ -82,7 +81,6 @@ def init_db():
     conn.commit()
     conn.close()
 
-
 def read_users():
     """Read users from users.txt, create default admin if not exists."""
     users = {}
@@ -96,7 +94,6 @@ def read_users():
             f.write('admin:admin123\n')
         users['admin'] = 'admin123'
     return users
-
 
 def project_exists(cursor, project):
     """Check if a project already exists based on 案件名, PH, PJNo."""
@@ -125,7 +122,6 @@ def project_exists(cursor, project):
     logging.debug(f"Found {count} matching projects")
     return count > 0
 
-
 def parse_date_from_db(date_str):
     """Parse date string from database (YYYY-MM-DD or YYYY/MM/DD) to datetime object."""
     if isna(date_str) or date_str is None or date_str == '':
@@ -144,7 +140,6 @@ def parse_date_from_db(date_str):
             logging.error(f"Failed to parse date: {date_str}, error: {e}")
             return None
 
-
 def parse_date_for_comparison(date_str):
     """Parse date string for comparison, supports YYYY/MM/DD(曜日) and YYYY-MM-DD."""
     if isna(date_str) or date_str is None or date_str == '':
@@ -153,7 +148,6 @@ def parse_date_for_comparison(date_str):
     try:
         if isinstance(date_str, datetime):
             return date_str
-        # Handle YYYY/MM/DD(曜日)
         if '(' in date_str:
             date_str = date_str.split('(')[0]
         parsed_date = datetime.strptime(date_str, '%Y/%m/%d')
@@ -168,7 +162,6 @@ def parse_date_for_comparison(date_str):
             logging.error(f"Failed to parse date for comparison: {date_str}, error: {e}")
             return None
 
-
 def format_date_jp(date):
     """Format datetime object to YYYY/MM/DD(曜日)."""
     if date is None:
@@ -176,7 +169,6 @@ def format_date_jp(date):
     weekdays = ['月', '火', '水', '木', '金', '土', '日']
     weekday = weekdays[date.weekday()]
     return date.strftime('%Y/%m/%d') + f'({weekday})'
-
 
 def convert_nat_to_none(project_dict):
     """Convert NaT/NaN/None values to empty strings and handle specific data types."""
@@ -193,7 +185,6 @@ def convert_nat_to_none(project_dict):
         if key == 'fb_late':
             project_dict[key] = bool(value)
     return project_dict
-
 
 def calculate_status(project, current_date=None):
     """Calculate project status based on milestone dates and current date."""
@@ -222,7 +213,6 @@ def calculate_status(project, current_date=None):
 
     return '要件引継待ち'
 
-
 def read_pages_ranges():
     """Read page ranges and corresponding days from pages.txt."""
     ranges = []
@@ -242,7 +232,6 @@ def read_pages_ranges():
     except FileNotFoundError:
         pass
     return ranges
-
 
 def read_working_days(file_path='config.txt'):
     """Read working days from config.txt, default to 9 if not found."""
@@ -266,7 +255,6 @@ def read_working_days(file_path='config.txt'):
         logging.error(f"Error reading {file_path}: {e}")
         return 9
 
-
 def add_working_days(start_date, working_days):
     """Add working days to a start date, skipping weekends."""
     if not start_date or working_days <= 0:
@@ -278,7 +266,6 @@ def add_working_days(start_date, working_days):
         if current_date.weekday() < 5:
             days_added += 1
     return current_date.strftime('%Y-%m-%d')
-
 
 def calculate_test_completion_date(page_count, test_start_date):
     """Calculate test completion date based on page count and test start date."""
@@ -296,7 +283,6 @@ def calculate_test_completion_date(page_count, test_start_date):
             return add_working_days(test_start_date, days)
     return ''
 
-
 def calculate_fb_completion_date(test_completion_date):
     """Calculate FB completion date based on test completion date."""
     if not test_completion_date:
@@ -307,7 +293,6 @@ def calculate_fb_completion_date(test_completion_date):
         return add_working_days(test_completion_date, working_days)
     except (ValueError, TypeError):
         return ''
-
 
 def import_excel_to_sqlite(file_path):
     """Import projects from Excel file to SQLite database."""
@@ -394,14 +379,12 @@ def import_excel_to_sqlite(file_path):
         logging.error(f"Failed to import Excel file {file_path}: {e}")
         return False
 
-
 def read_projects():
     """Read all projects from SQLite database."""
     conn = sqlite3.connect(DB_FILE)
     df = pd.read_sql_query('SELECT * FROM projects', conn)
     conn.close()
     return df
-
 
 def get_mail_templates():
     """Get list of mail templates from mail directory."""
@@ -411,7 +394,6 @@ def get_mail_templates():
     templates = [(f, f[:-4]) for f in sorted(templates)]
     logging.debug(f"Mail templates: {templates}")
     return templates
-
 
 def update_project(project_id, updates):
     """Update project in database with new values."""
@@ -472,14 +454,12 @@ def update_project(project_id, updates):
     conn.commit()
     conn.close()
 
-
 @app.route('/')
 def index():
     """Redirect to dashboard if logged in, else to login."""
     if 'username' in session:
         return redirect(url_for('dashboard'))
     return redirect(url_for('login'))
-
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -494,7 +474,6 @@ def login():
         else:
             flash('無効な認証情報', 'danger')
     return render_template('login.html')
-
 
 @app.route('/dashboard', methods=['GET', 'POST'])
 def dashboard():
@@ -582,7 +561,6 @@ def dashboard():
                            valid_statuses=VALID_STATUSES,
                            working_days=working_days)
 
-
 @app.route('/upload', methods=['POST'])
 def upload():
     """Handle Excel file upload."""
@@ -611,7 +589,6 @@ def upload():
         file_path = os.path.join(PROJECT_DIR, file.filename)
         file.save(file_path)
 
-        # Clear existing files in PROJECT_DIR (except the newly uploaded file)
         for existing_file in os.listdir(PROJECT_DIR):
             if existing_file != file.filename:
                 existing_file_path = os.path.join(PROJECT_DIR, existing_file)
@@ -619,23 +596,19 @@ def upload():
                     os.remove(existing_file_path)
 
         if import_excel_to_sqlite(file_path):
-            # Delete the uploaded file after successful import
             os.remove(file_path)
             flash('ファイルがアップロードされ、データベースに正常にインポートされました', 'success')
         else:
-            # Delete the file even if import fails to avoid clutter
             os.remove(file_path)
             flash('エラー: ファイルのインポートに失敗しました', 'danger')
 
     except Exception as e:
         logging.error(f"Error uploading file: {e}")
-        # Ensure the file is deleted in case of an error
         if os.path.exists(file_path):
             os.remove(file_path)
         flash(f'エラー: ファイルのアップロードに失敗しました: {str(e)}', 'danger')
 
     return redirect(url_for('dashboard'))
-
 
 @app.route('/upload_mail_template', methods=['POST'])
 def upload_mail_template():
@@ -675,7 +648,6 @@ def upload_mail_template():
     except Exception as e:
         logging.error(f"Error uploading mail template: {e}")
         return jsonify({'error': f'ファイルのアップロードに失敗しました: {str(e)}'}), 500
-
 
 @app.route('/get_mail_content/<int:project_id>/<filename>', methods=['GET'])
 def get_mail_content(project_id, filename):
@@ -735,7 +707,6 @@ def get_mail_content(project_id, filename):
         content = content.replace(key, value)
     return jsonify({'content': content})
 
-
 @app.route('/save_copied_template', methods=['POST'])
 def save_copied_template():
     """Save copied mail template to database."""
@@ -762,7 +733,6 @@ def save_copied_template():
         logging.error(f"Database error while saving copied template: {e}")
         return jsonify({'error': 'Database error'}), 500
 
-
 @app.route('/get_copied_templates/<int:project_id>', methods=['GET'])
 def get_copied_templates(project_id):
     """Get list of copied templates for a project."""
@@ -782,7 +752,6 @@ def get_copied_templates(project_id):
     except sqlite3.Error as e:
         logging.error(f"Database error while fetching copied templates: {e}")
         return jsonify({'error': 'Database error'}), 500
-
 
 @app.route('/calculate_test_dates', methods=['POST'])
 def calculate_test_dates():
@@ -814,13 +783,86 @@ def calculate_test_dates():
         logging.error(f"Error calculating test dates: {e}")
         return jsonify({'error': str(e)}), 500
 
+@app.route('/sort_projects', methods=['POST'])
+def sort_projects():
+    """Handle sorting of projects based on column and direction."""
+    if 'username' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    try:
+        data = request.get_json()
+        sort_column = data.get('column')
+        sort_direction = data.get('direction', 'asc').lower()
+        show_all = data.get('show_all', False)
+
+        if sort_column not in DISPLAY_COLUMNS:
+            return jsonify({'error': 'Invalid column'}), 400
+        if sort_direction not in ['asc', 'desc']:
+            return jsonify({'error': 'Invalid direction'}), 400
+
+        df = read_projects()
+        current_date = datetime.now()
+        filtered_projects = []
+
+        for _, row in df.iterrows():
+            if not show_all:
+                se_delivery_date = parse_date_from_db(row['SE納品'])
+                if se_delivery_date and se_delivery_date.date() < current_date.date():
+                    continue
+
+            project = row.to_dict()
+            project['ステータス'] = calculate_status(project, current_date)
+
+            closest_date = None
+            min_diff = float('inf')
+            for col in DATE_COLUMNS_DISPLAY:
+                date_str_db = row[col]
+                date_obj = parse_date_from_db(date_str_db)
+                project[f'{col}_past'] = False
+                if date_obj is not None:
+                    diff = abs((current_date.date() - date_obj.date()).days)
+                    if diff < min_diff:
+                        min_diff = diff
+                        closest_date = col
+                    if date_obj.date() < current_date.date():
+                        project[f'{col}_past'] = True
+                project[col] = format_date_jp(date_obj)
+
+            project['highlight_column'] = closest_date if closest_date else None
+            fb_completion_date = parse_date_from_db(row['FB完了予定日'])
+            project['fb_late'] = False
+
+            se_delivery_date = parse_date_from_db(row['SE納品'])
+            if fb_completion_date and se_delivery_date:
+                project['fb_late'] = fb_completion_date.date() > se_delivery_date.date()
+
+            project = convert_nat_to_none(project)
+            filtered_projects.append(project)
+
+        def safe_get(project, key):
+            value = project.get(key, '')
+            if key in DATE_COLUMNS_DB and value:
+                date_obj = parse_date_for_comparison(value)
+                return date_obj if date_obj else value
+            if isinstance(value, str) and value.strip() == '':
+                return None
+            return value
+
+        filtered_projects.sort(
+            key=lambda x: safe_get(x, sort_column) or '',
+            reverse=(sort_direction == 'desc')
+        )
+
+        return jsonify({'projects': filtered_projects})
+    except Exception as e:
+        logging.error(f"Error sorting projects: {e}")
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/logout')
 def logout():
     """Handle user logout."""
     session.pop('username', None)
     return redirect(url_for('login'))
-
 
 if __name__ == '__main__':
     app.run(debug=True)

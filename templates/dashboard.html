@@ -44,6 +44,32 @@
             font-weight: bold;
             margin-right: 30px;
         }
+        .sortable {
+            cursor: pointer;
+            position: relative;
+            user-select: none;
+        }
+        .sortable:hover {
+            background-color: #e9ecef;
+        }
+        .sort-indicator::after {
+            content: '';
+            display: inline-block;
+            width: 0;
+            height: 0;
+            margin-left: 5px;
+            vertical-align: middle;
+            border-left: 4px solid transparent;
+            border-right: 4px solid transparent;
+        }
+        .sort-asc .sort-indicator::after {
+            content: '';
+            border-bottom: 4px solid #000;
+        }
+        .sort-desc .sort-indicator::after {
+            content: '';
+            border-top: 4px solid #000;
+        }
     </style>
 </head>
 <body>
@@ -80,7 +106,10 @@
                 <tr>
                     <th>操作</th>
                     {% for col in display_columns %}
-                        <th>{{ col }}</th>
+                        <th class="sortable" data-column="{{ col }}">
+                            {{ col }}
+                            <span class="sort-indicator"></span>
+                        </th>
                     {% endfor %}
                 </tr>
             </thead>
@@ -330,7 +359,7 @@
     <!-- Mail Modal -->
     <div class="modal fade mail-modal" id="mailModal" tabindex="-1">
         <div class="modal-dialog modal-lg mail-modal-custom">
-            <div class	="modal-content">
+            <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">メールテンプレート</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
@@ -364,6 +393,8 @@
         console.log('JavaScript loaded');
 
         let currentProjectId = null;
+        let sortColumn = null;
+        let sortDirection = 'asc';
 
         function updateTestDates() {
             const pageCount = parseInt(document.getElementById('edit_ページ数').value);
@@ -371,7 +402,6 @@
             const testStartInput = document.getElementById('edit_テスト開始日');
             const devCompleteInput = document.getElementById('edit_開発完了');
 
-            // Prioritize テスト開始日, fall back to 開発完了 + 1 day
             if (testStartInput.value) {
                 testStartDate = new Date(testStartInput.value);
             } else if (devCompleteInput.value) {
@@ -417,16 +447,13 @@
                 return '';
             }
             try {
-                // Handle YYYY/MM/DD(曜日) format
                 if (dateStr.includes('(')) {
                     const cleanedDate = dateStr.split('(')[0].replace(/\//g, '-');
                     return cleanedDate;
                 }
-                // Handle YYYY-MM-DD format
                 if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
                     return dateStr;
                 }
-                // Handle YYYY/MM/DD format
                 if (dateStr.match(/^\d{4}\/\d{2}\/\d{2}$/)) {
                     return dateStr.replace(/\//g, '-');
                 }
@@ -451,7 +478,6 @@
                 'テスト開始日', 'テスト完了日', 'FB完了予定日', 'SE納品'
             ];
 
-            // Fill non-date fields
             fields.forEach(field => {
                 const element = document.getElementById(`edit_${field}`);
                 if (element) {
@@ -459,7 +485,6 @@
                 }
             });
 
-            // Fill date fields
             dateFields.forEach(field => {
                 const element = document.getElementById(`edit_${field}`);
                 if (element) {
@@ -471,7 +496,6 @@
                 }
             });
 
-            // Fill task checkboxes
             const taskCheckboxes = ['設計', 'Brse', 'テスト', 'FB'];
             taskCheckboxes.forEach(task => {
                 const checkbox = document.getElementById(`task_${task}`);
@@ -480,7 +504,6 @@
                 }
             });
 
-            // Update test dates
             updateTestDates();
         }
 
@@ -513,7 +536,7 @@
                     }
                 })
                 .catch(error => {
-                    consolesole.error('Error:', error);
+                    console.error('Error:', error);
                     alert('エラー: メールコンテンツの取得に失敗しました');
                 });
         }
@@ -595,7 +618,6 @@
             });
         });
 
-        // Add event listeners for page count and date inputs
         const pageCountInput = document.getElementById('edit_ページ数');
         pageCountInput.addEventListener('input', updateTestDates);
         pageCountInput.addEventListener('change', updateTestDates);
@@ -610,6 +632,102 @@
                 this.classList.add('active');
             });
         });
+
+        // Thêm sự kiện click cho các header có thể sắp xếp
+        document.querySelectorAll('.sortable').forEach(header => {
+            header.addEventListener('click', function() {
+                const column = this.getAttribute('data-column');
+
+                // Xác định hướng sắp xếp
+                if (sortColumn === column) {
+                    sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+                } else {
+                    sortColumn = column;
+                    sortDirection = 'asc';
+                }
+
+                // Xóa trạng thái sắp xếp cũ
+                document.querySelectorAll('.sortable').forEach(h => {
+                    h.classList.remove('sort-asc', 'sort-desc');
+                    h.querySelector('.sort-indicator').innerHTML = '';
+                });
+
+                // Cập nhật trạng thái sắp xếp cho cột hiện tại
+                this.classList.add(`sort-${sortDirection}`);
+
+                // Gửi yêu cầu AJAX để lấy dữ liệu đã sắp xếp
+                fetch('/sort_projects', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        column: sortColumn,
+                        direction: sortDirection,
+                        show_all: document.getElementById('showAll').checked
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        console.error('Sort error:', data.error);
+                        alert('エラー: 並べ替えに失敗しました');
+                        return;
+                    }
+                    // Cập nhật bảng với dữ liệu mới
+                    updateTable(data.projects);
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('エラー: 並べ替えに失敗しました');
+                });
+            });
+        });
+
+        // Hàm cập nhật bảng với dữ liệu mới
+        function updateTable(projects) {
+            const tbody = document.querySelector('table tbody');
+            tbody.innerHTML = ''; // Xóa nội dung cũ
+
+            projects.forEach(project => {
+                const row = document.createElement('tr');
+                // Cột 操作
+                row.innerHTML = `
+                    <td>
+                        <button class="btn btn-primary btn-sm"
+                                data-bs-toggle="modal"
+                                data-bs-target="#editModal"
+                                onclick='fillEditModal(${project.id}, ${JSON.stringify(project)})'>
+                            編集
+                        </button>
+                        <button class="btn btn-info btn-sm"
+                                data-bs-toggle="modal"
+                                data-bs-target="#mailModal"
+                                onclick='openMailModal(${project.id})'>
+                            メール
+                        </button>
+                    </td>
+                `;
+                // Các cột dữ liệu
+                const displayColumns = {{ display_columns | tojson | safe }};
+                displayColumns.forEach(col => {
+                    const classes = [];
+                    if (project.highlight_column === col) {
+                        classes.push('highlight-date');
+                    }
+                    if (project[`${col}_past`]) {
+                        classes.push('past-date');
+                    }
+                    if (col === 'FB完了予定日' && project.fb_late) {
+                        classes.push('fb-late');
+                    }
+                    row.innerHTML += `
+                        <td class="${classes.join(' ')}" data-fb-late="${project.fb_late}">
+                            ${project[col] || ''}
+                        </td>
+                    `;
+                });
+                tbody.appendChild(row);
+            });
+        }
     </script>
 </body>
 </html>
