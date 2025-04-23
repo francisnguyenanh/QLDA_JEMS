@@ -858,6 +858,37 @@ def sort_projects():
         logging.error(f"Error sorting projects: {e}")
         return jsonify({'error': str(e)}), 500
 
+@app.route('/delete_all_data', methods=['POST'])
+def delete_all_data():
+    """Delete all data from all tables in the database after password verification."""
+    if 'username' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    data = request.get_json()
+    password = data.get('password')
+    if not password:
+        return jsonify({'error': 'Password is required'}), 400
+
+    # Verify password
+    users = read_users()
+    username = session['username']
+    if username not in users or users[username] != password:
+        return jsonify({'error': 'Invalid password'}), 401
+
+    try:
+        conn = sqlite3.connect(DB_FILE)
+        cursor = conn.cursor()
+        # Delete data from all tables
+        cursor.execute('DELETE FROM projects')
+        cursor.execute('DELETE FROM copied_templates')
+        conn.commit()
+        conn.close()
+        logging.info(f"All data deleted by user: {username}")
+        return jsonify({'success': True})
+    except sqlite3.Error as e:
+        logging.error(f"Database error while deleting all data: {e}")
+        return jsonify({'error': 'Database error'}), 500
+
 @app.route('/logout')
 def logout():
     """Handle user logout."""
