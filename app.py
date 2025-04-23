@@ -20,9 +20,9 @@ MAIL_DIR = 'mail'
 PROJECT_DIR = 'project'
 OLD_DIR = 'old'
 DISPLAY_COLUMNS = [
-    'ステータス', 'タスク', '案件名', 'PH', '開発工数（h）', '設計工数（h）', '要件引継', '設計開始',
+    'ステータス', '案件名', '要件引継', '設計開始',
     '設計完了', '設計書送付', '開発開始', '開発完了', 'テスト開始日', 'テスト完了日',
-    'FB完了予定日', 'SE納品', 'SE', 'BSE', '案件番号', 'PJNo.', 'ページ数', '備考'
+    'FB完了予定日', 'SE納品', 'タスク','SE', 'BSE', '案件番号', 'PJNo.','PH', '開発工数（h）', '設計工数（h）', 'ページ数', '備考'
 ]
 DATE_COLUMNS_DB = [
     '要件引継', '設計開始', '設計完了', '設計書送付', '開発開始', '開発完了',
@@ -35,6 +35,7 @@ VALID_STATUSES = [
 
 
 def init_db():
+    """Initialize SQLite database with projects and copied_templates tables."""
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
     cursor.execute('''
@@ -83,6 +84,7 @@ def init_db():
 
 
 def read_users():
+    """Read users from users.txt, create default admin if not exists."""
     users = {}
     try:
         with open('users.txt', 'r', encoding='utf-8') as f:
@@ -97,30 +99,26 @@ def read_users():
 
 
 def project_exists(cursor, project):
-    # Lấy các khóa và giá trị
+    """Check if a project already exists based on 案件名, PH, PJNo."""
     keys = ['案件名', 'PH', 'PJNo.']
     conditions = []
     values = []
 
     for key in keys:
         value = project.get(key, '')
-        # Xử lý giá trị rỗng hoặc NaN
         if value is None or (isinstance(value, str) and value.strip() == '') or isna(value):
             continue
         conditions.append(f'"{key}" = ?')
         values.append(str(value))
 
-    # Nếu không có khóa nào hợp lệ (tất cả đều rỗng), coi như trùng lặp
     if not conditions:
         logging.debug("All keys (案件名, PH, PJNo.) are empty, treating as duplicate")
         return True
 
-    # Xây dựng câu SQL động
     query = f'''
         SELECT COUNT(*) FROM projects
         WHERE {' AND '.join(conditions)}
     '''
-
     logging.debug(f"Executing query: {query} with values: {values}")
     cursor.execute(query, values)
     count = cursor.fetchone()[0]
@@ -129,6 +127,7 @@ def project_exists(cursor, project):
 
 
 def parse_date_from_db(date_str):
+    """Parse date string from database (YYYY-MM-DD or YYYY/MM/DD) to datetime object."""
     if isna(date_str) or date_str is None or date_str == '':
         logging.debug(f"Date string is empty or None: {date_str}")
         return None
@@ -136,41 +135,182 @@ def parse_date_from_db(date_str):
         parsed_date = datetime.strptime(date_str, '%Y-%m-%d')
         logging.debug(f"Successfully parsed date: {date_str} -> {parsed_date}")
         return parsed_date
-    except (ValueError, TypeError) as e:
-        logging.error(f"Failed to parse date: {date_str}, error: {e}")
+    except ValueError:
+        try:
+            parsed_date = datetime.strptime(date_str, '%Y/%m/%d')
+            logging.debug(f"Successfully parsed date: {date_str} -> {parsed_date}")
+            return parsed_date
+        except (ValueError, TypeError) as e:
+            logging.error(f"Failed to parse date: {date_str}, error: {e}")
+            return None
+
+
+def parse_date_for_comparison(date_str):
+    """Parse date string for comparison, supports YYYY/MM/DD(曜日) and YYYY-MM-DD."""
+    if isna(date_str) or date_str is None or date_str == '':
+        logging.debug(f"Date string for comparison is empty or None: {date_str}")
         return None
+    try:
+        if isinstance(date_str, datetime):
+            return date_str
+        # Handle YYYY/MM/DD(曜日)
+        if '(' in date_str:
+            date_str = date_str.split('(')[0]
+        parsed_date = datetime.strptime(date_str, '%Y/%m/%d')
+        logging.debug(f"Successfully parsed date for comparison: {date_str} -> {parsed_date}")
+        return parsed_date
+    except ValueError:
+        try:
+            parsed_date = datetime.strptime(date_str, '%Y-%m-%d')
+            logging.debug(f"Successfully parsed date for comparison: {date_str} -> {parsed_date}")
+            return parsed_date
+        except (ValueError, TypeError) as e:
+            logging.error(f"Failed to parse date for comparison: {date_str}, error: {e}")
+            return None
 
 
-def calculate_status(project, current_date):
-    """
-    Tính toán trạng thái (ステータス) dựa trên ngày hệ thống và các ngày trong dự án.
-    """
+def format_date_jp(date):
+    """Format datetime object to YYYY/MM/DD(曜日)."""
+    if date is None:
+        return ''
+    weekdays = ['月', '火', '水', '木', '金', '土', '日']
+    weekday = weekdays[date.weekday()]
+    return date.strftime('%Y/%m/%d') + f'({weekday})'
+
+
+def convert_nat_to_none(project_dict):
+    """Convert NaT/NaN/None values to empty strings and handle specific data types."""
+    for key, value in project_dict.items():
+        if isna(value) or value is None:
+            project_dict[key] = ''
+        elif key == 'PJNo.':
+            if isinstance(value, (float, int)):
+                project_dict[key] = str(int(value))
+            else:
+                project_dict[key] = str(value)
+        elif isinstance(value, (float, int)):
+            project_dict[key] = str(value)
+        if key == 'fb_late':
+            project_dict[key] = bool(value)
+    return project_dict
+
+
+def calculate_status(project, current_date=None):
+    """Calculate project status based on milestone dates and current date."""
+    if current_date is None:
+        current_date = datetime.now()
+
     date_fields = [
         ('要件引継', '要件引継待ち'),
         ('設計完了', '設計中'),
         ('設計書送付', 'SE送付済'),
         ('開発完了', '開発中'),
-        ('SE納品', 'テスト中'),
+        ('テスト完了日', 'テスト中'),
+        ('SE納品', 'FB対応中'),
     ]
 
-    current_date = current_date.date()  # Chỉ lấy ngày, bỏ thời gian
+    current_date = current_date.date()
 
-    # Nếu không có ngày nào hoặc ngày SE納品 đã qua
     se_delivery_date = parse_date_from_db(project.get('SE納品', ''))
     if se_delivery_date and se_delivery_date.date() < current_date:
         return 'SE納品済'
 
-    # So sánh từng ngày
     for date_field, status in date_fields:
         date_value = parse_date_from_db(project.get(date_field, ''))
         if date_value and date_value.date() >= current_date:
             return status
 
-    # Mặc định là '要件引継待ち' nếu không khớp điều kiện nào
     return '要件引継待ち'
 
 
+def read_pages_ranges():
+    """Read page ranges and corresponding days from pages.txt."""
+    ranges = []
+    try:
+        with open('pages.txt', 'r', encoding='utf-8') as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    range_part, days = line.split(':')
+                    days = int(days.strip())
+                    from_page, to_page = map(int, range_part.split('-'))
+                    ranges.append((from_page, to_page, days))
+                except ValueError:
+                    continue
+    except FileNotFoundError:
+        pass
+    return ranges
+
+
+def read_working_days(file_path='config.txt'):
+    """Read working days from config.txt, default to 9 if not found."""
+    try:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            for line in f:
+                line = line.strip()
+                if line.startswith('fix FB days =') or line.startswith('const workingDays ='):
+                    try:
+                        value = int(line.split('=')[1].strip())
+                        return value
+                    except (IndexError, ValueError):
+                        logging.error(f"Invalid workingDays format in {file_path}: {line}")
+                        return 9
+        logging.warning(f"workingDays not found in {file_path}")
+        return 9
+    except FileNotFoundError:
+        logging.warning(f"File {file_path} not found")
+        return 9
+    except Exception as e:
+        logging.error(f"Error reading {file_path}: {e}")
+        return 9
+
+
+def add_working_days(start_date, working_days):
+    """Add working days to a start date, skipping weekends."""
+    if not start_date or working_days <= 0:
+        return ''
+    current_date = start_date
+    days_added = 0
+    while days_added < working_days:
+        current_date += timedelta(days=1)
+        if current_date.weekday() < 5:
+            days_added += 1
+    return current_date.strftime('%Y-%m-%d')
+
+
+def calculate_test_completion_date(page_count, test_start_date):
+    """Calculate test completion date based on page count and test start date."""
+    if not page_count or not test_start_date:
+        return ''
+    try:
+        page_count = int(page_count)
+        test_start_date = datetime.strptime(test_start_date, '%Y-%m-%d')
+    except (ValueError, TypeError):
+        return ''
+
+    ranges = read_pages_ranges()
+    for from_page, to_page, days in ranges:
+        if from_page <= page_count <= to_page:
+            return add_working_days(test_start_date, days)
+    return ''
+
+
+def calculate_fb_completion_date(test_completion_date):
+    """Calculate FB completion date based on test completion date."""
+    if not test_completion_date:
+        return ''
+    try:
+        test_completion_date = datetime.strptime(test_completion_date, '%Y-%m-%d')
+        working_days = read_working_days()
+        return add_working_days(test_completion_date, working_days)
+    except (ValueError, TypeError):
+        return ''
+
+
 def import_excel_to_sqlite(file_path):
+    """Import projects from Excel file to SQLite database."""
     if not os.path.exists(file_path):
         return False
 
@@ -183,7 +323,7 @@ def import_excel_to_sqlite(file_path):
 
         for col in DATE_COLUMNS_DB:
             if col in df.columns:
-                df[col] = pd.to_datetime(df[col], errors='coerce').dt.strftime('%Y-%m-%d').fillna("")
+                df[col] = pd.to_datetime(df[col], errors='coerce').dt.strftime('%Y-%m-%d').fillna('')
             else:
                 df[col] = ''
 
@@ -203,7 +343,6 @@ def import_excel_to_sqlite(file_path):
             if col not in df.columns:
                 df[col] = '' if col != 'ステータス' else '要件引継待ち'
 
-        # Tính toán trạng thái tự động
         for index, row in df.iterrows():
             project = row.to_dict()
             df.at[index, 'ステータス'] = calculate_status(project, current_date)
@@ -256,88 +395,8 @@ def import_excel_to_sqlite(file_path):
         return False
 
 
-def read_pages_ranges():
-    ranges = []
-    try:
-        with open('pages.txt', 'r', encoding='utf-8') as f:
-            for line in f:
-                line = line.strip()
-                if not line:
-                    continue
-                try:
-                    range_part, days = line.split(':')
-                    days = int(days.strip())
-                    from_page, to_page = map(int, range_part.split('-'))
-                    ranges.append((from_page, to_page, days))
-                except ValueError:
-                    continue
-    except FileNotFoundError:
-        pass
-    return ranges
-
-
-def read_working_days(file_path='config.txt'):
-    try:
-        with open(file_path, 'r', encoding='utf-8') as f:
-            for line in f:
-                line = line.strip()
-                if line.startswith('const workingDays ='):
-                    try:
-                        value = int(line.split('=')[1].strip())
-                        return value
-                    except (IndexError, ValueError):
-                        logging.error(f"Invalid workingDays format in {file_path}: {line}")
-                        return 9  # Default value
-        logging.warning(f"workingDays not found in {file_path}")
-        return 9  # Default value
-    except FileNotFoundError:
-        logging.warning(f"File {file_path} not found")
-        return 9  # Default value
-    except Exception as e:
-        logging.error(f"Error reading {file_path}: {e}")
-        return 9  # Default value
-
-
-def add_working_days(start_date, working_days):
-    if not start_date or working_days <= 0:
-        return ''
-    current_date = start_date
-    days_added = 0
-    while days_added < working_days:
-        current_date += timedelta(days=1)
-        if current_date.weekday() < 5:  # Monday to Friday
-            days_added += 1
-    return current_date.strftime('%Y-%m-%d')
-
-
-def calculate_test_completion_date(page_count, test_start_date):
-    if not page_count or not test_start_date:
-        return ''
-    try:
-        page_count = int(page_count)
-        test_start_date = datetime.strptime(test_start_date, '%Y-%m-%d')
-    except (ValueError, TypeError):
-        return ''
-
-    ranges = read_pages_ranges()
-    for from_page, to_page, days in ranges:
-        if from_page <= page_count <= to_page:
-            return add_working_days(test_start_date, days)
-    return ''
-
-
-def calculate_fb_completion_date(test_completion_date):
-    if not test_completion_date:
-        return ''
-    try:
-        test_completion_date = datetime.strptime(test_completion_date, '%Y-%m-%d')
-        working_days = read_working_days()  # Get value from file
-        return add_working_days(test_completion_date, working_days)
-    except (ValueError, TypeError):
-        return ''
-
-
 def read_projects():
+    """Read all projects from SQLite database."""
     conn = sqlite3.connect(DB_FILE)
     df = pd.read_sql_query('SELECT * FROM projects', conn)
     conn.close()
@@ -345,6 +404,7 @@ def read_projects():
 
 
 def get_mail_templates():
+    """Get list of mail templates from mail directory."""
     if not os.path.exists(MAIL_DIR):
         os.makedirs(MAIL_DIR)
     templates = [f for f in os.listdir(MAIL_DIR) if f.endswith('.txt')]
@@ -354,6 +414,7 @@ def get_mail_templates():
 
 
 def update_project(project_id, updates):
+    """Update project in database with new values."""
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
 
@@ -391,11 +452,7 @@ def update_project(project_id, updates):
     page_count = updates.get('ページ数')
     test_start_date = updates.get('テスト開始日')
     updates['テスト完了日'] = calculate_test_completion_date(page_count, test_start_date)
-
-    test_completion_date = updates.get('テスト完了日')
-    updates['FB完了予定日'] = calculate_fb_completion_date(test_completion_date)
-
-    # Tính toán trạng thái tự động
+    updates['FB完了予定日'] = calculate_fb_completion_date(updates.get('テスト完了日'))
     updates['ステータス'] = calculate_status(updates, current_date)
 
     set_clause_parts = []
@@ -411,58 +468,14 @@ def update_project(project_id, updates):
         SET {set_clause}
         WHERE id = ?
     '''
-
     cursor.execute(sql, values)
     conn.commit()
     conn.close()
 
 
-def parse_date_for_comparison(date_str):
-    if isna(date_str) or date_str is None or date_str == '':
-        logging.debug(f"Date string for comparison is empty or None: {date_str}")
-        return None
-    try:
-        if isinstance(date_str, datetime):
-            return date_str
-        parsed_date = datetime.strptime(date_str, '%Y/%m/%d(%a)')
-        logging.debug(f"Successfully parsed date for comparison: {date_str} -> {parsed_date}")
-        return parsed_date
-    except ValueError:
-        try:
-            parsed_date = datetime.strptime(date_str, '%Y-%m-%d')
-            logging.debug(f"Successfully parsed date for comparison: {date_str} -> {parsed_date}")
-            return parsed_date
-        except (ValueError, TypeError) as e:
-            logging.error(f"Failed to parse date for comparison: {date_str}, error: {e}")
-            return None
-
-
-def format_date_jp(date):
-    if date is None:
-        return ''
-    weekdays = ['月', '火', '水', '木', '金', '土', '日']
-    weekday = weekdays[date.weekday()]
-    return date.strftime('%Y/%m/%d') + f'({weekday})'
-
-
-def convert_nat_to_none(project_dict):
-    for key, value in project_dict.items():
-        if isna(value) or value is None:
-            project_dict[key] = ''
-        elif key == 'PJNo.':
-            if isinstance(value, (float, int)):
-                project_dict[key] = str(int(value))
-            else:
-                project_dict[key] = str(value)
-        elif isinstance(value, (float, int)):
-            project_dict[key] = str(value)
-        if key == 'fb_late':
-            project_dict[key] = bool(value)
-    return project_dict
-
-
 @app.route('/')
 def index():
+    """Redirect to dashboard if logged in, else to login."""
     if 'username' in session:
         return redirect(url_for('dashboard'))
     return redirect(url_for('login'))
@@ -470,35 +483,32 @@ def index():
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+    """Handle user login."""
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
-
         users = read_users()
-
         if username in users and users[username] == password:
             session['username'] = username
             return redirect(url_for('dashboard'))
         else:
             flash('無効な認証情報', 'danger')
-
     return render_template('login.html')
 
 
 @app.route('/dashboard', methods=['GET', 'POST'])
 def dashboard():
+    """Render dashboard with project data and handle project updates."""
     if 'username' not in session:
         return redirect(url_for('login'))
 
     init_db()
 
-    # Tạo thư mục project và old nếu chưa tồn tại
     if not os.path.exists(PROJECT_DIR):
         os.makedirs(PROJECT_DIR)
     if not os.path.exists(OLD_DIR):
         os.makedirs(OLD_DIR)
 
-    # Lấy trạng thái checkbox từ form
     show_all = request.form.get('show_all') == 'on'
 
     df = read_projects()
@@ -506,21 +516,16 @@ def dashboard():
     filtered_projects = []
 
     for _, row in df.iterrows():
-        # Nếu show_all = True, bỏ qua điều kiện lọc SE納品
         if not show_all:
             se_delivery_date = parse_date_from_db(row['SE納品'])
-            # Chỉ thêm dự án nếu SE納品 là NULL hoặc ngày SE納品 >= ngày hiện tại
             if se_delivery_date and se_delivery_date.date() < current_date.date():
                 continue
 
         project = row.to_dict()
-
-        # Tính toán trạng thái tự động
         project['ステータス'] = calculate_status(project, current_date)
 
         closest_date = None
         min_diff = float('inf')
-
         for col in DATE_COLUMNS_DISPLAY:
             date_str_db = row[col]
             date_obj = parse_date_from_db(date_str_db)
@@ -535,22 +540,16 @@ def dashboard():
             project[col] = format_date_jp(date_obj)
 
         project['highlight_column'] = closest_date if closest_date else None
-
         fb_completion_date = parse_date_from_db(row['FB完了予定日'])
         project['fb_late'] = False
+
         se_delivery_date = parse_date_from_db(row['SE納品'])
         if fb_completion_date and se_delivery_date:
             project['fb_late'] = fb_completion_date.date() > se_delivery_date.date()
-        logging.debug(f"Project ID: {row['id']}, 案件名: {row['案件名']}, "
-                      f"FB完了予定日: {row['FB完了予定日']}, SE納品: {row['SE納品']}, "
-                      f"fb_late: {project['fb_late']}, type: {type(project['fb_late'])}")
 
         project = convert_nat_to_none(project)
-        logging.debug(
-            f"After convert_nat_to_none, Project ID: {row['id']}, fb_late: {project['fb_late']}, type: {type(project['fb_late'])}")
         filtered_projects.append(project)
 
-    # Xử lý POST từ form chỉnh sửa dự án
     if request.method == 'POST' and 'index' in request.form:
         try:
             project_id = int(request.form['index'])
@@ -577,15 +576,16 @@ def dashboard():
                            projects=filtered_projects,
                            display_columns=DISPLAY_COLUMNS,
                            date_columns=DATE_COLUMNS_DISPLAY,
+                           show_all=show_all,
+                           mail_templates=mail_templates,
                            ranges=ranges,
                            valid_statuses=VALID_STATUSES,
-                           mail_templates=mail_templates,
-                           working_days=working_days,
-                           show_all=show_all)
+                           working_days=working_days)
 
 
 @app.route('/upload', methods=['POST'])
-def upload_file():
+def upload():
+    """Handle Excel file upload."""
     if 'username' not in session:
         return jsonify({'error': 'Unauthorized'}), 401
 
@@ -603,84 +603,112 @@ def upload_file():
         return redirect(url_for('dashboard'))
 
     try:
-        # Tạo thư mục project nếu chưa tồn tại
         if not os.path.exists(PROJECT_DIR):
             os.makedirs(PROJECT_DIR)
         if not os.path.exists(OLD_DIR):
             os.makedirs(OLD_DIR)
 
-        # Lưu file vào thư mục project với tên gốc
         file_path = os.path.join(PROJECT_DIR, file.filename)
         file.save(file_path)
 
-        # Xóa tất cả file trong thư mục old
-        for old_file in os.listdir(OLD_DIR):
-            old_file_path = os.path.join(OLD_DIR, old_file)
-            if os.path.isfile(old_file_path):
-                os.remove(old_file_path)
-
-        # Di chuyển các file cũ trong project (nếu có) vào thư mục old
+        # Clear existing files in PROJECT_DIR (except the newly uploaded file)
         for existing_file in os.listdir(PROJECT_DIR):
-            if existing_file != file.filename:  # Không di chuyển file vừa upload
+            if existing_file != file.filename:
                 existing_file_path = os.path.join(PROJECT_DIR, existing_file)
-                old_file_path = os.path.join(OLD_DIR,
-                                             f"{os.path.splitext(existing_file)[0]}_{datetime.now().strftime('%Y%m%d_%H%M%S')}{os.path.splitext(existing_file)[1]}")
                 if os.path.isfile(existing_file_path):
-                    shutil.move(existing_file_path, old_file_path)
+                    os.remove(existing_file_path)
 
-        # Nhập dữ liệu từ file Excel vào database
         if import_excel_to_sqlite(file_path):
-            # Di chuyển file vừa upload vào thư mục old sau khi import thành công
-            old_file_path = os.path.join(OLD_DIR,
-                                         f"{os.path.splitext(file.filename)[0]}_{datetime.now().strftime('%Y%m%d_%H%M%S')}{os.path.splitext(file.filename)[1]}")
-            shutil.move(file_path, old_file_path)
+            # Delete the uploaded file after successful import
+            os.remove(file_path)
             flash('ファイルがアップロードされ、データベースに正常にインポートされました', 'success')
         else:
+            # Delete the file even if import fails to avoid clutter
+            os.remove(file_path)
             flash('エラー: ファイルのインポートに失敗しました', 'danger')
 
     except Exception as e:
         logging.error(f"Error uploading file: {e}")
+        # Ensure the file is deleted in case of an error
+        if os.path.exists(file_path):
+            os.remove(file_path)
         flash(f'エラー: ファイルのアップロードに失敗しました: {str(e)}', 'danger')
 
     return redirect(url_for('dashboard'))
 
 
+@app.route('/upload_mail_template', methods=['POST'])
+def upload_mail_template():
+    """Handle mail template file upload."""
+    if 'username' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    if 'file' not in request.files:
+        return jsonify({'error': 'ファイルが選択されていません'}), 400
+
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({'error': 'ファイルが選択されていません'}), 400
+
+    if not file.filename.endswith('.txt'):
+        return jsonify({'error': 'テキストファイル（.txt）のみアップロード可能です'}), 400
+
+    try:
+        if not os.path.exists(MAIL_DIR):
+            os.makedirs(MAIL_DIR)
+        if not os.path.exists(OLD_DIR):
+            os.makedirs(OLD_DIR)
+
+        file_path = os.path.join(MAIL_DIR, file.filename)
+        if os.path.exists(file_path):
+            old_file_path = os.path.join(
+                OLD_DIR,
+                f"{os.path.splitext(file.filename)[0]}_{datetime.now().strftime('%Y%m%d_%H%M%S')}{os.path.splitext(file.filename)[1]}"
+            )
+            shutil.move(file_path, old_file_path)
+            logging.info(f"Moved existing file to: {old_file_path}")
+
+        file.save(file_path)
+        logging.info(f"Uploaded new mail template: {file_path}")
+        return jsonify({'success': True})
+
+    except Exception as e:
+        logging.error(f"Error uploading mail template: {e}")
+        return jsonify({'error': f'ファイルのアップロードに失敗しました: {str(e)}'}), 500
+
+
 @app.route('/get_mail_content/<int:project_id>/<filename>', methods=['GET'])
 def get_mail_content(project_id, filename):
-    logging.debug(f"Request for get_mail_content: project_id={project_id}, filename={filename}")
+    """Get mail template content and replace placeholders."""
     if '..' in filename or filename.startswith('/') or filename.startswith('\\'):
         logging.error(f"Invalid filename detected: {filename}")
         return jsonify({'error': 'Invalid filename'}), 400
     file_path = os.path.join(MAIL_DIR, filename)
-    logging.debug(f"Checking file path: {file_path}")
     if not os.path.exists(file_path) or not filename.endswith('.txt'):
         logging.error(f"File not found or invalid: {file_path}")
         return jsonify({'error': 'File not found or not a .txt file'}), 404
+
     try:
         conn = sqlite3.connect(DB_FILE)
         cursor = conn.cursor()
         cursor.execute('SELECT * FROM projects WHERE id = ?', (project_id,))
         project = cursor.fetchone()
-
         columns = [description[0] for description in cursor.description]
         conn.close()
-        logging.debug(f"Project fetched for ID {project_id}: {project}")
-        logging.debug(f"Columns from database: {columns}")
     except sqlite3.Error as e:
         logging.error(f"Database error: {e}")
         return jsonify({'error': 'Database error'}), 500
+
     if not project:
         logging.error(f"Project not found for ID: {project_id}")
         return jsonify({'error': 'Project not found'}), 404
 
     project_dict = {col: project[i] for i, col in enumerate(columns)}
     project_dict = convert_nat_to_none(project_dict)
-    logging.debug(f"Project dict: {project_dict}")
 
     try:
         with open(file_path, 'r', encoding='utf-8') as f:
             content = f.read()
-        logging.debug(f"File content: {content[:100]}")
     except Exception as e:
         logging.error(f"Failed to read file {file_path}: {e}")
         return jsonify({'error': f'Failed to read file: {str(e)}'}), 500
@@ -703,27 +731,22 @@ def get_mail_content(project_id, filename):
         date_obj = parse_date_from_db(date_str)
         placeholders[f'{{{date_col}}}'] = format_date_jp(date_obj)
 
-    logging.debug(f"Placeholders: {placeholders}")
-
     for key, value in placeholders.items():
         content = content.replace(key, value)
-    logging.debug(f"Final content: {content[:100]}")
     return jsonify({'content': content})
 
 
 @app.route('/save_copied_template', methods=['POST'])
 def save_copied_template():
+    """Save copied mail template to database."""
     if 'username' not in session:
         return jsonify({'error': 'Unauthorized'}), 401
-
     data = request.get_json()
     project_id = data.get('project_id')
     filename = data.get('filename')
-
     if not project_id or not filename:
         logging.error(f"Missing project_id or filename: project_id={project_id}, filename={filename}")
         return jsonify({'error': 'Missing project_id or filename'}), 400
-
     try:
         conn = sqlite3.connect(DB_FILE)
         cursor = conn.cursor()
@@ -742,9 +765,9 @@ def save_copied_template():
 
 @app.route('/get_copied_templates/<int:project_id>', methods=['GET'])
 def get_copied_templates(project_id):
+    """Get list of copied templates for a project."""
     if 'username' not in session:
         return jsonify({'error': 'Unauthorized'}), 401
-
     try:
         conn = sqlite3.connect(DB_FILE)
         cursor = conn.cursor()
@@ -761,8 +784,40 @@ def get_copied_templates(project_id):
         return jsonify({'error': 'Database error'}), 500
 
 
+@app.route('/calculate_test_dates', methods=['POST'])
+def calculate_test_dates():
+    """Calculate test completion and FB completion dates."""
+    try:
+        data = request.get_json()
+        page_count = data.get('page_count')
+        test_start_date = data.get('test_start_date')
+
+        if not page_count or not test_start_date:
+            return jsonify({'error': 'Missing page_count or test_start_date'}), 400
+
+        page_count = int(page_count)
+        test_start_date = datetime.strptime(test_start_date, '%Y-%m-%d')
+
+        test_completion_date = calculate_test_completion_date(page_count, test_start_date.strftime('%Y-%m-%d'))
+        if not test_completion_date:
+            test_completion_date = ''
+
+        fb_completion_date = calculate_fb_completion_date(test_completion_date)
+        if not fb_completion_date:
+            fb_completion_date = ''
+
+        return jsonify({
+            'test_completion_date': test_completion_date,
+            'fb_completion_date': fb_completion_date
+        })
+    except Exception as e:
+        logging.error(f"Error calculating test dates: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
 @app.route('/logout')
 def logout():
+    """Handle user logout."""
     session.pop('username', None)
     return redirect(url_for('login'))
 

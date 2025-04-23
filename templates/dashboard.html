@@ -39,11 +39,10 @@
             .modal-body .col-md-3:nth-child(3) { flex: 0 0 auto; width: 23.333333%; }
             .modal-body .col-md-3:nth-child(4) { flex: 0 0 auto; width: 23.333333%; }
         }
-        /* Style cho label của checkbox */
         .show-all-label {
-            color: #0056b3; /* Màu xanh đậm */
-            font-weight: bold; /* In đậm */
-            margin-right: 30px; /* Khoảng cách giữa label và checkbox */
+            color: #0056b3;
+            font-weight: bold;
+            margin-right: 30px;
         }
     </style>
 </head>
@@ -63,6 +62,7 @@
             </div>
             <div>
                 <button class="btn btn-success me-2" data-bs-toggle="modal" data-bs-target="#uploadModal">Excelアップロード</button>
+                <button class="btn btn-primary me-2" data-bs-toggle="modal" data-bs-target="#uploadMailTemplateModal">メールアップロード</button>
                 <a href="{{ url_for('logout') }}" class="btn btn-danger">ログアウト</a>
             </div>
         </div>
@@ -109,7 +109,7 @@
                             {% if project[col + '_past'] %}
                                 {% set _ = classes.append('past-date') %}
                             {% endif %}
-                            {% if col == 'FB完了予定日' and project.fb_late is sameas true %}
+                            {% if col == 'FB完了予定日' and project.fb_late %}
                                 {% set _ = classes.append('fb-late') %}
                             {% endif %}
                             <td class="{{ ' '.join(classes) }}" data-fb-late="{{ project.fb_late }}">
@@ -146,11 +146,35 @@
         </div>
     </div>
 
+    <!-- Mail Template Upload Modal -->
+    <div class="modal fade" id="uploadMailTemplateModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">メールアップロード</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="uploadMailTemplateForm" enctype="multipart/form-data">
+                        <div class="mb-3">
+                            <label for="mailTemplateFile" class="form-label">テキストファイルを選択 (.txt)</label>
+                            <input type="file" class="form-control" id="mailTemplateFile" name="file" accept=".txt" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary">アップロード</button>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">閉じる</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Edit Modal -->
     <div class="modal fade" id="editModal" tabindex="-1">
         <div class="modal-dialog modal-xl">
             <div class="modal-content">
-                <form method="POST">
+                <form method="POST" id="editForm">
                     <div class="modal-header">
                         <h5 class="modal-title">プロジェクト編集</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
@@ -165,27 +189,19 @@
                                     <label class="form-label">タスク</label>
                                     <div class="task-checkboxes d-flex">
                                         <div class="form-check">
-                                            <input type="checkbox" name="タスク"
-                                                   id="task_設計" value="設計"
-                                                   class="form-check-input" checked>
+                                            <input type="checkbox" name="タスク" id="task_設計" value="設計" class="form-check-input">
                                             <label class="form-check-label" for="task_設計">設計</label>
                                         </div>
                                         <div class="form-check">
-                                            <input type="checkbox" name="タスク"
-                                                   id="task_Brse" value="Brse"
-                                                   class="form-check-input">
+                                            <input type="checkbox" name="タスク" id="task_Brse" value="Brse" class="form-check-input">
                                             <label class="form-check-label" for="task_Brse">Brse</label>
                                         </div>
                                         <div class="form-check">
-                                            <input type="checkbox" name="タスク"
-                                                   id="task_テスト" value="テスト"
-                                                   class="form-check-input">
+                                            <input type="checkbox" name="タスク" id="task_テスト" value="テスト" class="form-check-input">
                                             <label class="form-check-label" for="task_テスト">テスト</label>
                                         </div>
                                         <div class="form-check">
-                                            <input type="checkbox" name="タスク"
-                                                   id="task_FB" value="FB"
-                                                   class="form-check-input">
+                                            <input type="checkbox" name="タスク" id="task_FB" value="FB" class="form-check-input">
                                             <label class="form-check-label" for="task_FB">FB</label>
                                         </div>
                                     </div>
@@ -193,38 +209,32 @@
                                 <!-- 案件名 -->
                                 <div class="mb-3">
                                     <label class="form-label">案件名</label>
-                                    <input type="text" name="案件名"
-                                           id="edit_案件名" class="form-control">
+                                    <input type="text" name="案件名" id="edit_案件名" class="form-control">
                                 </div>
                                 <!-- 案件番号 -->
                                 <div class="mb-3">
                                     <label class="form-label">案件番号</label>
-                                    <input type="text" name="案件番号"
-                                           id="edit_案件番号" class="form-control">
+                                    <input type="text" name="案件番号" id="edit_案件番号" class="form-control">
                                 </div>
                                 <!-- PJNo. -->
                                 <div class="mb-3">
                                     <label class="form-label">PJNo.</label>
-                                    <input type="text" name="PJNo."
-                                           id="edit_PJNo." class="form-control">
+                                    <input type="text" name="PJNo." id="edit_PJNo." class="form-control">
                                 </div>
                                 <!-- PH -->
                                 <div class="mb-3">
                                     <label class="form-label">PH</label>
-                                    <input type="text" name="PH"
-                                           id="edit_PH" class="form-control">
+                                    <input type="text" name="PH" id="edit_PH" class="form-control">
                                 </div>
                                 <!-- SE -->
                                 <div class="mb-3">
                                     <label class="form-label">SE</label>
-                                    <input type="text" name="SE"
-                                           id="edit_SE" class="form-control">
+                                    <input type="text" name="SE" id="edit_SE" class="form-control">
                                 </div>
                                 <!-- BSE -->
                                 <div class="mb-3">
                                     <label class="form-label">BSE</label>
-                                    <input type="text" name="BSE"
-                                           id="edit_BSE" class="form-control">
+                                    <input type="text" name="BSE" id="edit_BSE" class="form-control">
                                 </div>
                             </div>
                             <!-- Column 2 -->
@@ -232,20 +242,17 @@
                                 <!-- 開発工数（h） -->
                                 <div class="mb-3">
                                     <label class="form-label">開発工数（h）</label>
-                                    <input type="text" name="開発工数（h）"
-                                           id="edit_開発工数（h）" class="form-control">
+                                    <input type="number" name="開発工数（h）" id="edit_開発工数（h）" class="form-control" step="0.1" min="0">
                                 </div>
                                 <!-- 設計工数（h） -->
                                 <div class="mb-3">
                                     <label class="form-label">設計工数（h）</label>
-                                    <input type="text" name="設計工数（h）"
-                                           id="edit_設計工数（h）" class="form-control">
+                                    <input type="number" name="設計工数（h）" id="edit_設計工数（h）" class="form-control" step="0.1" min="0">
                                 </div>
                                 <!-- ページ数 -->
                                 <div class="mb-3">
                                     <label class="form-label">ページ数</label>
-                                    <input type="number" name="ページ数"
-                                           id="edit_ページ数" class="form-control" min="1">
+                                    <input type="number" name="ページ数" id="edit_ページ数" class="form-control" min="1">
                                 </div>
                             </div>
                             <!-- Column 3 -->
@@ -253,38 +260,32 @@
                                 <!-- 要件引継 -->
                                 <div class="mb-3">
                                     <label class="form-label">要件引継</label>
-                                    <input type="date" name="要件引継"
-                                           id="edit_要件引継" class="form-control">
+                                    <input type="date" name="要件引継" id="edit_要件引継" class="form-control">
                                 </div>
                                 <!-- 設計開始 -->
                                 <div class="mb-3">
                                     <label class="form-label">設計開始</label>
-                                    <input type="date" name="設計開始"
-                                           id="edit_設計開始" class="form-control">
+                                    <input type="date" name="設計開始" id="edit_設計開始" class="form-control">
                                 </div>
                                 <!-- 設計完了 -->
                                 <div class="mb-3">
                                     <label class="form-label">設計完了</label>
-                                    <input type="date" name="設計完了"
-                                           id="edit_設計完了" class="form-control">
+                                    <input type="date" name="設計完了" id="edit_設計完了" class="form-control">
                                 </div>
                                 <!-- 設計書送付 -->
                                 <div class="mb-3">
                                     <label class="form-label">設計書送付</label>
-                                    <input type="date" name="設計書送付"
-                                           id="edit_設計書送付" class="form-control">
+                                    <input type="date" name="設計書送付" id="edit_設計書送付" class="form-control">
                                 </div>
                                 <!-- 開発開始 -->
                                 <div class="mb-3">
                                     <label class="form-label">開発開始</label>
-                                    <input type="date" name="開発開始"
-                                           id="edit_開発開始" class="form-control">
+                                    <input type="date" name="開発開始" id="edit_開発開始" class="form-control">
                                 </div>
                                 <!-- 開発完了 -->
                                 <div class="mb-3">
                                     <label class="form-label">開発完了</label>
-                                    <input type="date" name="開発完了"
-                                           id="edit_開発完了" class="form-control">
+                                    <input type="date" name="開発完了" id="edit_開発完了" class="form-control">
                                 </div>
                             </div>
                             <!-- Column 4 -->
@@ -292,32 +293,27 @@
                                 <!-- テスト開始日 -->
                                 <div class="mb-3">
                                     <label class="form-label">テスト開始日</label>
-                                    <input type="date" name="テスト開始日"
-                                           id="edit_テスト開始日" class="form-control">
+                                    <input type="date" name="テスト開始日" id="edit_テスト開始日" class="form-control">
                                 </div>
                                 <!-- テスト完了日 -->
                                 <div class="mb-3">
                                     <label class="form-label">テスト完了日</label>
-                                    <input type="date" name="テスト完了日"
-                                           id="edit_テスト完了日" class="form-control" readonly>
+                                    <input type="date" name="テスト完了日" id="edit_テスト完了日" class="form-control" readonly>
                                 </div>
                                 <!-- FB完了予定日 -->
                                 <div class="mb-3">
                                     <label class="form-label">FB完了予定日</label>
-                                    <input type="date" name="FB完了予定日"
-                                           id="edit_FB完了予定日" class="form-control" readonly>
+                                    <input type="date" name="FB完了予定日" id="edit_FB完了予定日" class="form-control" readonly>
                                 </div>
                                 <!-- SE納品 -->
                                 <div class="mb-3">
                                     <label class="form-label">SE納品</label>
-                                    <input type="date" name="SE納品"
-                                           id="edit_SE納品" class="form-control">
+                                    <input type="date" name="SE納品" id="edit_SE納品" class="form-control">
                                 </div>
                                 <!-- 備考 -->
                                 <div class="mb-3">
                                     <label class="form-label">備考</label>
-                                    <textarea name="備考" id="edit_備考"
-                                              class="form-control"></textarea>
+                                    <textarea name="備考" id="edit_備考" class="form-control"></textarea>
                                 </div>
                             </div>
                         </div>
@@ -334,7 +330,7 @@
     <!-- Mail Modal -->
     <div class="modal fade mail-modal" id="mailModal" tabindex="-1">
         <div class="modal-dialog modal-lg mail-modal-custom">
-            <div class="modal-content">
+            <div class	="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">メールテンプレート</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
@@ -366,7 +362,254 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         console.log('JavaScript loaded');
-'Relevant code omitted for brevity'
+
+        let currentProjectId = null;
+
+        function updateTestDates() {
+            const pageCount = parseInt(document.getElementById('edit_ページ数').value);
+            let testStartDate = null;
+            const testStartInput = document.getElementById('edit_テスト開始日');
+            const devCompleteInput = document.getElementById('edit_開発完了');
+
+            // Prioritize テスト開始日, fall back to 開発完了 + 1 day
+            if (testStartInput.value) {
+                testStartDate = new Date(testStartInput.value);
+            } else if (devCompleteInput.value) {
+                testStartDate = new Date(devCompleteInput.value);
+                testStartDate.setDate(testStartDate.getDate() + 1);
+            }
+
+            if (pageCount > 0 && testStartDate) {
+                const testStartDateYMD = testStartDate.toISOString().split('T')[0];
+                console.log('Sending request to /calculate_test_dates with:', { page_count: pageCount, test_start_date: testStartDateYMD });
+                fetch('/calculate_test_dates', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ page_count: pageCount, test_start_date: testStartDateYMD })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        console.error('Error calculating dates:', data.error);
+                        document.getElementById('edit_テスト完了日').value = '';
+                        document.getElementById('edit_FB完了予定日').value = '';
+                    } else {
+                        document.getElementById('edit_テスト完了日').value = data.test_completion_date;
+                        document.getElementById('edit_FB完了予定日').value = data.fb_completion_date;
+                        console.log('Updated dates:', data);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    document.getElementById('edit_テスト完了日').value = '';
+                    document.getElementById('edit_FB完了予定日').value = '';
+                });
+            } else {
+                console.log('Clearing test dates: invalid pageCount or testStartDate');
+                document.getElementById('edit_テスト完了日').value = '';
+                document.getElementById('edit_FB完了予定日').value = '';
+            }
+        }
+
+        function parseDateToYMD(dateStr) {
+            if (!dateStr || dateStr === '') {
+                console.log('Empty date string');
+                return '';
+            }
+            try {
+                // Handle YYYY/MM/DD(曜日) format
+                if (dateStr.includes('(')) {
+                    const cleanedDate = dateStr.split('(')[0].replace(/\//g, '-');
+                    return cleanedDate;
+                }
+                // Handle YYYY-MM-DD format
+                if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                    return dateStr;
+                }
+                // Handle YYYY/MM/DD format
+                if (dateStr.match(/^\d{4}\/\d{2}\/\d{2}$/)) {
+                    return dateStr.replace(/\//g, '-');
+                }
+                console.warn('Unknown date format:', dateStr);
+                return '';
+            } catch (e) {
+                console.error('Error parsing date:', dateStr, e);
+                return '';
+            }
+        }
+
+        function fillEditModal(projectId, project) {
+            console.log('Filling edit modal for project:', project);
+            document.getElementById('editIndex').value = projectId;
+
+            const fields = [
+                '案件名', '案件番号', 'PJNo.', 'PH', 'SE', 'BSE', '開発工数（h）', '設計工数（h）', 'ページ数',
+                '備考'
+            ];
+            const dateFields = [
+                '要件引継', '設計開始', '設計完了', '設計書送付', '開発開始', '開発完了',
+                'テスト開始日', 'テスト完了日', 'FB完了予定日', 'SE納品'
+            ];
+
+            // Fill non-date fields
+            fields.forEach(field => {
+                const element = document.getElementById(`edit_${field}`);
+                if (element) {
+                    element.value = project[field] || '';
+                }
+            });
+
+            // Fill date fields
+            dateFields.forEach(field => {
+                const element = document.getElementById(`edit_${field}`);
+                if (element) {
+                    const dateValue = parseDateToYMD(project[field]);
+                    console.log(`Setting date for ${field}:`, project[field], '->', dateValue);
+                    element.value = dateValue;
+                } else {
+                    console.warn(`Element not found for ${field}`);
+                }
+            });
+
+            // Fill task checkboxes
+            const taskCheckboxes = ['設計', 'Brse', 'テスト', 'FB'];
+            taskCheckboxes.forEach(task => {
+                const checkbox = document.getElementById(`task_${task}`);
+                if (checkbox) {
+                    checkbox.checked = project['タスク'] ? project['タスク'].split(',').includes(task) : false;
+                }
+            });
+
+            // Update test dates
+            updateTestDates();
+        }
+
+        function openMailModal(projectId) {
+            currentProjectId = projectId;
+            document.getElementById('mailContent').value = '';
+            fetch(`/get_copied_templates/${projectId}`)
+                .then(response => response.json())
+                .then(data => {
+                    document.querySelectorAll('.mail-buttons .btn').forEach(btn => {
+                        const filename = btn.getAttribute('data-filename');
+                        if (data.templates.includes(filename)) {
+                            btn.classList.add('copied');
+                        } else {
+                            btn.classList.remove('copied');
+                        }
+                    });
+                })
+                .catch(error => console.error('Error fetching copied templates:', error));
+        }
+
+        function loadMailContent(projectId, filename) {
+            fetch(`/get_mail_content/${projectId}/${filename}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        alert('エラー: ' + data.error);
+                    } else {
+                        document.getElementById('mailContent').value = data.content;
+                    }
+                })
+                .catch(error => {
+                    consolesole.error('Error:', error);
+                    alert('エラー: メールコンテンツの取得に失敗しました');
+                });
+        }
+
+        function copyMailContent() {
+            const mailContent = document.getElementById('mailContent').value;
+            if (mailContent) {
+                navigator.clipboard.writeText(mailContent)
+                    .then(() => {
+                        const activeButton = document.querySelector('.mail-buttons .btn.active');
+                        if (activeButton) {
+                            const filename = activeButton.getAttribute('data-filename');
+                            fetch('/save_copied_template', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ project_id: currentProjectId, filename: filename })
+                            })
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.success) {
+                                    activeButton.classList.add('copied');
+                                } else {
+                                    console.error('Failed to save copied template:', data.error);
+                                }
+                            })
+                            .catch(error => console.error('Error saving copied template:', error));
+                        }
+                    })
+                    .catch(err => {
+                        console.error('Failed to copy:', err);
+                        alert('コピーに失敗しました');
+                    });
+            } else {
+                alert('コピーするコンテンツがありません');
+            }
+        }
+
+        document.getElementById('uploadForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            fetch('/upload', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                if (response.ok) {
+                    window.location.reload();
+                } else {
+                    return response.json().then(data => {
+                        throw new Error(data.error || 'アップロードに失敗しました');
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('エラー: ' + error.message);
+            });
+        });
+
+        document.getElementById('uploadMailTemplateForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            fetch('/upload_mail_template', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert('エラー: ' + data.error);
+                } else {
+                    alert('メールテンプレートが正常にアップロードされました');
+                    window.location.reload();
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('エラー: アップロードに失敗しました');
+            });
+        });
+
+        // Add event listeners for page count and date inputs
+        const pageCountInput = document.getElementById('edit_ページ数');
+        pageCountInput.addEventListener('input', updateTestDates);
+        pageCountInput.addEventListener('change', updateTestDates);
+        pageCountInput.addEventListener('blur', updateTestDates);
+
+        document.getElementById('edit_開発完了').addEventListener('change', updateTestDates);
+        document.getElementById('edit_テスト開始日').addEventListener('change', updateTestDates);
+
+        document.querySelectorAll('.mail-buttons .btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.mail-buttons .btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
     </script>
 </body>
 </html>

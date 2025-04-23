@@ -5,9 +5,12 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="64eee58c-2e7e-4880-8bbe-77c2d3583eee" name="Changes" comment="update">
+      <change afterPath="$PROJECT_DIR$/old/設計予定プロジェクト一覧_20250420_181536 (1)_20250423_203602.xlsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app.py" beforeDir="false" afterPath="$PROJECT_DIR$/app.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/old/設計予定プロジェクト一覧_20250420_181536_20250423_153842.xlsx" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/projects.db" beforeDir="false" afterPath="$PROJECT_DIR$/projects.db" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/temp.py" beforeDir="false" afterPath="$PROJECT_DIR$/temp.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/templates/dashboard.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/dashboard.html" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
