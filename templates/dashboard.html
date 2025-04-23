@@ -25,75 +25,19 @@
         .form-label { font-size: 0.9rem; }
         .form-control, .form-check-input, .form-select { font-size: 0.9rem; }
         textarea.form-control { resize: vertical; min-height: 60px; }
-
-        /* Tăng độ rộng của Mail Modal */
-        .mail-modal-custom {
-            max-width: 1200px; /* Độ rộng mới = 800px * 1.5 */
-        }
-
-        /* Style cho Mail Modal */
-        .mail-modal .modal-body {
-            display: flex;
-            flex-direction: row;
-            gap: 15px;
-            min-height: 400px;
-            padding: 15px;
-        }
-
-        .mail-buttons-container {
-            flex: 1;
-            max-width: 33.33%;
-            padding-right: 15px;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .mail-buttons {
-            display: flex;
-            flex-direction: column;
-            flex-grow: 1;
-        }
-
-        .mail-buttons .btn {
-            margin-bottom: 10px; /* Khoảng cách giữa các nút */
-            width: 100%; /* Nút chiếm toàn bộ chiều rộng của container */
-            text-align: left; /* Căn trái văn bản trên nút */
-        }
-
-        .mail-buttons .btn.copied {
-            color: green; /* Màu chữ xanh lá cho nút đã copy */
-        }
-
-        .mail-content-container {
-            flex: 2;
-            max-width: 66.67%;
-            display: flex;
-        }
-
-        #mailContent {
-            width: 100%;
-            height: 100%;
-            font-size: 0.9rem;
-            resize: vertical;
-        }
-
-        @media (min-width: 768px) { /* md以上の画面サイズに適用 */
-            .modal-body .col-md-3:nth-child(1) {
-                flex: 0 0 auto;
-                width: 30%; /* 幅を30%に広げる例 */
-            }
-            .modal-body .col-md-3:nth-child(2) {
-                flex: 0 0 auto;
-                width: 23.333333%; /* 他の列とのバランスを見て調整 */
-            }
-            .modal-body .col-md-3:nth-child(3) {
-                flex: 0 0 auto;
-                width: 23.333333%; /* 他の列とのバランスを見て調整 */
-            }
-            .modal-body .col-md-3:nth-child(4) {
-                flex: 0 0 auto;
-                width: 23.333333%; /* 他の列とのバランスを見て調整 */
-            }
+        .mail-modal-custom { max-width: 1200px; }
+        .mail-modal .modal-body { display: flex; flex-direction: row; gap: 15px; min-height: 400px; padding: 15px; }
+        .mail-buttons-container { flex: 1; max-width: 33.33%; padding-right: 15px; display: flex; flex-direction: column; }
+        .mail-buttons { display: flex; flex-direction: column; flex-grow: 1; }
+        .mail-buttons .btn { margin-bottom: 10px; width: 100%; text-align: left; }
+        .mail-buttons .btn.copied { color: green; }
+        .mail-content-container { flex: 2; max-width: 66.67%; display: flex; }
+        #mailContent { width: 100%; height: 100%; font-size: 0.9rem; resize: vertical; }
+        @media (min-width: 768px) {
+            .modal-body .col-md-3:nth-child(1) { flex: 0 0 auto; width: 30%; }
+            .modal-body .col-md-3:nth-child(2) { flex: 0 0 auto; width: 23.333333%; }
+            .modal-body .col-md-3:nth-child(3) { flex: 0 0 auto; width: 23.333333%; }
+            .modal-body .col-md-3:nth-child(4) { flex: 0 0 auto; width: 23.333333%; }
         }
     </style>
 </head>
@@ -101,7 +45,10 @@
     <div class="container mt-4">
         <div class="d-flex justify-content-between mb-3">
             <h2>プロジェクト管理</h2>
-            <a href="{{ url_for('logout') }}" class="btn btn-danger">ログアウト</a>
+            <div>
+                <button class="btn btn-success me-2" data-bs-toggle="modal" data-bs-target="#uploadModal">Excelアップロード</button>
+                <a href="{{ url_for('logout') }}" class="btn btn-danger">ログアウト</a>
+            </div>
         </div>
 
         {% with messages = get_flashed_messages(with_categories=true) %}
@@ -157,6 +104,30 @@
                 {% endfor %}
             </tbody>
         </table>
+    </div>
+
+    <!-- Upload Modal -->
+    <div class="modal fade" id="uploadModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Excelファイルアップロード</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="uploadForm" enctype="multipart/form-data">
+                        <div class="mb-3">
+                            <label for="excelFile" class="form-label">Excelファイルを選択 (.xlsx, .xls)</label>
+                            <input type="file" class="form-control" id="excelFile" name="file" accept=".xlsx,.xls" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary">アップロード</button>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">閉じる</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Edit Modal -->
@@ -242,15 +213,6 @@
                             </div>
                             <!-- Column 2 -->
                             <div class="col-md-3">
-                                <!-- ステータス -->
-                                <div class="mb-3">
-                                    <label class="form-label">ステータス</label>
-                                    <select name="ステータス" id="edit_ステータス" class="form-select">
-                                        {% for status in valid_statuses %}
-                                            <option value="{{ status }}">{{ status }}</option>
-                                        {% endfor %}
-                                    </select>
-                                </div>
                                 <!-- 開発工数（h） -->
                                 <div class="mb-3">
                                     <label class="form-label">開発工数（h）</label>
@@ -362,8 +324,7 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body d-flex">
-                    <!-- Cột trái: Các nút xếp dọc (1/3) -->
-                    <div class="mail-buttons-container" style="flex: 1; max-width: 33.33%; padding-right: 15px;">
+                    <div class="mail-buttons-container">
                         <div class="mail-buttons d-flex flex-column">
                             {% for full_name, display_name in mail_templates %}
                                 <button class="btn btn-outline-primary mb-2"
@@ -374,8 +335,7 @@
                             {% endfor %}
                         </div>
                     </div>
-                    <!-- Cột phải: Textarea hiển thị nội dung (2/3) -->
-                    <div class="mail-content-container" style="flex: 2; max-width: 66.67%;">
+                    <div class="mail-content-container">
                         <textarea id="mailContent" class="form-control" placeholder="テンプレートを選択してください"></textarea>
                     </div>
                 </div>
@@ -390,8 +350,6 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         console.log('JavaScript loaded');
-
-        // Lấy workingDays từ template
         const workingDays = {{ working_days | safe }};
         let currentProjectId = 0;
         let currentFilename = '';
@@ -401,17 +359,11 @@
             currentProjectId = projectId;
             currentFilename = '';
             document.getElementById('mailContent').value = '';
-
-            // Xóa class copied của tất cả các nút
             const buttons = document.querySelectorAll('.mail-buttons .btn');
             buttons.forEach(button => button.classList.remove('copied'));
-
-            // Lấy danh sách template đã copy từ server
             fetch(`/get_copied_templates/${projectId}`)
                 .then(response => {
-                    if (!response.ok) {
-                        throw new Error(`HTTP error ${response.status}`);
-                    }
+                    if (!response.ok) throw new Error(`HTTP error ${response.status}`);
                     return response.json();
                 })
                 .then(data => {
@@ -422,14 +374,10 @@
                     const copiedTemplates = data.templates || [];
                     copiedTemplates.forEach(filename => {
                         const button = document.querySelector(`.mail-buttons .btn[data-filename="${filename}"]`);
-                        if (button) {
-                            button.classList.add('copied');
-                        }
+                        if (button) button.classList.add('copied');
                     });
                 })
-                .catch(error => {
-                    console.error('Error fetching copied templates:', error);
-                });
+                .catch(error => console.error('Error fetching copied templates:', error));
         }
 
         const ranges = [
@@ -443,7 +391,6 @@
             currentFilename = filename;
             fetch(`/get_mail_content/${projectId}/${filename}`)
                 .then(response => {
-                    console.log(`Response status: ${response.status}`);
                     if (!response.ok) {
                         return response.text().then(text => {
                             throw new Error(`HTTP error ${response.status}: ${text}`);
@@ -469,25 +416,14 @@
             textarea.select();
             try {
                 document.execCommand('copy');
-                // Xóa alert xác nhận
-                // alert('内容をクリップボードにコピーしました');
-
                 if (currentProjectId && currentFilename) {
-                    // Gửi yêu cầu lưu template đã copy
                     fetch('/save_copied_template', {
                         method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            project_id: currentProjectId,
-                            filename: currentFilename
-                        })
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ project_id: currentProjectId, filename: currentFilename })
                     })
                     .then(response => {
-                        if (!response.ok) {
-                            throw new Error(`HTTP error ${response.status}`);
-                        }
+                        if (!response.ok) throw new Error(`HTTP error ${response.status}`);
                         return response.json();
                     })
                     .then(data => {
@@ -495,16 +431,10 @@
                             console.error('Error saving copied template:', data.error);
                             return;
                         }
-                        // Cập nhật giao diện: Thêm class copied cho nút vừa copy
-                        const buttons = document.querySelectorAll('.mail-buttons .btn');
                         const button = document.querySelector(`.mail-buttons .btn[data-filename="${currentFilename}"]`);
-                        if (button) {
-                            button.classList.add('copied');
-                        }
+                        if (button) button.classList.add('copied');
                     })
-                    .catch(error => {
-                        console.error('Error saving copied template:', error);
-                    });
+                    .catch(error => console.error('Error saving copied template:', error));
                 }
             } catch (err) {
                 alert('コピーに失敗しました: ' + err);
@@ -513,34 +443,42 @@
 
         function fillEditModal(index, project) {
             console.log('Starting fillEditModal with project ID:', index);
-            document.getElementById('editIndex').value = index;
+            try {
+                const editIndexInput = document.getElementById('editIndex');
+                if (!editIndexInput) {
+                    console.error('Element with ID editIndex not found');
+                    return;
+                }
+                editIndexInput.value = index;
+                console.log('Set editIndex value to:', index);
 
-            {% for col in display_columns %}
-                {% if col in date_columns %}
-                    let dateValue_{{ col|replace(' ', '_') }} = project['{{ col }}'];
-                    if (dateValue_{{ col|replace(' ', '_') }} && dateValue_{{ col|replace(' ', '_') }} !== '') {
-                        dateValue_{{ col|replace(' ', '_') }} = dateValue_{{ col|replace(' ', '_') }}.split('(')[0].replace(/\//g, '-');
-                    } else {
-                        dateValue_{{ col|replace(' ', '_') }} = '';
-                    }
-                    document.getElementById('edit_{{ col|replace(' ', '_') }}').value = dateValue_{{ col|replace(' ', '_') }};
-                {% elif col == 'タスク' %}
-                    let tasks = project['{{ col }}'] ? project['{{ col }}'].split(',') : [];
-                    document.getElementById('task_設計').checked = tasks.includes('設計') || !project['{{ col }}'];
-                    document.getElementById('task_Brse').checked = tasks.includes('Brse');
-                    document.getElementById('task_テスト').checked = tasks.includes('テスト');
-                    document.getElementById('task_FB').checked = tasks.includes('FB');
-                {% elif col == 'ステータス' %}
-                    document.getElementById('edit_ステータス').value = project['{{ col }}'] || '要件引継待ち';
-                {% else %}
-                    document.getElementById('edit_{{ col|replace(' ', '_') }}').value = project['{{ col }}'] != null ? project['{{ col }}'] : '';
-                {% endif %}
-            {% endfor %}
+                {% for col in display_columns %}
+                    {% if col in date_columns %}
+                        let dateValue_{{ col|replace(' ', '_') }} = project['{{ col }}'];
+                        if (dateValue_{{ col|replace(' ', '_') }} && dateValue_{{ col|replace(' ', '_') }} !== '') {
+                            dateValue_{{ col|replace(' ', '_') }} = dateValue_{{ col|replace(' ', '_') }}.split('(')[0].replace(/\//g, '-');
+                        } else {
+                            dateValue_{{ col|replace(' ', '_') }} = '';
+                        }
+                        document.getElementById('edit_{{ col|replace(' ', '_') }}').value = dateValue_{{ col|replace(' ', '_') }};
+                    {% elif col == 'タスク' %}
+                        let tasks = project['{{ col }}'] ? project['{{ col }}'].split(',') : [];
+                        document.getElementById('task_設計').checked = tasks.includes('設計') || !project['{{ col }}'];
+                        document.getElementById('task_Brse').checked = tasks.includes('Brse');
+                        document.getElementById('task_テスト').checked = tasks.includes('テスト');
+                        document.getElementById('task_FB').checked = tasks.includes('FB');
+                    {% elif col != 'ステータス' %}
+                        document.getElementById('edit_{{ col|replace(' ', '_') }}').value = project['{{ col }}'] != null ? project['{{ col }}'] : '';
+                    {% endif %}
+                {% endfor %}
 
-            console.log('Completed fillEditModal');
-            updateTestStartDate();
-            updateTestCompletionDate();
-            updateFBCompletionDate();
+                console.log('Completed fillEditModal');
+                updateTestStartDate();
+                updateTestCompletionDate();
+                updateFBCompletionDate();
+            } catch (error) {
+                console.error('Error in fillEditModal:', error);
+            }
         }
 
         function updateTestStartDate() {
@@ -647,6 +585,34 @@
         document.getElementById('edit_テスト開始日').addEventListener('change', updateTestCompletionDate);
         document.getElementById('edit_ページ数').addEventListener('change', updateTestCompletionDate);
         document.getElementById('edit_テスト完了日').addEventListener('change', updateFBCompletionDate);
+
+        document.querySelector('#editModal form').addEventListener('submit', function(event) {
+            const formData = new FormData(this);
+            console.log('Form data being submitted:');
+            for (let [key, value] of formData.entries()) {
+                console.log(`${key}: ${value}`);
+            }
+        });
+
+        document.getElementById('uploadForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const formData = new FormData(this);
+            fetch('/upload', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                if (response.redirected) {
+                    window.location.href = response.url;
+                } else {
+                    return response.json();
+                }
+            })
+            .catch(error => {
+                console.error('Error uploading file:', error);
+                alert('ファイルのアップロードに失敗しました: ' + error.message);
+            });
+        });
     </script>
 </body>
 </html>
