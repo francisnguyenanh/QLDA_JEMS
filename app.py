@@ -97,11 +97,35 @@ def read_users():
 
 
 def project_exists(cursor, project):
-    cursor.execute('''
+    # Lấy các khóa và giá trị
+    keys = ['案件名', 'PH', 'PJNo.']
+    conditions = []
+    values = []
+
+    for key in keys:
+        value = project.get(key, '')
+        # Xử lý giá trị rỗng hoặc NaN
+        if value is None or (isinstance(value, str) and value.strip() == '') or isna(value):
+            continue
+        conditions.append(f'"{key}" = ?')
+        values.append(str(value))
+
+    # Nếu không có khóa nào hợp lệ (tất cả đều rỗng), coi như trùng lặp
+    if not conditions:
+        logging.debug("All keys (案件名, PH, PJNo.) are empty, treating as duplicate")
+        return True
+
+    # Xây dựng câu SQL động
+    query = f'''
         SELECT COUNT(*) FROM projects
-        WHERE 案件名 = ? AND PH = ? AND "PJNo." = ? AND 案件番号 = ?
-    ''', (project.get('案件名', ''), project.get('PH', ''), project.get('PJNo.', ''), project.get('案件番号', '')))
-    return cursor.fetchone()[0] > 0
+        WHERE {' AND '.join(conditions)}
+    '''
+
+    logging.debug(f"Executing query: {query} with values: {values}")
+    cursor.execute(query, values)
+    count = cursor.fetchone()[0]
+    logging.debug(f"Found {count} matching projects")
+    return count > 0
 
 
 def parse_date_from_db(date_str):
@@ -159,7 +183,7 @@ def import_excel_to_sqlite(file_path):
 
         for col in DATE_COLUMNS_DB:
             if col in df.columns:
-                df[col] = pd.to_datetime(df[col], errors='coerce').dt.strftime('%Y-%m-%d').fillna('')
+                df[col] = pd.to_datetime(df[col], errors='coerce').dt.strftime('%Y-%m-%d').fillna("")
             else:
                 df[col] = ''
 
@@ -187,6 +211,7 @@ def import_excel_to_sqlite(file_path):
         conn = sqlite3.connect(DB_FILE)
         cursor = conn.cursor()
 
+        imported_count = 0
         for _, row in df.iterrows():
             project = row.to_dict()
             if not project_exists(cursor, project):
@@ -220,9 +245,11 @@ def import_excel_to_sqlite(file_path):
                     project.get('タスク', ''),
                     project.get('ステータス', '要件引継待ち')
                 ))
+                imported_count += 1
 
         conn.commit()
         conn.close()
+        logging.info(f"Imported {imported_count} new projects from {file_path}")
         return True
     except Exception as e:
         logging.error(f"Failed to import Excel file {file_path}: {e}")
@@ -588,7 +615,7 @@ def upload_file():
             if os.path.isfile(old_file_path):
                 os.remove(old_file_path)
 
-        # Di chuyển file cũ (nếu có) vào thư mục old
+        # Di chuyển các file cũ trong project (nếu có) vào thư mục old
         for existing_file in os.listdir(PROJECT_DIR):
             if existing_file != file.filename:  # Không di chuyển file vừa upload
                 existing_file_path = os.path.join(PROJECT_DIR, existing_file)
@@ -599,7 +626,11 @@ def upload_file():
 
         # Nhập dữ liệu từ file Excel vào database
         if import_excel_to_sqlite(file_path):
-            flash('ファイルが正常にアップロードされ、データがインポートされました', 'success')
+            # Di chuyển file vừa upload vào thư mục old sau khi import thành công
+            old_file_path = os.path.join(OLD_DIR,
+                                         f"{os.path.splitext(file.filename)[0]}_{datetime.now().strftime('%Y%m%d_%H%M%S')}{os.path.splitext(file.filename)[1]}")
+            shutil.move(file_path, old_file_path)
+            flash('ファイルがアップロードされ、データベースに正常にインポートされました', 'success')
         else:
             flash('エラー: ファイルのインポートに失敗しました', 'danger')
 
