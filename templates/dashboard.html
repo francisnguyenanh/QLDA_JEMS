@@ -101,7 +101,7 @@
             margin-bottom: 8px;
             font-size: 0.85rem;
             padding: 8px;
-            text-align: left; /* Căn phải label của button */
+            text-align: right; /* Căn phải label của button */
         }
 
         /* Style cho button copied */
@@ -109,7 +109,7 @@
             background-color: #28a745;
             color: white;
             border-color: #28a745;
-            text-align: left; /* Đảm bảo căn phải khi copied */
+            text-align: right; /* Đảm bảo căn phải khi copied */
         }
 
         .mail-content-container {
@@ -134,9 +134,11 @@
 
         .btn-group-responsive .btn {
             flex: 1;
-            min-width: 100px;
+            min-width: 130px; /* Tăng min-width để chứa label dài */
             font-size: 0.85rem;
             padding: 8px;
+            white-space: nowrap; /* Ngăn văn bản xuống dòng */
+            text-align: center; /* Căn giữa văn bản trong button */
         }
 
         .show-all-label {
@@ -229,7 +231,7 @@
             }
 
             .btn-group-responsive .btn {
-                min-width: auto;
+                min-width: auto; /* Trên PC, cho phép button tự điều chỉnh theo nội dung */
             }
         }
     </style>
@@ -249,9 +251,9 @@
                 </form>
             </div>
             <div class="btn-group-responsive">
-                <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#uploadModal">Excel　　</button>
-                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#uploadMailTemplateModal">メール　　</button>
-                <button class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteAllModal">全削除　　</button>
+                <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#uploadModal">Excel</button>
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#uploadMailTemplateModal">メール</button>
+                <button class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteAllModal">全削除</button>
                 <a href="{{ url_for('logout') }}" class="btn btn-danger">Logout</a>
             </div>
         </div>
@@ -418,7 +420,7 @@
                                     <input type="text" name="PH" id="edit_PH" class="form-control">
                                 </div>
                                 <div class="mb-3">
-                                    <label class "form-label">SE</label>
+                                    <label class="form-label">SE</label>
                                     <input type="text" name="SE" id="edit_SE" class="form-control">
                                 </div>
                                 <div class="mb-3">
