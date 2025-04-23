@@ -2,81 +2,243 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>プロジェクト管理</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
+        body {
+            font-size: 16px;
+        }
+
+        /* Responsive container */
+        .container {
+            max-width: 90%;
+            padding: 15px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        /* Responsive table */
+        .table-responsive {
+            overflow-x: auto;
+        }
+
+        .table {
+            font-size: 0.9rem;
+            width: 100%;
+        }
+
+        th, td {
+            white-space: nowrap;
+            padding: 8px;
+        }
+
+        /* Điều chỉnh chiều rộng cột */
+        th:nth-child(1), td:nth-child(1) { width: 180px; } /* 操作 */
+        th:nth-child(2), td:nth-child(2) { width: 150px; } /* ステータス */
+        th:nth-child(3), td:nth-child(3) { width: 180px; } /* タスク */
+        th:nth-child(4), td:nth-child(4) { width: 400px; } /* 案件名 */
+        th:nth-child(18), td:nth-child(18) { width: 140px; }
+        th:nth-child(20), td:nth-child(20) { width: 180px; }
+        th:nth-child(6), td:nth-child(6) { width: 150px; }
+        th:nth-child(7), td:nth-child(7) { width: 150px; }
+        th:nth-child(22), td:nth-child(22) { width: 140px; }
+        th:nth-child(23), td:nth-child(23) { width: 250px; }
+
+        /* Style cho ngày hết hạn và highlight */
         .past-date { background-color: #f0f0f0 !important; }
         .highlight-date { background-color: yellow !important; color: red !important; }
         .fb-late { background-color: red !important; color: white !important; }
-        th, td { white-space: nowrap; }
-        th:nth-child(1), td:nth-child(1) { width: 150px; } /* 操作 */
-        th:nth-child(2), td:nth-child(2) { width: 120px; } /* ステータス */
-        th:nth-child(3), td:nth-child(3) { width: 150px; } /* タスク */
-        th:nth-child(4), td:nth-child(4) { width: 300px; } /* 案件名 */
-        th:nth-child(18), td:nth-child(18) { width: 100px; }
-        th:nth-child(20), td:nth-child(20) { width: 150px; }
-        th:nth-child(6), td:nth-child(6) { width: 120px; }
-        th:nth-child(7), td:nth-child(7) { width: 120px; }
-        th:nth-child(22), td:nth-child(22) { width: 100px; }
-        th:nth-child(23), td:nth-child(23) { width: 200px; }
-        .modal-body .row { margin-left: -10px; margin-right: -10px; }
-        .modal-body .col-md-3 { padding-left: 10px; padding-right: 10px; }
-        .task-checkboxes .form-check { margin-right: 10px; }
-        .form-label { font-size: 0.9rem; }
-        .form-control, .form-check-input, .form-select { font-size: 0.9rem; }
-        textarea.form-control { resize: vertical; min-height: 60px; }
-        .mail-modal-custom { max-width: 1200px; }
-        .mail-modal .modal-body { display: flex; flex-direction: row; gap: 15px; min-height: 400px; padding: 15px; }
-        .mail-buttons-container { flex: 1; max-width: 33.33%; padding-right: 15px; display: flex; flex-direction: column; }
-        .mail-buttons { display: flex; flex-direction: column; flex-grow: 1; }
-        .mail-buttons .btn { margin-bottom: 10px; width: 100%; text-align: left; }
-        .mail-buttons .btn.copied { color: green; }
-        .mail-content-container { flex: 2; max-width: 66.67%; display: flex; }
-        #mailContent { width: 100%; height: 100%; font-size: 0.9rem; resize: vertical; }
-        @media (min-width: 768px) {
-            .modal-body .col-md-3:nth-child(1) { flex: 0 0 auto; width: 30%; }
-            .modal-body .col-md-3:nth-child(2) { flex: 0 0 auto; width: 23.333333%; }
-            .modal-body .col-md-3:nth-child(3) { flex: 0 0 auto; width: 23.333333%; }
-            .modal-body .col-md-3:nth-child(4) { flex: 0 0 auto; width: 23.333333%; }
+
+        /* Modal responsive */
+        .modal-body .row {
+            margin-left: -5px;
+            margin-right: -5px;
         }
+
+        .modal-body .col-12 {
+            padding: 5px;
+        }
+
+        .task-checkboxes .form-check {
+            margin-right: 8px;
+            margin-bottom: 8px;
+        }
+
+        .form-label {
+            font-size: 0.85rem;
+        }
+
+        .form-control, .form-check-input, .form-select {
+            font-size: 0.85rem;
+            padding: 6px;
+        }
+
+        textarea.form-control {
+            resize: vertical;
+            min-height: 50px;
+        }
+
+        .mail-modal-custom {
+            max-width: 95%;
+        }
+
+        .mail-modal .modal-body {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            min-height: 300px;
+            padding: 10px;
+        }
+
+        .mail-buttons-container {
+            flex: none;
+            max-width: 100%;
+            padding-right: 0;
+        }
+
+        .mail-buttons .btn {
+            margin-bottom: 8px;
+            font-size: 0.85rem;
+            padding: 8px;
+            text-align: left; /* Căn phải label của button */
+        }
+
+        /* Style cho button copied */
+        .mail-buttons .btn.copied {
+            background-color: #28a745;
+            color: white;
+            border-color: #28a745;
+            text-align: left; /* Đảm bảo căn phải khi copied */
+        }
+
+        .mail-content-container {
+            flex: none;
+            max-width: 100%;
+        }
+
+        #mailContent {
+            width: 100%;
+            height: 300px;
+            max-height: 500px;
+            font-size: 0.85rem;
+            resize: vertical;
+        }
+
+        /* Responsive button group */
+        .btn-group-responsive {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .btn-group-responsive .btn {
+            flex: 1;
+            min-width: 100px;
+            font-size: 0.85rem;
+            padding: 8px;
+        }
+
         .show-all-label {
             color: #0056b3;
             font-weight: bold;
             margin-right: 30px;
+            font-size: 0.9rem;
         }
+
+        /* Sortable style */
         .sortable {
             cursor: pointer;
             position: relative;
             user-select: none;
         }
+
         .sortable:hover {
             background-color: #e9ecef;
         }
+
         .sort-indicator::after {
             content: '';
             display: inline-block;
             width: 0;
             height: 0;
-            margin-left: 5px;
+            margin-left: 4px;
             vertical-align: middle;
-            border-left: 4px solid transparent;
-            border-right: 4px solid transparent;
+            border-left: 3px solid transparent;
+            border-right: 3px solid transparent;
         }
+
         .sort-asc .sort-indicator::after {
-            content: '';
-            border-bottom: 4px solid #000;
+            border-bottom: 3px solid #000;
         }
+
         .sort-desc .sort-indicator::after {
-            content: '';
-            border-top: 4px solid #000;
+            border-top: 3px solid #000;
+        }
+
+        /* Modal footer */
+        .modal-footer {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        /* Media Queries cho PC */
+        @media (min-width: 768px) {
+            .container {
+                max-width: 90%;
+            }
+
+            .table {
+                font-size: 0.9rem;
+            }
+
+            th, td {
+                padding: 10px;
+            }
+
+            .modal-body .row {
+                margin-left: -10px;
+                margin-right: -10px;
+            }
+
+            .modal-body .col-md-3 {
+                padding: 10px;
+            }
+
+            .mail-modal .modal-body {
+                flex-direction: row;
+                gap: 15px;
+                padding: 15px;
+            }
+
+            .mail-buttons-container {
+                flex: 1;
+                max-width: 33.33%;
+                padding-right: 15px;
+            }
+
+            .mail-content-container {
+                flex: 2;
+                max-width: 66.67%;
+            }
+
+            #mailContent {
+                height: 600px;
+                max-height: 800px;
+            }
+
+            .btn-group-responsive .btn {
+                min-width: auto;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="container mt-4">
-        <div class="d-flex justify-content-between mb-3">
-            <div>
-                <h2>プロジェクト管理</h2>
+    <div class="container mt-3">
+        <div class="d-flex justify-content-between align-items-center mb-3 flex-column flex-md-row">
+            <div class="mb-2 mb-md-0">
+                <h2 class="h4">とも管理</h2>
                 <form id="showAllForm" method="POST">
                     <div class="form-check d-flex align-items-center">
                         <label class="show-all-label" for="showAll">SE納品済も表示</label>
@@ -86,11 +248,11 @@
                     </div>
                 </form>
             </div>
-            <div>
-                <button class="btn btn-success me-2" data-bs-toggle="modal" data-bs-target="#uploadModal">Excelアップロード</button>
-                <button class="btn btn-primary me-2" data-bs-toggle="modal" data-bs-target="#uploadMailTemplateModal">メールアップロード</button>
-                <button class="btn btn-danger me-2" data-bs-toggle="modal" data-bs-target="#deleteAllModal">全てのデータを削除</button>
-                <a href="{{ url_for('logout') }}" class="btn btn-danger">ログアウト</a>
+            <div class="btn-group-responsive">
+                <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#uploadModal">Excel　　</button>
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#uploadMailTemplateModal">メール　　</button>
+                <button class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteAllModal">全削除　　</button>
+                <a href="{{ url_for('logout') }}" class="btn btn-danger">Logout</a>
             </div>
         </div>
 
@@ -102,59 +264,63 @@
             {% endif %}
         {% endwith %}
 
-        <table class="table table-bordered">
-            <thead>
-                <tr>
-                    <th>操作</th>
-                    {% for col in display_columns %}
-                        <th class="sortable" data-column="{{ col }}">
-                            {{ col }}
-                            <span class="sort-indicator"></span>
-                        </th>
-                    {% endfor %}
-                </tr>
-            </thead>
-            <tbody>
-                {% for project in projects %}
+        <div class="table-responsive">
+            <table class="table table-bordered">
+                <thead>
                     <tr>
-                        <td>
-                            <button class="btn btn-primary btn-sm"
-                                    data-bs-toggle="modal"
-                                    data-bs-target="#editModal"
-                                    onclick='fillEditModal({{ project.id }}, {{ project | tojson | safe }})'>
-                                編集
-                            </button>
-                            <button class="btn btn-info btn-sm"
-                                    data-bs-toggle="modal"
-                                    data-bs-target="#mailModal"
-                                    onclick='openMailModal({{ project.id }})'>
-                                メール
-                            </button>
-                        </td>
+                        <th>操作</th>
                         {% for col in display_columns %}
-                            {% set classes = [] %}
-                            {% if project.highlight_column == col %}
-                                {% set _ = classes.append('highlight-date') %}
-                            {% endif %}
-                            {% if project[col + '_past'] %}
-                                {% set _ = classes.append('past-date') %}
-                            {% endif %}
-                            {% if col == 'FB完了予定日' and project.fb_late %}
-                                {% set _ = classes.append('fb-late') %}
-                            {% endif %}
-                            <td class="{{ ' '.join(classes) }}" data-fb-late="{{ project.fb_late }}">
-                                {{ project[col] }}
-                            </td>
+                            <th class="sortable" data-column="{{ col }}">
+                                {{ col }}
+                                <span class="sort-indicator"></span>
+                            </th>
                         {% endfor %}
                     </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+                </thead>
+                <tbody>
+                    {% for project in projects %}
+                        <tr>
+                            <td>
+                                <div class="d-flex gap-2">
+                                    <button class="btn btn-primary btn-sm"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#editModal"
+                                            onclick='fillEditModal({{ project.id }}, {{ project | tojson | safe }})'>
+                                        編集
+                                    </button>
+                                    <button class="btn btn-info btn-sm"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#mailModal"
+                                            onclick='openMailModal({{ project.id }})'>
+                                        メール
+                                    </button>
+                                </div>
+                            </td>
+                            {% for col in display_columns %}
+                                {% set classes = [] %}
+                                {% if project.highlight_column == col %}
+                                    {% set _ = classes.append('highlight-date') %}
+                                {% endif %}
+                                {% if project[col + '_past'] %}
+                                    {% set _ = classes.append('past-date') %}
+                                {% endif %}
+                                {% if col == 'FB完了予定日' and project.fb_late %}
+                                    {% set _ = classes.append('fb-late') %}
+                                {% endif %}
+                                <td class="{{ ' '.join(classes) }}" data-fb-late="{{ project.fb_late }}">
+                                    {{ project[col] }}
+                                </td>
+                            {% endfor %}
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
 
     <!-- Upload Modal -->
     <div class="modal fade" id="uploadModal" tabindex="-1">
-        <div class="modal-dialog">
+        <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">Excelファイルアップロード</h5>
@@ -166,11 +332,11 @@
                             <label for="excelFile" class="form-label">Excelファイルを選択 (.xlsx, .xls)</label>
                             <input type="file" class="form-control" id="excelFile" name="file" accept=".xlsx,.xls" required>
                         </div>
-                        <button type="submit" class="btn btn-primary">アップロード</button>
+                        <button type="submit" class="btn btn-primary w-100">アップロード</button>
                     </form>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">閉じる</button>
+                    <button type="button" class="btn btn-secondary w-100" data-bs-dismiss="modal">閉じる</button>
                 </div>
             </div>
         </div>
@@ -178,7 +344,7 @@
 
     <!-- Mail Template Upload Modal -->
     <div class="modal fade" id="uploadMailTemplateModal" tabindex="-1">
-        <div class="modal-dialog">
+        <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">メールアップロード</h5>
@@ -190,11 +356,11 @@
                             <label for="mailTemplateFile" class="form-label">テキストファイルを選択 (.txt)</label>
                             <input type="file" class="form-control" id="mailTemplateFile" name="file" accept=".txt" required>
                         </div>
-                        <button type="submit" class="btn btn-primary">アップロード</button>
+                        <button type="submit" class="btn btn-primary w-100">アップロード</button>
                     </form>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">閉じる</button>
+                    <button type="button" class="btn btn-secondary w-100" data-bs-dismiss="modal">閉じる</button>
                 </div>
             </div>
         </div>
@@ -202,7 +368,7 @@
 
     <!-- Edit Modal -->
     <div class="modal fade" id="editModal" tabindex="-1">
-        <div class="modal-dialog modal-xl">
+        <div class="modal-dialog modal-dialog-scrollable modal-xl">
             <div class="modal-content">
                 <form method="POST" id="editForm">
                     <div class="modal-header">
@@ -213,11 +379,10 @@
                         <input type="hidden" name="index" id="editIndex">
                         <div class="row">
                             <!-- Column 1 -->
-                            <div class="col-md-3">
-                                <!-- タスク -->
+                            <div class="col-12 col-md-3">
                                 <div class="mb-3">
                                     <label class="form-label">タスク</label>
-                                    <div class="task-checkboxes d-flex">
+                                    <div class="task-checkboxes d-flex flex-wrap">
                                         <div class="form-check">
                                             <input type="checkbox" name="タスク" id="task_設計" value="設計" class="form-check-input">
                                             <label class="form-check-label" for="task_設計">設計</label>
@@ -236,111 +401,91 @@
                                         </div>
                                     </div>
                                 </div>
-                                <!-- 案件名 -->
                                 <div class="mb-3">
                                     <label class="form-label">案件名</label>
                                     <input type="text" name="案件名" id="edit_案件名" class="form-control">
                                 </div>
-                                <!-- 案件番号 -->
                                 <div class="mb-3">
                                     <label class="form-label">案件番号</label>
                                     <input type="text" name="案件番号" id="edit_案件番号" class="form-control">
                                 </div>
-                                <!-- PJNo. -->
                                 <div class="mb-3">
                                     <label class="form-label">PJNo.</label>
                                     <input type="text" name="PJNo." id="edit_PJNo." class="form-control">
                                 </div>
-                                <!-- PH -->
                                 <div class="mb-3">
                                     <label class="form-label">PH</label>
                                     <input type="text" name="PH" id="edit_PH" class="form-control">
                                 </div>
-                                <!-- SE -->
                                 <div class="mb-3">
-                                    <label class="form-label">SE</label>
+                                    <label class "form-label">SE</label>
                                     <input type="text" name="SE" id="edit_SE" class="form-control">
                                 </div>
-                                <!-- BSE -->
                                 <div class="mb-3">
                                     <label class="form-label">BSE</label>
                                     <input type="text" name="BSE" id="edit_BSE" class="form-control">
                                 </div>
                             </div>
                             <!-- Column 2 -->
-                            <div class="col-md-3">
-                                <!-- 開発工数（h） -->
+                            <div class="col-12 col-md-3">
                                 <div class="mb-3">
                                     <label class="form-label">開発工数（h）</label>
                                     <input type="number" name="開発工数（h）" id="edit_開発工数（h）" class="form-control" step="0.1" min="0">
                                 </div>
-                                <!-- 設計工数（h） -->
                                 <div class="mb-3">
                                     <label class="form-label">設計工数（h）</label>
                                     <input type="number" name="設計工数（h）" id="edit_設計工数（h）" class="form-control" step="0.1" min="0">
                                 </div>
-                                <!-- ページ数 -->
                                 <div class="mb-3">
                                     <label class="form-label">ページ数</label>
                                     <input type="number" name="ページ数" id="edit_ページ数" class="form-control" min="1">
                                 </div>
                             </div>
                             <!-- Column 3 -->
-                            <div class="col-md-3">
-                                <!-- 要件引継 -->
+                            <div class="col-12 col-md-3">
                                 <div class="mb-3">
                                     <label class="form-label">要件引継</label>
                                     <input type="date" name="要件引継" id="edit_要件引継" class="form-control">
                                 </div>
-                                <!-- 設計開始 -->
                                 <div class="mb-3">
                                     <label class="form-label">設計開始</label>
                                     <input type="date" name="設計開始" id="edit_設計開始" class="form-control">
                                 </div>
-                                <!-- 設計完了 -->
                                 <div class="mb-3">
                                     <label class="form-label">設計完了</label>
                                     <input type="date" name="設計完了" id="edit_設計完了" class="form-control">
                                 </div>
-                                <!-- 設計書送付 -->
                                 <div class="mb-3">
                                     <label class="form-label">設計書送付</label>
                                     <input type="date" name="設計書送付" id="edit_設計書送付" class="form-control">
                                 </div>
-                                <!-- 開発開始 -->
                                 <div class="mb-3">
                                     <label class="form-label">開発開始</label>
                                     <input type="date" name="開発開始" id="edit_開発開始" class="form-control">
                                 </div>
-                                <!-- 開発完了 -->
                                 <div class="mb-3">
                                     <label class="form-label">開発完了</label>
                                     <input type="date" name="開発完了" id="edit_開発完了" class="form-control">
                                 </div>
                             </div>
                             <!-- Column 4 -->
-                            <div class="col-md-3">
-                                <!-- テスト開始日 -->
+                            <div class="col-12 col-md-3">
                                 <div class="mb-3">
                                     <label class="form-label">テスト開始日</label>
                                     <input type="date" name="テスト開始日" id="edit_テスト開始日" class="form-control">
                                 </div>
-                                <!-- テスト完了日 -->
                                 <div class="mb-3">
                                     <label class="form-label">テスト完了日</label>
                                     <input type="date" name="テスト完了日" id="edit_テスト完了日" class="form-control" readonly>
                                 </div>
-                                <!-- FB完了予定日 -->
                                 <div class="mb-3">
                                     <label class="form-label">FB完了予定日</label>
                                     <input type="date" name="FB完了予定日" id="edit_FB完了予定日" class="form-control" readonly>
                                 </div>
-                                <!-- SE納品 -->
                                 <div class="mb-3">
                                     <label class="form-label">SE納品</label>
                                     <input type="date" name="SE納品" id="edit_SE納品" class="form-control">
                                 </div>
-                                <!-- 備考 -->
                                 <div class="mb-3">
                                     <label class="form-label">備考</label>
                                     <textarea name="備考" id="edit_備考" class="form-control"></textarea>
@@ -359,18 +504,18 @@
 
     <!-- Mail Modal -->
     <div class="modal fade mail-modal" id="mailModal" tabindex="-1">
-        <div class="modal-dialog modal-lg mail-modal-custom">
+        <div class="modal-dialog modal-dialog-scrollable mail-modal-custom">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">メールテンプレート</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body d-flex">
+                <div class="modal-body">
                     <div class="mail-buttons-container">
                         <div class="mail-buttons d-flex flex-column">
                             {% for full_name, display_name in mail_templates %}
                                 <button class="btn btn-outline-primary mb-2"
-                                        onclick="loadMailContent(currentProjectId, '{{ full_name }}')"
+                                        onclick="loadMailContent(currentProjectId, '{{ full_name }}', this)"
                                         data-filename="{{ full_name }}">
                                     {{ display_name }}
                                 </button>
@@ -391,7 +536,7 @@
 
     <!-- Delete All Data Modal -->
     <div class="modal fade" id="deleteAllModal" tabindex="-1">
-        <div class="modal-dialog">
+        <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">全てのデータを削除</h5>
@@ -437,7 +582,6 @@
 
             if (pageCount > 0 && testStartDate) {
                 const testStartDateYMD = testStartDate.toISOString().split('T')[0];
-                console.log('Sending request to /calculate_test_dates with:', { page_count: pageCount, test_start_date: testStartDateYMD });
                 fetch('/calculate_test_dates', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -452,7 +596,6 @@
                     } else {
                         document.getElementById('edit_テスト完了日').value = data.test_completion_date;
                         document.getElementById('edit_FB完了予定日').value = data.fb_completion_date;
-                        console.log('Updated dates:', data);
                     }
                 })
                 .catch(error => {
@@ -461,7 +604,6 @@
                     document.getElementById('edit_FB完了予定日').value = '';
                 });
             } else {
-                console.log('Clearing test dates: invalid pageCount or testStartDate');
                 document.getElementById('edit_テスト完了日').value = '';
                 document.getElementById('edit_FB完了予定日').value = '';
             }
@@ -469,7 +611,6 @@
 
         function parseDateToYMD(dateStr) {
             if (!dateStr || dateStr === '') {
-                console.log('Empty date string');
                 return '';
             }
             try {
@@ -483,7 +624,6 @@
                 if (dateStr.match(/^\d{4}\/\d{2}\/\d{2}$/)) {
                     return dateStr.replace(/\//g, '-');
                 }
-                console.warn('Unknown date format:', dateStr);
                 return '';
             } catch (e) {
                 console.error('Error parsing date:', dateStr, e);
@@ -492,7 +632,6 @@
         }
 
         function fillEditModal(projectId, project) {
-            console.log('Filling edit modal for project:', project);
             document.getElementById('editIndex').value = projectId;
 
             const fields = [
@@ -515,10 +654,7 @@
                 const element = document.getElementById(`edit_${field}`);
                 if (element) {
                     const dateValue = parseDateToYMD(project[field]);
-                    console.log(`Setting date for ${field}:`, project[field], '->', dateValue);
                     element.value = dateValue;
-                } else {
-                    console.warn(`Element not found for ${field}`);
                 }
             });
 
@@ -551,7 +687,11 @@
                 .catch(error => console.error('Error fetching copied templates:', error));
         }
 
-        function loadMailContent(projectId, filename) {
+        function loadMailContent(projectId, filename, button) {
+            // Xóa lớp active khỏi tất cả button và thêm vào button được click
+            document.querySelectorAll('.mail-buttons .btn').forEach(btn => btn.classList.remove('active'));
+            button.classList.add('active');
+
             fetch(`/get_mail_content/${projectId}/${filename}`)
                 .then(response => response.json())
                 .then(data => {
@@ -584,11 +724,16 @@
                             .then(data => {
                                 if (data.success) {
                                     activeButton.classList.add('copied');
+                                    console.log('Copied template saved:', filename);
                                 } else {
                                     console.error('Failed to save copied template:', data.error);
                                 }
                             })
-                            .catch(error => console.error('Error saving copied template:', error));
+                            .catch(error => {
+                                console.error('Error saving copied template:', error);
+                            });
+                        } else {
+                            console.warn('No active button found');
                         }
                     })
                     .catch(err => {
@@ -678,100 +823,6 @@
 
         document.getElementById('edit_開発完了').addEventListener('change', updateTestDates);
         document.getElementById('edit_テスト開始日').addEventListener('change', updateTestDates);
-
-        document.querySelectorAll('.mail-buttons .btn').forEach(btn => {
-            btn.addEventListener('click', function() {
-                document.querySelectorAll('.mail-buttons .btn').forEach(b => b.classList.remove('active'));
-                this.classList.add('active');
-            });
-        });
-
-        document.querySelectorAll('.sortable').forEach(header => {
-            header.addEventListener('click', function() {
-                const column = this.getAttribute('data-column');
-
-                if (sortColumn === column) {
-                    sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
-                } else {
-                    sortColumn = column;
-                    sortDirection = 'asc';
-                }
-
-                document.querySelectorAll('.sortable').forEach(h => {
-                    h.classList.remove('sort-asc', 'sort-desc');
-                    h.querySelector('.sort-indicator').innerHTML = '';
-                });
-
-                this.classList.add(`sort-${sortDirection}`);
-
-                fetch('/sort_projects', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        column: sortColumn,
-                        direction: sortDirection,
-                        show_all: document.getElementById('showAll').checked
-                    })
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.error) {
-                        console.error('Sort error:', data.error);
-                        alert('エラー: 並べ替えに失敗しました');
-                        return;
-                    }
-                    updateTable(data.projects);
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('エラー: 並べ替えに失敗しました');
-                });
-            });
-        });
-
-        function updateTable(projects) {
-            const tbody = document.querySelector('table tbody');
-            tbody.innerHTML = '';
-
-            projects.forEach(project => {
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>
-                        <button class="btn btn-primary btn-sm"
-                                data-bs-toggle="modal"
-                                data-bs-target="#editModal"
-                                onclick='fillEditModal(${project.id}, ${JSON.stringify(project)})'>
-                            編集
-                        </button>
-                        <button class="btn btn-info btn-sm"
-                                data-bs-toggle="modal"
-                                data-bs-target="#mailModal"
-                                onclick='openMailModal(${project.id})'>
-                            メール
-                        </button>
-                    </td>
-                `;
-                const displayColumns = {{ display_columns | tojson | safe }};
-                displayColumns.forEach(col => {
-                    const classes = [];
-                    if (project.highlight_column === col) {
-                        classes.push('highlight-date');
-                    }
-                    if (project[`${col}_past`]) {
-                        classes.push('past-date');
-                    }
-                    if (col === 'FB完了予定日' && project.fb_late) {
-                        classes.push('fb-late');
-                    }
-                    row.innerHTML += `
-                        <td class="${classes.join(' ')}" data-fb-late="${project.fb_late}">
-                            ${project[col] || ''}
-                        </td>
-                    `;
-                });
-                tbody.appendChild(row);
-            });
-        }
     </script>
 </body>
 </html>
