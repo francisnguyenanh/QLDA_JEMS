@@ -498,57 +498,60 @@ def dashboard():
     if not os.path.exists(OLD_DIR):
         os.makedirs(OLD_DIR)
 
+    # Lấy trạng thái checkbox từ form
+    show_all = request.form.get('show_all') == 'on'
+
     df = read_projects()
     current_date = datetime.now()
     filtered_projects = []
 
     for _, row in df.iterrows():
+        # Nếu show_all = True, bỏ qua điều kiện lọc SE納品
+        if not show_all:
+            se_delivery_date = parse_date_from_db(row['SE納品'])
+            # Chỉ thêm dự án nếu SE納品 là NULL hoặc ngày SE納品 >= ngày hiện tại
+            if se_delivery_date and se_delivery_date.date() < current_date.date():
+                continue
+
+        project = row.to_dict()
+
+        # Tính toán trạng thái tự động
+        project['ステータス'] = calculate_status(project, current_date)
+
+        closest_date = None
+        min_diff = float('inf')
+
+        for col in DATE_COLUMNS_DISPLAY:
+            date_str_db = row[col]
+            date_obj = parse_date_from_db(date_str_db)
+            project[f'{col}_past'] = False
+            if date_obj is not None:
+                diff = abs((current_date.date() - date_obj.date()).days)
+                if diff < min_diff:
+                    min_diff = diff
+                    closest_date = col
+                if date_obj.date() < current_date.date():
+                    project[f'{col}_past'] = True
+            project[col] = format_date_jp(date_obj)
+
+        project['highlight_column'] = closest_date if closest_date else None
+
+        fb_completion_date = parse_date_from_db(row['FB完了予定日'])
+        project['fb_late'] = False
         se_delivery_date = parse_date_from_db(row['SE納品'])
-        if se_delivery_date is None or se_delivery_date.date() >= current_date.date():
-            project = row.to_dict()
+        if fb_completion_date and se_delivery_date:
+            project['fb_late'] = fb_completion_date.date() > se_delivery_date.date()
+        logging.debug(f"Project ID: {row['id']}, 案件名: {row['案件名']}, "
+                      f"FB完了予定日: {row['FB完了予定日']}, SE納品: {row['SE納品']}, "
+                      f"fb_late: {project['fb_late']}, type: {type(project['fb_late'])}")
 
-            # Tính toán trạng thái tự động
-            project['ステータス'] = calculate_status(project, current_date)
+        project = convert_nat_to_none(project)
+        logging.debug(
+            f"After convert_nat_to_none, Project ID: {row['id']}, fb_late: {project['fb_late']}, type: {type(project['fb_late'])}")
+        filtered_projects.append(project)
 
-            closest_date = None
-            min_diff = float('inf')
-
-            for col in DATE_COLUMNS_DISPLAY:
-                date_str_db = row[col]
-                date_obj = parse_date_from_db(date_str_db)
-                project[f'{col}_past'] = False
-                if date_obj is not None:
-                    diff = abs((current_date.date() - date_obj.date()).days)
-                    if diff < min_diff:
-                        min_diff = diff
-                        closest_date = col
-                    if date_obj.date() < current_date.date():
-                        project[f'{col}_past'] = True
-                project[col] = format_date_jp(date_obj)
-
-            project['highlight_column'] = closest_date if closest_date else None
-
-            fb_completion_date = parse_date_from_db(row['FB完了予定日'])
-            project['fb_late'] = False
-            if fb_completion_date and se_delivery_date:
-                project['fb_late'] = fb_completion_date.date() > se_delivery_date.date()
-            logging.debug(f"Project ID: {row['id']}, 案件名: {row['案件名']}, "
-                          f"FB完了予定日: {row['FB完了予定日']}, SE納品: {row['SE納品']}, "
-                          f"fb_late: {project['fb_late']}, type: {type(project['fb_late'])}")
-
-            project = convert_nat_to_none(project)
-            logging.debug(
-                f"After convert_nat_to_none, Project ID: {row['id']}, fb_late: {project['fb_late']}, type: {type(project['fb_late'])}")
-            filtered_projects.append(project)
-
-    if request.method == 'POST':
-        if not request.form:
-            flash('エラー: フォームデータがありません', 'danger')
-            return redirect(url_for('dashboard'))
-        if 'index' not in request.form:
-            flash('エラー: プロジェクトIDが指定されていません', 'danger')
-            return redirect(url_for('dashboard'))
-
+    # Xử lý POST từ form chỉnh sửa dự án
+    if request.method == 'POST' and 'index' in request.form:
         try:
             project_id = int(request.form['index'])
         except ValueError:
@@ -577,7 +580,8 @@ def dashboard():
                            ranges=ranges,
                            valid_statuses=VALID_STATUSES,
                            mail_templates=mail_templates,
-                           working_days=working_days)
+                           working_days=working_days,
+                           show_all=show_all)
 
 
 @app.route('/upload', methods=['POST'])
