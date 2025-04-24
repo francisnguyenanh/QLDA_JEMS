@@ -101,7 +101,7 @@
             margin-bottom: 8px;
             font-size: 0.85rem;
             padding: 8px;
-            text-align: right; /* Căn phải label của button */
+            text-align: left;
         }
 
         /* Style cho button copied */
@@ -109,7 +109,7 @@
             background-color: #28a745;
             color: white;
             border-color: #28a745;
-            text-align: right; /* Đảm bảo căn phải khi copied */
+            text-align: left;
         }
 
         .mail-content-container {
@@ -134,11 +134,11 @@
 
         .btn-group-responsive .btn {
             flex: 1;
-            min-width: 130px; /* Tăng min-width để chứa label dài */
+            min-width: 130px;
             font-size: 0.85rem;
             padding: 8px;
-            white-space: nowrap; /* Ngăn văn bản xuống dòng */
-            text-align: center; /* Căn giữa văn bản trong button */
+            white-space: nowrap;
+            text-align: center;
         }
 
         .show-all-label {
@@ -178,11 +178,67 @@
             border-top: 3px solid #000;
         }
 
-        /* Modal footer */
-        .modal-footer {
+        /* Modal header styling for buttons */
+        .modal-header {
             display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
             gap: 10px;
-            justify-content: flex-end;
+        }
+
+        .modal-header .d-flex {
+            flex-shrink: 0;
+        }
+
+        .modal-header .btn {
+            font-size: 0.85rem;
+            padding: 6px 12px;
+        }
+
+        /* Modal scrollable adjustments */
+        .modal-dialog-scrollable .modal-content {
+            max-height: 90vh; /* Limit modal height to 90% of viewport */
+        }
+
+        .modal-dialog-scrollable .modal-body {
+            max-height: calc(90vh - 120px); /* Adjust for header height */
+            overflow-y: auto; /* Enable vertical scrolling */
+            padding: 10px;
+        }
+
+        @media (max-width: 576px) {
+            .modal-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .modal-header .d-flex {
+                width: 100%;
+                justify-content: flex-end;
+            }
+
+            .modal-header .btn {
+                width: auto;
+                margin-left: 5px;
+            }
+
+            .modal-body .row {
+                margin-left: -5px;
+                margin-right: -5px;
+            }
+
+            .modal-body .col-12 {
+                padding: 5px;
+            }
+
+            .modal-dialog-scrollable .modal-body {
+                max-height: calc(90vh - 150px); /* Adjust for header on smaller screens */
+            }
+
+            .modal-dialog {
+                margin: 10px; /* Reduce margin for small screens */
+            }
         }
 
         /* Media Queries cho PC */
@@ -231,7 +287,7 @@
             }
 
             .btn-group-responsive .btn {
-                min-width: auto; /* Trên PC, cho phép button tự điều chỉnh theo nội dung */
+                min-width: auto;
             }
         }
     </style>
@@ -279,7 +335,7 @@
                         {% endfor %}
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="projectTableBody">
                     {% for project in projects %}
                         <tr>
                             <td>
@@ -322,11 +378,14 @@
 
     <!-- Upload Modal -->
     <div class="modal fade" id="uploadModal" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-dialog modal-dialog-scrollable modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">Excelファイルアップロード</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">閉じる</button>
+                        <button type="submit" form="uploadForm" class="btn btn-primary">アップロード</button>
+                    </div>
                 </div>
                 <div class="modal-body">
                     <form id="uploadForm" enctype="multipart/form-data">
@@ -334,11 +393,7 @@
                             <label for="excelFile" class="form-label">Excelファイルを選択 (.xlsx, .xls)</label>
                             <input type="file" class="form-control" id="excelFile" name="file" accept=".xlsx,.xls" required>
                         </div>
-                        <button type="submit" class="btn btn-primary w-100">アップロード</button>
                     </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary w-100" data-bs-dismiss="modal">閉じる</button>
                 </div>
             </div>
         </div>
@@ -346,11 +401,14 @@
 
     <!-- Mail Template Upload Modal -->
     <div class="modal fade" id="uploadMailTemplateModal" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-dialog modal-dialog-scrollable modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">メールアップロード</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">閉じる</button>
+                        <button type="submit" form="uploadMailTemplateForm" class="btn btn-primary">アップロード</button>
+                    </div>
                 </div>
                 <div class="modal-body">
                     <form id="uploadMailTemplateForm" enctype="multipart/form-data">
@@ -358,11 +416,7 @@
                             <label for="mailTemplateFile" class="form-label">テキストファイルを選択 (.txt)</label>
                             <input type="file" class="form-control" id="mailTemplateFile" name="file" accept=".txt" required>
                         </div>
-                        <button type="submit" class="btn btn-primary w-100">アップロード</button>
                     </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary w-100" data-bs-dismiss="modal">閉じる</button>
                 </div>
             </div>
         </div>
@@ -375,7 +429,10 @@
                 <form method="POST" id="editForm">
                     <div class="modal-header">
                         <h5 class="modal-title">プロジェクト編集</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">閉じる</button>
+                            <button type="submit" class="btn btn-primary">保存</button>
+                        </div>
                     </div>
                     <div class="modal-body">
                         <input type="hidden" name="index" id="editIndex">
@@ -495,10 +552,6 @@
                             </div>
                         </div>
                     </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">閉じる</button>
-                        <button type="submit" class="btn btn-primary">保存</button>
-                    </div>
                 </form>
             </div>
         </div>
@@ -510,7 +563,10 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">メールテンプレート</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">閉じる</button>
+                        <button type="button" class="btn btn-primary" onclick="copyMailContent()">コピー</button>
+                    </div>
                 </div>
                 <div class="modal-body">
                     <div class="mail-buttons-container">
@@ -528,21 +584,20 @@
                         <textarea id="mailContent" class="form-control" placeholder="テンプレートを選択してください"></textarea>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">閉じる</button>
-                    <button type="button" class="btn btn-primary" onclick="copyMailContent()">コピー</button>
-                </div>
             </div>
         </div>
     </div>
 
     <!-- Delete All Data Modal -->
     <div class="modal fade" id="deleteAllModal" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-dialog modal-dialog-scrollable modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">全てのデータを削除</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+                        <button type="button" class="btn btn-danger" onclick="deleteAllData()">削除</button>
+                    </div>
                 </div>
                 <div class="modal-body">
                     <p>この操作はデータベース内のすべてのデータを削除します。この操作は元に戻せません。続行するにはログインパスワードを入力してください。</p>
@@ -552,10 +607,6 @@
                             <input type="password" class="form-control" id="confirmPassword" name="password" required>
                         </div>
                     </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
-                    <button type="button" class="btn btn-danger" onclick="deleteAllData()">削除</button>
                 </div>
             </div>
         </div>
@@ -568,6 +619,111 @@
         let currentProjectId = null;
         let sortColumn = null;
         let sortDirection = 'asc';
+
+        // Sorting functionality
+        document.querySelectorAll('.sortable').forEach(header => {
+            header.addEventListener('click', function() {
+                const column = this.getAttribute('data-column');
+                // Toggle sort direction if clicking the same column
+                if (sortColumn === column) {
+                    sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+                } else {
+                    sortDirection = 'asc';
+                }
+                sortColumn = column;
+
+                // Update sort indicators
+                document.querySelectorAll('.sortable').forEach(h => {
+                    h.classList.remove('sort-asc', 'sort-desc');
+                });
+                this.classList.add(`sort-${sortDirection}`);
+
+                // Fetch sorted data
+                fetchSortedData(column, sortDirection);
+            });
+        });
+
+        function fetchSortedData(column, direction) {
+            const showAll = document.getElementById('showAll').checked;
+            fetch('/sort_projects', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    column: column,
+                    direction: direction,
+                    show_all: showAll
+                })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.error) {
+                    console.error('Error sorting data:', data.error);
+                    alert('エラー: ソートに失敗しました - ' + data.error);
+                    return;
+                }
+                updateTable(data.projects);
+            })
+            .catch(error => {
+                console.error('Error fetching sorted data:', error);
+                alert('エラー: ソートに失敗しました - ' + error.message);
+            });
+        }
+
+        function updateTable(projects) {
+            const tbody = document.getElementById('projectTableBody');
+            tbody.innerHTML = ''; // Clear existing rows
+
+            projects.forEach(project => {
+                const row = document.createElement('tr');
+
+                // Operation column
+                const opCell = document.createElement('td');
+                opCell.innerHTML = `
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-primary btn-sm"
+                                data-bs-toggle="modal"
+                                data-bs-target="#editModal"
+                                onclick='fillEditModal(${project.id}, ${JSON.stringify(project)})'>
+                            編集
+                        </button>
+                        <button class="btn btn-info btn-sm"
+                                data-bs-toggle="modal"
+                                data-bs-target="#mailModal"
+                                onclick='openMailModal(${project.id})'>
+                            メール
+                        </button>
+                    </div>
+                `;
+                row.appendChild(opCell);
+
+                // Other columns
+                const displayColumns = {{ display_columns | tojson | safe }};
+                displayColumns.forEach(col => {
+                    const cell = document.createElement('td');
+                    let classes = [];
+                    if (project.highlight_column === col) {
+                        classes.push('highlight-date');
+                    }
+                    if (project[col + '_past']) {
+                        classes.push('past-date');
+                    }
+                    if (col === 'FB完了予定日' && project.fb_late) {
+                        classes.push('fb-late');
+                    }
+                    cell.className = classes.join(' ');
+                    cell.setAttribute('data-fb-late', project.fb_late);
+                    cell.textContent = project[col] || '';
+                    row.appendChild(cell);
+                });
+
+                tbody.appendChild(row);
+            });
+        }
 
         function updateTestDates() {
             const pageCount = parseInt(document.getElementById('edit_ページ数').value);
@@ -690,7 +846,6 @@
         }
 
         function loadMailContent(projectId, filename, button) {
-            // Xóa lớp active khỏi tất cả button và thêm vào button được click
             document.querySelectorAll('.mail-buttons .btn').forEach(btn => btn.classList.remove('active'));
             button.classList.add('active');
 
