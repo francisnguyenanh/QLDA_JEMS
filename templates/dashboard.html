@@ -33,7 +33,7 @@
             padding: 8px;
         }
 
-        /* Điều chỉnh chiều rộng cột */
+        /* Column width adjustments */
         th:nth-child(1), td:nth-child(1) { width: 180px; } /* 操作 */
         th:nth-child(2), td:nth-child(2) { width: 150px; } /* ステータス */
         th:nth-child(3), td:nth-child(3) { width: 180px; } /* タスク */
@@ -45,7 +45,7 @@
         th:nth-child(22), td:nth-child(22) { width: 140px; }
         th:nth-child(23), td:nth-child(23) { width: 250px; }
 
-        /* Style cho ngày hết hạn và highlight */
+        /* Styles for dates and highlights */
         .past-date { background-color: #f0f0f0 !important; }
         .highlight-date { background-color: yellow !important; color: red !important; }
         .fb-late { background-color: red !important; color: white !important; }
@@ -104,7 +104,7 @@
             text-align: left;
         }
 
-        /* Style cho button copied */
+        /* Style for copied button */
         .mail-buttons .btn.copied {
             background-color: #28a745;
             color: white;
@@ -141,7 +141,7 @@
             text-align: center;
         }
 
-        .show-all-label {
+        .show-all-label, .show-unnecessary-label {
             color: #0056b3;
             font-weight: bold;
             margin-right: 30px;
@@ -196,6 +196,18 @@
             padding: 6px 12px;
         }
 
+        /* Style for 不要 checkbox */
+        .modal-header .form-check {
+            margin: 0 10px;
+            display: flex;
+            align-items: center;
+        }
+
+        .modal-header .form-check-label {
+            font-size: 0.85rem;
+            margin-left: 5px;
+        }
+
         /* Modal scrollable adjustments */
         .modal-dialog-scrollable .modal-content {
             max-height: 90vh; /* Limit modal height to 90% of viewport */
@@ -241,7 +253,7 @@
             }
         }
 
-        /* Media Queries cho PC */
+        /* Media Queries for PC */
         @media (min-width: 768px) {
             .container {
                 max-width: 90%;
@@ -298,11 +310,19 @@
             <div class="mb-2 mb-md-0">
                 <h2 class="h4">とも管理</h2>
                 <form id="showAllForm" method="POST">
-                    <div class="form-check d-flex align-items-center">
-                        <label class="show-all-label" for="showAll">SE納品済も表示</label>
-                        <input type="checkbox" class="form-check-input" id="showAll" name="show_all"
-                               {% if show_all %}checked{% endif %}
-                               onchange="document.getElementById('showAllForm').submit()">
+                    <div class="form-check d-flex align-items-center flex-wrap gap-3">
+                        <div>
+                            <label class="show-all-label" for="showAll">SE納品済も表示</label>
+                            <input type="checkbox" class="form-check-input" id="showAll" name="show_all"
+                                   {% if show_all %}checked{% endif %}
+                                   onchange="document.getElementById('showAllForm').submit()">
+                        </div>
+                        <div>
+                            <label class="show-unnecessary-label" for="showUnnecessary">不要も表示</label>
+                            <input type="checkbox" class="form-check-input" id="showUnnecessary" name="show_unnecessary"
+                                   {% if show_unnecessary %}checked{% endif %}
+                                   onchange="document.getElementById('showAllForm').submit()">
+                        </div>
                     </div>
                 </form>
             </div>
@@ -429,7 +449,11 @@
                 <form method="POST" id="editForm">
                     <div class="modal-header">
                         <h5 class="modal-title">プロジェクト編集</h5>
-                        <div class="d-flex gap-2">
+                        <div class="d-flex gap-2 align-items-center">
+                            <div class="form-check">
+                                <input type="checkbox" name="不要" id="edit_不要" class="form-check-input">
+                                <label class="form-check-label" for="edit_不要">不要</label>
+                            </div>
                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">閉じる</button>
                             <button type="submit" class="btn btn-primary">保存</button>
                         </div>
@@ -645,13 +669,15 @@
 
         function fetchSortedData(column, direction) {
             const showAll = document.getElementById('showAll').checked;
+            const showUnnecessary = document.getElementById('showUnnecessary').checked;
             fetch('/sort_projects', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     column: column,
                     direction: direction,
-                    show_all: showAll
+                    show_all: showAll,
+                    show_unnecessary: showUnnecessary
                 })
             })
             .then(response => {
@@ -823,6 +849,12 @@
                     checkbox.checked = project['タスク'] ? project['タスク'].split(',').includes(task) : false;
                 }
             });
+
+            // Populate 不要 checkbox
+            const unnecessaryCheckbox = document.getElementById('edit_不要');
+            if (unnecessaryCheckbox) {
+                unnecessaryCheckbox.checked = project['不要'] === 1 || project['不要'] === '1';
+            }
 
             updateTestDates();
         }

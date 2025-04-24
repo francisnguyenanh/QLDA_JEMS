@@ -61,7 +61,8 @@ def init_db():
             FB完了予定日 TEXT,
             ページ数 INTEGER,
             タスク TEXT,
-            ステータス TEXT
+            ステータス TEXT,
+            不要 INTEGER DEFAULT 0
         )
     ''')
     cursor.execute('''
@@ -78,6 +79,8 @@ def init_db():
     if 'ステータス' not in columns:
         cursor.execute('ALTER TABLE projects ADD COLUMN ステータス TEXT')
         cursor.execute("UPDATE projects SET ステータス = '要件引継待ち' WHERE ステータス IS NULL")
+    if '不要' not in columns:
+        cursor.execute('ALTER TABLE projects ADD COLUMN 不要 INTEGER DEFAULT 0')
     conn.commit()
     conn.close()
 
@@ -174,13 +177,13 @@ def convert_nat_to_none(project_dict):
     """Convert NaT/NaN/None values to empty strings and handle specific data types."""
     for key, value in project_dict.items():
         if isna(value) or value is None:
-            project_dict[key] = ''
+            project_dict[key] = '' if key != '不要' else 0
         elif key == 'PJNo.':
             if isinstance(value, (float, int)):
                 project_dict[key] = str(int(value))
             else:
                 project_dict[key] = str(value)
-        elif isinstance(value, (float, int)):
+        elif isinstance(value, (float, int)) and key != '不要':
             project_dict[key] = str(value)
         if key == 'fb_late':
             project_dict[key] = bool(value)
@@ -324,9 +327,11 @@ def import_excel_to_sqlite(file_path):
                     x) if pd.notna(x) else ''
             )
 
-        for col in ['ページ数', 'タスク', 'ステータス']:
+        for col in ['ページ数', 'タスク', 'ステータス', '不要']:
             if col not in df.columns:
                 df[col] = '' if col != 'ステータス' else '要件引継待ち'
+                if col == '不要':
+                    df[col] = 0
 
         for index, row in df.iterrows():
             project = row.to_dict()
@@ -343,8 +348,8 @@ def import_excel_to_sqlite(file_path):
                     INSERT INTO projects (
                         SE, 案件名, PH, "開発工数（h）", "設計工数（h）", 要件引継, 設計開始,
                         設計完了, 設計書送付, 開発開始, 開発完了, SE納品, BSE, 案件番号, "PJNo.",
-                        備考, テスト開始日, テスト完了日, FB完了予定日, ページ数, タスク, ステータス
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        備考, テスト開始日, テスト完了日, FB完了予定日, ページ数, タスク, ステータス, 不要
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ''', (
                     project.get('SE', ''),
                     project.get('案件名', ''),
@@ -367,7 +372,8 @@ def import_excel_to_sqlite(file_path):
                     project.get('FB完了予定日', ''),
                     project.get('ページ数', None),
                     project.get('タスク', ''),
-                    project.get('ステータス', '要件引継待ち')
+                    project.get('ステータス', '要件引継待ち'),
+                    project.get('不要', 0)
                 ))
                 imported_count += 1
 
@@ -421,6 +427,9 @@ def update_project(project_id, updates):
         updates['タスク'] = ','.join(tasks) if tasks else ''
     else:
         updates['タスク'] = ''
+
+    if '不要' in updates:
+        updates['不要'] = 1 if updates['不要'] == 'on' else 0
 
     if '開発完了' in updates and updates['開発完了']:
         try:
@@ -489,16 +498,20 @@ def dashboard():
         os.makedirs(OLD_DIR)
 
     show_all = request.form.get('show_all') == 'on'
+    show_unnecessary = request.form.get('show_unnecessary') == 'on'
 
     df = read_projects()
     current_date = datetime.now()
     filtered_projects = []
 
     for _, row in df.iterrows():
-        if not show_all:
-            se_delivery_date = parse_date_from_db(row['SE納品'])
-            if se_delivery_date and se_delivery_date.date() < current_date.date():
-                continue
+        # Apply filtering: include project if (不要 = 0 OR show_unnecessary) AND (SE納品 not past OR show_all)
+        if not show_unnecessary and row.get('不要', 0) == 1:
+            continue
+
+        se_delivery_date = parse_date_from_db(row['SE納品'])
+        if not show_all and se_delivery_date and se_delivery_date.date() < current_date.date():
+            continue
 
         project = row.to_dict()
         project['ステータス'] = calculate_status(project, current_date)
@@ -556,6 +569,7 @@ def dashboard():
                            display_columns=DISPLAY_COLUMNS,
                            date_columns=DATE_COLUMNS_DISPLAY,
                            show_all=show_all,
+                           show_unnecessary=show_unnecessary,
                            mail_templates=mail_templates,
                            ranges=ranges,
                            valid_statuses=VALID_STATUSES,
@@ -805,6 +819,10 @@ def sort_projects():
         filtered_projects = []
 
         for _, row in df.iterrows():
+            # Skip projects where 不要 = 1
+            if row.get('不要', 0) == 1:
+                continue
+
             if not show_all:
                 se_delivery_date = parse_date_from_db(row['SE納品'])
                 if se_delivery_date and se_delivery_date.date() < current_date.date():
