@@ -42,8 +42,12 @@
         th:nth-child(20), td:nth-child(20) { width: 180px; }
         th:nth-child(6), td:nth-child(6) { width: 150px; }
         th:nth-child(7), td:nth-child(7) { width: 150px; }
-        th:nth-child(22), td:nth-child(22) { width: 140px; }
-        th:nth-child(23), td:nth-child(23) { width: 250px; }
+        th:nth-child(22), td:nth-child(22) { width: 140px; } /* ページ数 */
+        th:nth-child(23), td:nth-child(23) { width: 100px; } /* 注文設計 */
+        th:nth-child(24), td:nth-child(24) { width: 100px; } /* 注文テスト */
+        th:nth-child(25), td:nth-child(25) { width: 100px; } /* 注文FB */
+        th:nth-child(26), td:nth-child(26) { width: 100px; } /* 注文BrSE */
+        th:nth-child(27), td:nth-child(27) { width: 250px; } /* 備考 */
 
         /* Styles for dates and highlights */
         .past-date { background-color: #f0f0f0 !important; }
@@ -60,7 +64,7 @@
             padding: 5px;
         }
 
-        .task-checkboxes .form-check {
+        .task-checkboxes .form-check, .order-checkboxes .form-check {
             margin-right: 8px;
             margin-bottom: 8px;
         }
@@ -522,6 +526,27 @@
                                 <div class="mb-3">
                                     <label class="form-label">ページ数</label>
                                     <input type="number" name="ページ数" id="edit_ページ数" class="form-control" min="1">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">注文項目</label>
+                                    <div class="order-checkboxes d-flex flex-wrap">
+                                        <div class="form-check">
+                                            <input type="checkbox" name="注文設計" id="edit_注文設計" class="form-check-input">
+                                            <label class="form-check-label" for="edit_注文設計">注文設計</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input type="checkbox" name="注文テスト" id="edit_注文テスト" class="form-check-input">
+                                            <label class="form-check-label" for="edit_注文テスト">注文テスト</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input type="checkbox" name="注文FB" id="edit_注文FB" class="form-check-input">
+                                            <label class="form-check-label" for="edit_注文FB">注文FB</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input type="checkbox" name="注文BrSE" id="edit_注文BrSE" class="form-check-input">
+                                            <label class="form-check-label" for="edit_注文BrSE">注文BrSE</label>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                             <!-- Column 3 -->

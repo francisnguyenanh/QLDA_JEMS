@@ -22,7 +22,8 @@ OLD_DIR = 'old'
 DISPLAY_COLUMNS = [
     'ステータス', '案件名', '要件引継', '設計開始',
     '設計完了', '設計書送付', '開発開始', '開発完了', 'テスト開始日', 'テスト完了日',
-    'FB完了予定日', 'SE納品', 'タスク', 'SE', 'BSE', '案件番号', 'PJNo.', 'PH', '開発工数（h）', '設計工数（h）', 'ページ数', '備考'
+    'FB完了予定日', 'SE納品', 'タスク', 'SE', 'BSE', '案件番号', 'PJNo.', 'PH',
+    '開発工数（h）', '設計工数（h）', 'ページ数', '注文設計', '注文テスト', '注文FB', '注文BrSE', '備考'
 ]
 DATE_COLUMNS_DB = [
     '要件引継', '設計開始', '設計完了', '設計書送付', '開発開始', '開発完了',
@@ -62,7 +63,11 @@ def init_db():
             ページ数 INTEGER,
             タスク TEXT,
             ステータス TEXT,
-            不要 INTEGER DEFAULT 0
+            不要 INTEGER DEFAULT 0,
+            注文設計 INTEGER DEFAULT 0,
+            注文テスト INTEGER DEFAULT 0,
+            注文FB INTEGER DEFAULT 0,
+            注文BrSE INTEGER DEFAULT 0
         )
     ''')
     cursor.execute('''
@@ -81,6 +86,14 @@ def init_db():
         cursor.execute("UPDATE projects SET ステータス = '要件引継待ち' WHERE ステータス IS NULL")
     if '不要' not in columns:
         cursor.execute('ALTER TABLE projects ADD COLUMN 不要 INTEGER DEFAULT 0')
+    if '注文設計' not in columns:
+        cursor.execute('ALTER TABLE projects ADD COLUMN 注文設計 INTEGER DEFAULT 0')
+    if '注文テスト' not in columns:
+        cursor.execute('ALTER TABLE projects ADD COLUMN 注文テスト INTEGER DEFAULT 0')
+    if '注文FB' not in columns:
+        cursor.execute('ALTER TABLE projects ADD COLUMN 注文FB INTEGER DEFAULT 0')
+    if '注文BrSE' not in columns:
+        cursor.execute('ALTER TABLE projects ADD COLUMN 注文BrSE INTEGER DEFAULT 0')
     conn.commit()
     conn.close()
 
@@ -177,14 +190,16 @@ def convert_nat_to_none(project_dict):
     """Convert NaT/NaN/None values to empty strings and handle specific data types."""
     for key, value in project_dict.items():
         if isna(value) or value is None:
-            project_dict[key] = '' if key != '不要' else 0
+            project_dict[key] = '' if key not in ['不要', '注文設計', '注文テスト', '注文FB', '注文BrSE'] else 0
         elif key == 'PJNo.':
             if isinstance(value, (float, int)):
                 project_dict[key] = str(int(value))
             else:
                 project_dict[key] = str(value)
-        elif isinstance(value, (float, int)) and key != '不要':
+        elif isinstance(value, (float, int)) and key not in ['不要', '注文設計', '注文テスト', '注文FB', '注文BrSE']:
             project_dict[key] = str(value)
+        elif key in ['注文設計', '注文テスト', '注文FB', '注文BrSE']:
+            project_dict[key] = '○' if value == 1 else ''
         if key == 'fb_late':
             project_dict[key] = bool(value)
     return project_dict
@@ -327,10 +342,10 @@ def import_excel_to_sqlite(file_path):
                     x) if pd.notna(x) else ''
             )
 
-        for col in ['ページ数', 'タスク', 'ステータス', '不要']:
+        for col in ['ページ数', 'タスク', 'ステータス', '不要', '注文設計', '注文テスト', '注文FB', '注文BrSE']:
             if col not in df.columns:
                 df[col] = '' if col != 'ステータス' else '要件引継待ち'
-                if col == '不要':
+                if col in ['不要', '注文設計', '注文テスト', '注文FB', '注文BrSE']:
                     df[col] = 0
 
         for index, row in df.iterrows():
@@ -348,8 +363,9 @@ def import_excel_to_sqlite(file_path):
                     INSERT INTO projects (
                         SE, 案件名, PH, "開発工数（h）", "設計工数（h）", 要件引継, 設計開始,
                         設計完了, 設計書送付, 開発開始, 開発完了, SE納品, BSE, 案件番号, "PJNo.",
-                        備考, テスト開始日, テスト完了日, FB完了予定日, ページ数, タスク, ステータス, 不要
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        備考, テスト開始日, テスト完了日, FB完了予定日, ページ数, タスク, ステータス,
+                        不要, 注文設計, 注文テスト, 注文FB, 注文BrSE
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ''', (
                     project.get('SE', ''),
                     project.get('案件名', ''),
@@ -373,7 +389,11 @@ def import_excel_to_sqlite(file_path):
                     project.get('ページ数', None),
                     project.get('タスク', ''),
                     project.get('ステータス', '要件引継待ち'),
-                    project.get('不要', 0)
+                    project.get('不要', 0),
+                    project.get('注文設計', 0),
+                    project.get('注文テスト', 0),
+                    project.get('注文FB', 0),
+                    project.get('注文BrSE', 0)
                 ))
                 imported_count += 1
 
@@ -428,8 +448,9 @@ def update_project(project_id, updates):
     else:
         updates['タスク'] = ''
 
-    if '不要' in updates:
-        updates['不要'] = 1 if updates['不要'] == 'on' else 0
+    for field in ['不要', '注文設計', '注文テスト', '注文FB', '注文BrSE']:
+        if field in updates:
+            updates[field] = 1 if updates[field] == 'on' else 0
 
     if '開発完了' in updates and updates['開発完了']:
         try:
@@ -781,13 +802,8 @@ def calculate_test_dates():
         page_count = int(page_count)
         test_start_date = datetime.strptime(test_start_date, '%Y-%m-%d')
 
-        test_completion_date = calculate_test_completion_date(page_count, test_start_date.strftime('%Y-%m-%d'))
-        if not test_completion_date:
-            test_completion_date = ''
-
+        test_completion_date = calculate_test_completion_date(page_count, test_start_date)
         fb_completion_date = calculate_fb_completion_date(test_completion_date)
-        if not fb_completion_date:
-            fb_completion_date = ''
 
         return jsonify({
             'test_completion_date': test_completion_date,
@@ -799,19 +815,20 @@ def calculate_test_dates():
 
 @app.route('/sort_projects', methods=['POST'])
 def sort_projects():
-    """Handle sorting of projects based on column and direction."""
+    """Sort projects based on column and direction."""
     if 'username' not in session:
         return jsonify({'error': 'Unauthorized'}), 401
 
     try:
         data = request.get_json()
-        sort_column = data.get('column')
-        sort_direction = data.get('direction', 'asc').lower()
+        column = data.get('column')
+        direction = data.get('direction', 'asc').lower()
         show_all = data.get('show_all', False)
+        show_unnecessary = data.get('show_unnecessary', False)
 
-        if sort_column not in DISPLAY_COLUMNS:
+        if column not in DISPLAY_COLUMNS and column != 'id':
             return jsonify({'error': 'Invalid column'}), 400
-        if sort_direction not in ['asc', 'desc']:
+        if direction not in ['asc', 'desc']:
             return jsonify({'error': 'Invalid direction'}), 400
 
         df = read_projects()
@@ -819,14 +836,12 @@ def sort_projects():
         filtered_projects = []
 
         for _, row in df.iterrows():
-            # Skip projects where 不要 = 1
-            if row.get('不要', 0) == 1:
+            if not show_unnecessary and row.get('不要', 0) == 1:
                 continue
 
-            if not show_all:
-                se_delivery_date = parse_date_from_db(row['SE納品'])
-                if se_delivery_date and se_delivery_date.date() < current_date.date():
-                    continue
+            se_delivery_date = parse_date_from_db(row['SE納品'])
+            if not show_all and se_delivery_date and se_delivery_date.date() < current_date.date():
+                continue
 
             project = row.to_dict()
             project['ステータス'] = calculate_status(project, current_date)
@@ -857,18 +872,19 @@ def sort_projects():
             project = convert_nat_to_none(project)
             filtered_projects.append(project)
 
+        # Sort projects
         def safe_get(project, key):
             value = project.get(key, '')
-            if key in DATE_COLUMNS_DB and value:
+            if key in DATE_COLUMNS_DB:
                 date_obj = parse_date_for_comparison(value)
-                return date_obj if date_obj else value
-            if isinstance(value, str) and value.strip() == '':
-                return None
+                return date_obj if date_obj else datetime.max if direction == 'asc' else datetime.min
+            if isinstance(value, str) and value == '':
+                return '' if direction == 'asc' else '\uffff'
             return value
 
         filtered_projects.sort(
-            key=lambda x: safe_get(x, sort_column) or '',
-            reverse=(sort_direction == 'desc')
+            key=lambda x: safe_get(x, column),
+            reverse=(direction == 'desc')
         )
 
         return jsonify({'projects': filtered_projects})
@@ -878,30 +894,27 @@ def sort_projects():
 
 @app.route('/delete_all_data', methods=['POST'])
 def delete_all_data():
-    """Delete all data from all tables in the database after password verification."""
+    """Delete all data from projects and copied_templates tables."""
     if 'username' not in session:
         return jsonify({'error': 'Unauthorized'}), 401
 
     data = request.get_json()
     password = data.get('password')
-    if not password:
-        return jsonify({'error': 'Password is required'}), 400
-
-    # Verify password
     users = read_users()
     username = session['username']
-    if username not in users or users[username] != password:
-        return jsonify({'error': 'Invalid password'}), 401
+
+    if users.get(username) != password:
+        return jsonify({'error': 'パスワードが正しくありません'}), 400
 
     try:
         conn = sqlite3.connect(DB_FILE)
         cursor = conn.cursor()
-        # Delete data from all tables
         cursor.execute('DELETE FROM projects')
         cursor.execute('DELETE FROM copied_templates')
+        cursor.execute('DELETE FROM sqlite_sequence')  # Reset auto-increment
         conn.commit()
         conn.close()
-        logging.info(f"All data deleted by user: {username}")
+        logging.info("All data deleted successfully")
         return jsonify({'success': True})
     except sqlite3.Error as e:
         logging.error(f"Database error while deleting all data: {e}")
