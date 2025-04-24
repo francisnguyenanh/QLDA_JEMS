@@ -328,6 +328,17 @@
             .btn-group-responsive .btn {
                 min-width: auto;
             }
+
+            textarea[name="備考"] {
+                max-height: 200px;
+                overflow-y: auto;
+                resize: vertical;
+            }
+
+            .modal-body {
+                max-height: 60vh;
+                overflow-y: auto;
+            }
         }
     </style>
 </head>
@@ -504,12 +515,7 @@
                                     </div>
                                 </div>
                                 <div class="mb-3">
-                                    <label class="form-label">ステータス</label>
-                                    <select name="ステータス" id="edit_ステータス" class="form-select">
-                                        {% for status in valid_statuses %}
-                                            <option value="{{ status }}">{{ status }}</option>
-                                        {% endfor %}
-                                    </select>
+
                                 </div>
                                 <div class="mb-3">
                                     <label class="form-label">案件名</label>
@@ -538,6 +544,12 @@
                             </div>
                             <!-- Column 2 -->
                             <div class="col-12 col-md-3">
+                                <label class="form-label">ステータス</label>
+                                    <select name="ステータス" id="edit_ステータス" class="form-select">
+                                        {% for status in valid_statuses %}
+                                            <option value="{{ status }}">{{ status }}</option>
+                                        {% endfor %}
+                                    </select>
                                 <div class="mb-3">
                                     <label class="form-label">開発工数（h）</label>
                                     <input type="number" name="開発工数（h）" id="edit_開発工数（h）" class="form-control" step="0.1" min="0">

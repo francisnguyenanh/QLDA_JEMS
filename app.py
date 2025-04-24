@@ -8,8 +8,8 @@ import openpyxl
 from pandas import isna
 import logging
 
-# Configure logging
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+# Configure #logging
+#logging.basicConfig(level=#logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'
@@ -131,43 +131,43 @@ def project_exists(cursor, project):
         values.append(str(value))
 
     if not conditions:
-        logging.debug("All keys (案件名, PH, PJNo.) are empty, treating as duplicate")
+        #logging.debug("All keys (案件名, PH, PJNo.) are empty, treating as duplicate")
         return True
 
     query = f'''
         SELECT COUNT(*) FROM projects
         WHERE {' AND '.join(conditions)}
     '''
-    logging.debug(f"Executing query: {query} with values: {values}")
+    ##logging.debug(f"Executing query: {query} with values: {values}")
     cursor.execute(query, values)
     count = cursor.fetchone()[0]
-    logging.debug(f"Found {count} matching projects")
+    ##logging.debug(f"Found {count} matching projects")
     return count > 0
 
 
 def parse_date_from_db(date_str):
     """Parse date string from database (YYYY-MM-DD or YYYY/MM/DD) to datetime object."""
     if isna(date_str) or date_str is None or date_str == '':
-        logging.debug(f"Date string is empty or None: {date_str}")
+        ##logging.debug(f"Date string is empty or None: {date_str}")
         return None
     try:
         parsed_date = datetime.strptime(date_str, '%Y-%m-%d')
-        logging.debug(f"Successfully parsed date: {date_str} -> {parsed_date}")
+        ##logging.debug(f"Successfully parsed date: {date_str} -> {parsed_date}")
         return parsed_date
     except ValueError:
         try:
             parsed_date = datetime.strptime(date_str, '%Y/%m/%d')
-            logging.debug(f"Successfully parsed date: {date_str} -> {parsed_date}")
+            ##logging.debug(f"Successfully parsed date: {date_str} -> {parsed_date}")
             return parsed_date
         except (ValueError, TypeError) as e:
-            logging.error(f"Failed to parse date: {date_str}, error: {e}")
+            ##logging.error(f"Failed to parse date: {date_str}, error: {e}")
             return None
 
 
 def parse_date_for_comparison(date_str):
     """Parse date string for comparison, supports YYYY/MM/DD(曜日) and YYYY-MM-DD."""
     if isna(date_str) or date_str is None or date_str == '':
-        logging.debug(f"Date string for comparison is empty or None: {date_str}")
+        ##logging.debug(f"Date string for comparison is empty or None: {date_str}")
         return None
     try:
         if isinstance(date_str, datetime):
@@ -175,15 +175,15 @@ def parse_date_for_comparison(date_str):
         if '(' in date_str:
             date_str = date_str.split('(')[0]
         parsed_date = datetime.strptime(date_str, '%Y/%m/%d')
-        logging.debug(f"Successfully parsed date for comparison: {date_str} -> {parsed_date}")
+        ##logging.debug(f"Successfully parsed date for comparison: {date_str} -> {parsed_date}")
         return parsed_date
     except ValueError:
         try:
             parsed_date = datetime.strptime(date_str, '%Y-%m-%d')
-            logging.debug(f"Successfully parsed date for comparison: {date_str} -> {parsed_date}")
+            ##logging.debug(f"Successfully parsed date for comparison: {date_str} -> {parsed_date}")
             return parsed_date
         except (ValueError, TypeError) as e:
-            logging.error(f"Failed to parse date for comparison: {date_str}, error: {e}")
+            ##logging.error(f"Failed to parse date for comparison: {date_str}, error: {e}")
             return None
 
 
@@ -280,15 +280,15 @@ def read_working_days(file_path='config.txt'):
                         value = int(line.split('=')[1].strip())
                         return value
                     except (IndexError, ValueError):
-                        logging.error(f"Invalid workingDays format in {file_path}: {line}")
+                        ##logging.error(f"Invalid workingDays format in {file_path}: {line}")
                         return 9
-        logging.warning(f"workingDays not found in {file_path}")
+        ##logging.warning(f"workingDays not found in {file_path}")
         return 9
     except FileNotFoundError:
-        logging.warning(f"File {file_path} not found")
+        ##logging.warning(f"File {file_path} not found")
         return 9
     except Exception as e:
-        logging.error(f"Error reading {file_path}: {e}")
+        ##logging.error(f"Error reading {file_path}: {e}")
         return 9
 
 
@@ -306,41 +306,41 @@ def add_working_days(start_date, working_days):
 
 
 def calculate_test_completion_date(page_count, test_start_date):
-    logging.debug(f"Calculating test completion date: page_count={page_count}, test_start_date={test_start_date}")
+    ##logging.debug(f"Calculating test completion date: page_count={page_count}, test_start_date={test_start_date}")
     if not page_count or not test_start_date:
-        logging.error("Invalid inputs: page_count or test_start_date is empty")
+        ##logging.error("Invalid inputs: page_count or test_start_date is empty")
         return ''
     try:
         page_count = int(page_count)
         test_start_date = datetime.strptime(test_start_date, '%Y-%m-%d')
     except (ValueError, TypeError) as e:
-        logging.error(f"Input parsing error: {str(e)}")
+        ##logging.error(f"Input parsing error: {str(e)}")
         return ''
 
     ranges = read_pages_ranges()
-    logging.debug(f"Page ranges from pages.txt: {ranges}")
+    ##logging.debug(f"Page ranges from pages.txt: {ranges}")
     for from_page, to_page, days in ranges:
         if from_page <= page_count <= to_page:
             result = add_working_days(test_start_date, days)
-            logging.debug(f"Test completion date calculated: {result}")
+            #logging.debug(f"Test completion date calculated: {result}")
             return result
-    logging.warning(f"No matching range found for page_count={page_count}")
+    #logging.warning(f"No matching range found for page_count={page_count}")
     return ''
 
 
 def calculate_fb_completion_date(test_completion_date):
-    logging.debug(f"Calculating FB completion date: test_completion_date={test_completion_date}")
+    #logging.debug(f"Calculating FB completion date: test_completion_date={test_completion_date}")
     if not test_completion_date:
-        logging.error("Test completion date is empty")
+        #logging.error("Test completion date is empty")
         return ''
     try:
         test_completion_date = datetime.strptime(test_completion_date, '%Y-%m-%d')
         working_days = read_working_days()
         result = add_working_days(test_completion_date, working_days)
-        logging.debug(f"FB completion date calculated: {result}")
+        #logging.debug(f"FB completion date calculated: {result}")
         return result
     except (ValueError, TypeError) as e:
-        logging.error(f"Error parsing test_completion_date: {str(e)}")
+        #logging.error(f"Error parsing test_completion_date: {str(e)}")
         return ''
 
 
@@ -450,10 +450,10 @@ def import_excel_to_sqlite(file_path):
 
         conn.commit()
         conn.close()
-        logging.info(f"Imported {imported_count} new projects from {file_path}")
+        #logging.info(f"Imported {imported_count} new projects from {file_path}")
         return True
     except Exception as e:
-        logging.error(f"Failed to import Excel file {file_path}: {e}")
+        #logging.error(f"Failed to import Excel file {file_path}: {e}")
         return False
 
 
@@ -471,7 +471,7 @@ def get_mail_templates():
         os.makedirs(MAIL_DIR)
     templates = [f for f in os.listdir(MAIL_DIR) if f.endswith('.txt')]
     templates = [(f, f[:-4]) for f in sorted(templates)]
-    logging.debug(f"Mail templates: {templates}")
+    #logging.debug(f"Mail templates: {templates}")
     return templates
 
 
@@ -523,13 +523,13 @@ def update_project(project_id, updates):
     # Calculate テスト完了日 and FB完了予定日
     page_count = updates.get('ページ数')
     test_start_date = updates.get('テスト開始日')
-    logging.debug(f"Calculating test dates: page_count={page_count}, test_start_date={test_start_date}")
+    #logging.debug(f"Calculating test dates: page_count={page_count}, test_start_date={test_start_date}")
 
     # Use values from form if available and valid
     if 'テスト完了日' in updates and updates['テスト完了日']:
         try:
             datetime.strptime(updates['テスト完了日'], '%Y-%m-%d')
-            logging.debug(f"Using テスト完了日 from form: {updates['テスト完了日']}")
+            #logging.debug(f"Using テスト完了日 from form: {updates['テスト完了日']}")
         except ValueError:
             updates['テスト完了日'] = ''
     else:
@@ -538,7 +538,7 @@ def update_project(project_id, updates):
     if 'FB完了予定日' in updates and updates['FB完了予定日']:
         try:
             datetime.strptime(updates['FB完了予定日'], '%Y-%m-%d')
-            logging.debug(f"Using FB完了予定日 from form: {updates['FB完了予定日']}")
+            #logging.debug(f"Using FB完了予定日 from form: {updates['FB完了予定日']}")
         except ValueError:
             updates['FB完了予定日'] = ''
     else:
@@ -561,7 +561,7 @@ def update_project(project_id, updates):
         SET {set_clause}
         WHERE id = ?
     '''
-    logging.debug(f"Executing SQL: {sql} with values: {values}")
+    #logging.debug(f"Executing SQL: {sql} with values: {values}")
     cursor.execute(sql, values)
     conn.commit()
     conn.close()
@@ -724,7 +724,7 @@ def upload():
             flash('エラー: ファイルのインポートに失敗しました', 'danger')
 
     except Exception as e:
-        logging.error(f"Error uploading file: {e}")
+        #logging.error(f"Error uploading file: {e}")
         if os.path.exists(file_path):
             os.remove(file_path)
         flash(f'エラー: ファイルのアップロードに失敗しました: {str(e)}', 'danger')
@@ -761,14 +761,14 @@ def upload_mail_template():
                 f"{os.path.splitext(file.filename)[0]}_{datetime.now().strftime('%Y%m%d_%H%M%S')}{os.path.splitext(file.filename)[1]}"
             )
             shutil.move(file_path, old_file_path)
-            logging.info(f"Moved existing file to: {old_file_path}")
+            #logging.info(f"Moved existing file to: {old_file_path}")
 
         file.save(file_path)
-        logging.info(f"Uploaded new mail template: {file_path}")
+        #logging.info(f"Uploaded new mail template: {file_path}")
         return jsonify({'success': True})
 
     except Exception as e:
-        logging.error(f"Error uploading mail template: {e}")
+        #logging.error(f"Error uploading mail template: {e}")
         return jsonify({'error': f'ファイルのアップロードに失敗しました: {str(e)}'}), 500
 
 
@@ -776,11 +776,11 @@ def upload_mail_template():
 def get_mail_content(project_id, filename):
     """Get mail template content and replace placeholders."""
     if '..' in filename or filename.startswith('/') or filename.startswith('\\'):
-        logging.error(f"Invalid filename detected: {filename}")
+        #logging.error(f"Invalid filename detected: {filename}")
         return jsonify({'error': 'Invalid filename'}), 400
     file_path = os.path.join(MAIL_DIR, filename)
     if not os.path.exists(file_path) or not filename.endswith('.txt'):
-        logging.error(f"File not found or invalid: {file_path}")
+        #logging.error(f"File not found or invalid: {file_path}")
         return jsonify({'error': 'File not found or not a .txt file'}), 404
 
     try:
@@ -791,11 +791,11 @@ def get_mail_content(project_id, filename):
         columns = [description[0] for description in cursor.description]
         conn.close()
     except sqlite3.Error as e:
-        logging.error(f"Database error: {e}")
+        #logging.error(f"Database error: {e}")
         return jsonify({'error': 'Database error'}), 500
 
     if not project:
-        logging.error(f"Project not found for ID: {project_id}")
+        #logging.error(f"Project not found for ID: {project_id}")
         return jsonify({'error': 'Project not found'}), 404
 
     project_dict = {col: project[i] for i, col in enumerate(columns)}
@@ -805,7 +805,7 @@ def get_mail_content(project_id, filename):
         with open(file_path, 'r', encoding='utf-8') as f:
             content = f.read()
     except Exception as e:
-        logging.error(f"Failed to read file {file_path}: {e}")
+        #logging.error(f"Failed to read file {file_path}: {e}")
         return jsonify({'error': f'Failed to read file: {str(e)}'}), 500
 
     pjno_value = project_dict.get('PJNo.', '')
@@ -840,7 +840,7 @@ def save_copied_template():
     project_id = data.get('project_id')
     filename = data.get('filename')
     if not project_id or not filename:
-        logging.error(f"Missing project_id or filename: project_id={project_id}, filename={filename}")
+        #logging.error(f"Missing project_id or filename: project_id={project_id}, filename={filename}")
         return jsonify({'error': 'Missing project_id or filename'}), 400
     try:
         conn = sqlite3.connect(DB_FILE)
@@ -851,10 +851,10 @@ def save_copied_template():
         ''', (project_id, filename, datetime.now().strftime('%Y-%m-%d %H:%M:%S')))
         conn.commit()
         conn.close()
-        logging.debug(f"Saved copied template: project_id={project_id}, filename={filename}")
+        #logging.debug(f"Saved copied template: project_id={project_id}, filename={filename}")
         return jsonify({'success': True})
     except sqlite3.Error as e:
-        logging.error(f"Database error while saving copied template: {e}")
+        #logging.error(f"Database error while saving copied template: {e}")
         return jsonify({'error': 'Database error'}), 500
 
 
@@ -872,10 +872,10 @@ def get_copied_templates(project_id):
         ''', (project_id,))
         templates = [row[0] for row in cursor.fetchall()]
         conn.close()
-        logging.debug(f"Copied templates for project_id={project_id}: {templates}")
+        #logging.debug(f"Copied templates for project_id={project_id}: {templates}")
         return jsonify({'templates': templates})
     except sqlite3.Error as e:
-        logging.error(f"Database error while fetching copied templates: {e}")
+        #logging.error(f"Database error while fetching copied templates: {e}")
         return jsonify({'error': 'Database error'}), 500
 
 
@@ -886,28 +886,28 @@ def calculate_test_dates():
         page_count = data.get('page_count')
         test_start_date = data.get('test_start_date')
 
-        logging.debug(f"Received calculate_test_dates request: page_count={page_count}, test_start_date={test_start_date}")
+        #logging.debug(f"Received calculate_test_dates request: page_count={page_count}, test_start_date={test_start_date}")
 
         if not page_count or not test_start_date:
-            logging.error("Missing page_count or test_start_date")
+            #logging.error("Missing page_count or test_start_date")
             return jsonify({'error': 'Missing page_count or test_start_date'}), 400
 
         page_count = int(page_count)
         test_start_date = datetime.strptime(test_start_date, '%Y-%m-%d')
 
-        logging.debug(f"Parsed inputs: page_count={page_count}, test_start_date={test_start_date}")
+        #logging.debug(f"Parsed inputs: page_count={page_count}, test_start_date={test_start_date}")
 
         test_completion_date = calculate_test_completion_date(page_count, test_start_date.strftime('%Y-%m-%d'))
         fb_completion_date = calculate_fb_completion_date(test_completion_date)
 
-        logging.debug(f"Calculated dates: test_completion_date={test_completion_date}, fb_completion_date={fb_completion_date}")
+        #logging.debug(f"Calculated dates: test_completion_date={test_completion_date}, fb_completion_date={fb_completion_date}")
 
         return jsonify({
             'test_completion_date': test_completion_date,
             'fb_completion_date': fb_completion_date
         })
     except Exception as e:
-        logging.error(f"Error calculating test dates: {str(e)}")
+        #logging.error(f"Error calculating test dates: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
 
@@ -987,7 +987,7 @@ def sort_projects():
 
         return jsonify({'projects': filtered_projects})
     except Exception as e:
-        logging.error(f"Error sorting projects: {e}")
+        #logging.error(f"Error sorting projects: {e}")
         return jsonify({'error': str(e)}), 500
 
 
@@ -1013,10 +1013,10 @@ def delete_all_data():
         cursor.execute('DELETE FROM sqlite_sequence')  # Reset auto-increment
         conn.commit()
         conn.close()
-        logging.info("All data deleted successfully")
+        #logging.info("All data deleted successfully")
         return jsonify({'success': True})
     except sqlite3.Error as e:
-        logging.error(f"Database error while deleting all data: {e}")
+        #logging.error(f"Database error while deleting all data: {e}")
         return jsonify({'error': 'Database error'}), 500
 
 
