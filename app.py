@@ -34,6 +34,7 @@ VALID_STATUSES = [
     '要件引継待ち', '設計中', 'SE送付済', '開発中', 'テスト中', 'FB対応中', 'SE納品済'
 ]
 
+
 def init_db():
     """Initialize SQLite database with projects and copied_templates tables."""
     conn = sqlite3.connect(DB_FILE)
@@ -67,7 +68,8 @@ def init_db():
             注文設計 INTEGER DEFAULT 0,
             注文テスト INTEGER DEFAULT 0,
             注文FB INTEGER DEFAULT 0,
-            注文BrSE INTEGER DEFAULT 0
+            注文BrSE INTEGER DEFAULT 0,
+            user_edited_status INTEGER DEFAULT 0
         )
     ''')
     cursor.execute('''
@@ -94,8 +96,11 @@ def init_db():
         cursor.execute('ALTER TABLE projects ADD COLUMN 注文FB INTEGER DEFAULT 0')
     if '注文BrSE' not in columns:
         cursor.execute('ALTER TABLE projects ADD COLUMN 注文BrSE INTEGER DEFAULT 0')
+    if 'user_edited_status' not in columns:
+        cursor.execute('ALTER TABLE projects ADD COLUMN user_edited_status INTEGER DEFAULT 0')
     conn.commit()
     conn.close()
+
 
 def read_users():
     """Read users from users.txt, create default admin if not exists."""
@@ -110,6 +115,7 @@ def read_users():
             f.write('admin:admin123\n')
         users['admin'] = 'admin123'
     return users
+
 
 def project_exists(cursor, project):
     """Check if a project already exists based on 案件名, PH, PJNo."""
@@ -138,6 +144,7 @@ def project_exists(cursor, project):
     logging.debug(f"Found {count} matching projects")
     return count > 0
 
+
 def parse_date_from_db(date_str):
     """Parse date string from database (YYYY-MM-DD or YYYY/MM/DD) to datetime object."""
     if isna(date_str) or date_str is None or date_str == '':
@@ -155,6 +162,7 @@ def parse_date_from_db(date_str):
         except (ValueError, TypeError) as e:
             logging.error(f"Failed to parse date: {date_str}, error: {e}")
             return None
+
 
 def parse_date_for_comparison(date_str):
     """Parse date string for comparison, supports YYYY/MM/DD(曜日) and YYYY-MM-DD."""
@@ -178,6 +186,7 @@ def parse_date_for_comparison(date_str):
             logging.error(f"Failed to parse date for comparison: {date_str}, error: {e}")
             return None
 
+
 def format_date_jp(date):
     """Format datetime object to YYYY/MM/DD(曜日)."""
     if date is None:
@@ -186,17 +195,20 @@ def format_date_jp(date):
     weekday = weekdays[date.weekday()]
     return date.strftime('%Y/%m/%d') + f'({weekday})'
 
+
 def convert_nat_to_none(project_dict):
     """Convert NaT/NaN/None values to empty strings and handle specific data types."""
     for key, value in project_dict.items():
         if isna(value) or value is None:
-            project_dict[key] = '' if key not in ['不要', '注文設計', '注文テスト', '注文FB', '注文BrSE'] else 0
+            project_dict[key] = '' if key not in ['不要', '注文設計', '注文テスト', '注文FB', '注文BrSE',
+                                                  'user_edited_status'] else 0
         elif key == 'PJNo.':
             if isinstance(value, (float, int)):
                 project_dict[key] = str(int(value))
             else:
                 project_dict[key] = str(value)
-        elif isinstance(value, (float, int)) and key not in ['不要', '注文設計', '注文テスト', '注文FB', '注文BrSE']:
+        elif isinstance(value, (float, int)) and key not in ['不要', '注文設計', '注文テスト', '注文FB', '注文BrSE',
+                                                             'user_edited_status']:
             project_dict[key] = str(value)
         elif key in ['注文設計', '注文テスト', '注文FB', '注文BrSE']:
             project_dict[key] = '○' if value == 1 else ''
@@ -204,8 +216,12 @@ def convert_nat_to_none(project_dict):
             project_dict[key] = bool(value)
     return project_dict
 
+
 def calculate_status(project, current_date=None):
-    """Calculate project status based on milestone dates and current date."""
+    """Calculate project status based on milestone dates and current date, unless user_edited_status is 1."""
+    if project.get('user_edited_status', 0) == 1:
+        return project.get('ステータス', '要件引継待ち')  # Keep user-edited status
+
     if current_date is None:
         current_date = datetime.now()
 
@@ -231,6 +247,7 @@ def calculate_status(project, current_date=None):
 
     return '要件引継待ち'
 
+
 def read_pages_ranges():
     """Read page ranges and corresponding days from pages.txt."""
     ranges = []
@@ -250,6 +267,7 @@ def read_pages_ranges():
     except FileNotFoundError:
         pass
     return ranges
+
 
 def read_working_days(file_path='config.txt'):
     """Read working days from config.txt, default to 9 if not found."""
@@ -273,6 +291,7 @@ def read_working_days(file_path='config.txt'):
         logging.error(f"Error reading {file_path}: {e}")
         return 9
 
+
 def add_working_days(start_date, working_days):
     """Add working days to a start date, skipping weekends."""
     if not start_date or working_days <= 0:
@@ -284,6 +303,7 @@ def add_working_days(start_date, working_days):
         if current_date.weekday() < 5:
             days_added += 1
     return current_date.strftime('%Y-%m-%d')
+
 
 def calculate_test_completion_date(page_count, test_start_date):
     """Calculate test completion date based on page count and test start date."""
@@ -301,6 +321,7 @@ def calculate_test_completion_date(page_count, test_start_date):
             return add_working_days(test_start_date, days)
     return ''
 
+
 def calculate_fb_completion_date(test_completion_date):
     """Calculate FB completion date based on test completion date."""
     if not test_completion_date:
@@ -311,6 +332,7 @@ def calculate_fb_completion_date(test_completion_date):
         return add_working_days(test_completion_date, working_days)
     except (ValueError, TypeError):
         return ''
+
 
 def import_excel_to_sqlite(file_path):
     """Import projects from Excel file to SQLite database."""
@@ -342,10 +364,11 @@ def import_excel_to_sqlite(file_path):
                     x) if pd.notna(x) else ''
             )
 
-        for col in ['ページ数', 'タスク', 'ステータス', '不要', '注文設計', '注文テスト', '注文FB', '注文BrSE']:
+        for col in ['ページ数', 'タスク', 'ステータス', '不要', '注文設計', '注文テスト', '注文FB', '注文BrSE',
+                    'user_edited_status']:
             if col not in df.columns:
                 df[col] = '' if col != 'ステータス' else '要件引継待ち'
-                if col in ['不要', '注文設計', '注文テスト', '注文FB', '注文BrSE']:
+                if col in ['不要', '注文設計', '注文テスト', '注文FB', '注文BrSE', 'user_edited_status']:
                     df[col] = 0
 
         for index, row in df.iterrows():
@@ -364,8 +387,8 @@ def import_excel_to_sqlite(file_path):
                         SE, 案件名, PH, "開発工数（h）", "設計工数（h）", 要件引継, 設計開始,
                         設計完了, 設計書送付, 開発開始, 開発完了, SE納品, BSE, 案件番号, "PJNo.",
                         備考, テスト開始日, テスト完了日, FB完了予定日, ページ数, タスク, ステータス,
-                        不要, 注文設計, 注文テスト, 注文FB, 注文BrSE
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        不要, 注文設計, 注文テスト, 注文FB, 注文BrSE, user_edited_status
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ''', (
                     project.get('SE', ''),
                     project.get('案件名', ''),
@@ -393,7 +416,8 @@ def import_excel_to_sqlite(file_path):
                     project.get('注文設計', 0),
                     project.get('注文テスト', 0),
                     project.get('注文FB', 0),
-                    project.get('注文BrSE', 0)
+                    project.get('注文BrSE', 0),
+                    project.get('user_edited_status', 0)
                 ))
                 imported_count += 1
 
@@ -405,12 +429,14 @@ def import_excel_to_sqlite(file_path):
         logging.error(f"Failed to import Excel file {file_path}: {e}")
         return False
 
+
 def read_projects():
     """Read all projects from SQLite database."""
     conn = sqlite3.connect(DB_FILE)
     df = pd.read_sql_query('SELECT * FROM projects', conn)
     conn.close()
     return df
+
 
 def get_mail_templates():
     """Get list of mail templates from mail directory."""
@@ -420,6 +446,7 @@ def get_mail_templates():
     templates = [(f, f[:-4]) for f in sorted(templates)]
     logging.debug(f"Mail templates: {templates}")
     return templates
+
 
 def update_project(project_id, updates):
     """Update project in database with new values."""
@@ -452,6 +479,12 @@ def update_project(project_id, updates):
         if field in updates:
             updates[field] = 1 if updates[field] == 'on' else 0
 
+    # Handle ステータス and user_edited_status
+    if 'ステータス' in updates and updates['ステータス'] in VALID_STATUSES:
+        updates['user_edited_status'] = 1  # Mark as user-edited
+    else:
+        updates['user_edited_status'] = 0  # Reset if status is not provided or invalid
+
     if '開発完了' in updates and updates['開発完了']:
         try:
             dev_complete_date = datetime.strptime(updates['開発完了'], '%Y-%m-%d')
@@ -461,11 +494,14 @@ def update_project(project_id, updates):
     elif '開発完了' in updates and not updates['開発完了']:
         updates['テスト開始日'] = ''
 
-    page_count = updates.get('ページ数')
+    page_count = updates.get('페이지수')
     test_start_date = updates.get('テスト開始日')
     updates['テスト完了日'] = calculate_test_completion_date(page_count, test_start_date)
     updates['FB完了予定日'] = calculate_fb_completion_date(updates.get('テスト完了日'))
-    updates['ステータス'] = calculate_status(updates, current_date)
+
+    # Only calculate status if not user-edited
+    if updates.get('user_edited_status', 0) == 0:
+        updates['ステータス'] = calculate_status(updates, current_date)
 
     set_clause_parts = []
     values = []
@@ -484,12 +520,14 @@ def update_project(project_id, updates):
     conn.commit()
     conn.close()
 
+
 @app.route('/')
 def index():
     """Redirect to dashboard if logged in, else to login."""
     if 'username' in session:
         return redirect(url_for('dashboard'))
     return redirect(url_for('login'))
+
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -504,6 +542,7 @@ def login():
         else:
             flash('無効な認証情報', 'danger')
     return render_template('login.html')
+
 
 @app.route('/dashboard', methods=['GET', 'POST'])
 def dashboard():
@@ -572,7 +611,7 @@ def dashboard():
 
         updates = {}
         for col in df.columns:
-            if col in request.form and col != 'id' and col != 'ステータス':
+            if col in request.form and col != 'id':
                 if col == 'タスク':
                     updates[col] = ','.join(request.form.getlist(col))
                 else:
@@ -595,6 +634,7 @@ def dashboard():
                            ranges=ranges,
                            valid_statuses=VALID_STATUSES,
                            working_days=working_days)
+
 
 @app.route('/upload', methods=['POST'])
 def upload():
@@ -645,6 +685,7 @@ def upload():
 
     return redirect(url_for('dashboard'))
 
+
 @app.route('/upload_mail_template', methods=['POST'])
 def upload_mail_template():
     """Handle mail template file upload."""
@@ -683,6 +724,7 @@ def upload_mail_template():
     except Exception as e:
         logging.error(f"Error uploading mail template: {e}")
         return jsonify({'error': f'ファイルのアップロードに失敗しました: {str(e)}'}), 500
+
 
 @app.route('/get_mail_content/<int:project_id>/<filename>', methods=['GET'])
 def get_mail_content(project_id, filename):
@@ -742,6 +784,7 @@ def get_mail_content(project_id, filename):
         content = content.replace(key, value)
     return jsonify({'content': content})
 
+
 @app.route('/save_copied_template', methods=['POST'])
 def save_copied_template():
     """Save copied mail template to database."""
@@ -768,6 +811,7 @@ def save_copied_template():
         logging.error(f"Database error while saving copied template: {e}")
         return jsonify({'error': 'Database error'}), 500
 
+
 @app.route('/get_copied_templates/<int:project_id>', methods=['GET'])
 def get_copied_templates(project_id):
     """Get list of copied templates for a project."""
@@ -787,6 +831,7 @@ def get_copied_templates(project_id):
     except sqlite3.Error as e:
         logging.error(f"Database error while fetching copied templates: {e}")
         return jsonify({'error': 'Database error'}), 500
+
 
 @app.route('/calculate_test_dates', methods=['POST'])
 def calculate_test_dates():
@@ -812,6 +857,7 @@ def calculate_test_dates():
     except Exception as e:
         logging.error(f"Error calculating test dates: {e}")
         return jsonify({'error': str(e)}), 500
+
 
 @app.route('/sort_projects', methods=['POST'])
 def sort_projects():
@@ -892,6 +938,7 @@ def sort_projects():
         logging.error(f"Error sorting projects: {e}")
         return jsonify({'error': str(e)}), 500
 
+
 @app.route('/delete_all_data', methods=['POST'])
 def delete_all_data():
     """Delete all data from projects and copied_templates tables."""
@@ -920,11 +967,13 @@ def delete_all_data():
         logging.error(f"Database error while deleting all data: {e}")
         return jsonify({'error': 'Database error'}), 500
 
+
 @app.route('/logout')
 def logout():
     """Handle user logout."""
     session.pop('username', None)
     return redirect(url_for('login'))
+
 
 if __name__ == '__main__':
     app.run(debug=True)
