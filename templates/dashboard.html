@@ -799,10 +799,14 @@
 
         function updateTestDates() {
             console.log('updateTestDates triggered');
-            const pageCount = parseInt(document.getElementById('edit_ページ数').value);
-            let testStartDate = null;
+            const pageCountInput = document.getElementById('edit_ページ数');
             const testStartInput = document.getElementById('edit_テスト開始日');
             const devCompleteInput = document.getElementById('edit_開発完了');
+            const testCompletionInput = document.getElementById('edit_テスト完了日');
+            const fbCompletionInput = document.getElementById('edit_FB完了予定日');
+
+            const pageCount = parseInt(pageCountInput.value);
+            let testStartDate = null;
 
             console.log('pageCount:', pageCount);
             console.log('testStartInput.value:', testStartInput.value);
@@ -827,28 +831,33 @@
                 })
                 .then(response => {
                     console.log('Response status:', response.status);
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! Status: ${response.status}`);
+                    }
                     return response.json();
                 })
                 .then(data => {
                     console.log('Response data:', data);
                     if (data.error) {
                         console.error('Error calculating dates:', data.error);
-                        document.getElementById('edit_テスト完了日').value = '';
-                        document.getElementById('edit_FB完了予定日').value = '';
+                        testCompletionInput.value = '';
+                        fbCompletionInput.value = '';
                     } else {
-                        document.getElementById('edit_テスト完了日').value = data.test_completion_date;
-                        document.getElementById('edit_FB完了予定日').value = data.fb_completion_date;
+                        testCompletionInput.value = data.test_completion_date || '';
+                        fbCompletionInput.value = data.fb_completion_date || '';
+                        console.log('Set testCompletionInput:', testCompletionInput.value);
+                        console.log('Set fbCompletionInput:', fbCompletionInput.value);
                     }
                 })
                 .catch(error => {
                     console.error('Fetch error:', error);
-                    document.getElementById('edit_テスト完了日').value = '';
-                    document.getElementById('edit_FB完了予定日').value = '';
+                    testCompletionInput.value = '';
+                    fbCompletionInput.value = '';
                 });
             } else {
                 console.log('Clearing dates due to invalid input');
-                document.getElementById('edit_テスト完了日').value = '';
-                document.getElementById('edit_FB完了予定日').value = '';
+                testCompletionInput.value = '';
+                fbCompletionInput.value = '';
             }
         }
 

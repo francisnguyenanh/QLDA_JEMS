@@ -356,24 +356,40 @@ def import_excel_to_sqlite(file_path):
 
         current_date = datetime.now()
 
+        # Process date columns
         for col in DATE_COLUMNS_DB:
             if col in df.columns:
                 df[col] = pd.to_datetime(df[col], errors='coerce').dt.strftime('%Y-%m-%d').fillna('')
             else:
                 df[col] = ''
 
+        # Set test start date based on development completion
         if '開発完了' in df.columns:
             df['テスト開始日'] = df['開発完了'].apply(
                 lambda x: (pd.to_datetime(x, errors='coerce') + timedelta(days=1)).strftime('%Y-%m-%d')
                 if pd.notna(x) and x != '' else ''
             )
 
+        # Handle PJNo. formatting
         if 'PJNo.' in df.columns:
             df['PJNo.'] = df['PJNo.'].apply(
                 lambda x: str(int(float(x))) if pd.notna(x) and x != '' and isinstance(x, (int, float)) else str(
                     x) if pd.notna(x) else ''
             )
 
+        # Process 案件名: Remove "株式会社"
+        if '案件名' in df.columns:
+            df['案件名'] = df['案件名'].apply(
+                lambda x: str(x).replace('株式会社', '') if pd.notna(x) and isinstance(x, str) else str(x)
+            )
+
+        # Process SE: Keep only the part before the first space (1-byte or 2-byte)
+        if 'SE' in df.columns:
+            df['SE'] = df['SE'].apply(
+                lambda x: str(x).split()[0] if pd.notna(x) and isinstance(x, str) and str(x).strip() else str(x)
+            )
+
+        # Initialize missing columns
         for col in ['ページ数', 'タスク', 'ステータス', '不要', '注文設計', '注文テスト', '注文FB', '注文BrSE',
                     'user_edited_status']:
             if col not in df.columns:
@@ -381,6 +397,7 @@ def import_excel_to_sqlite(file_path):
                 if col in ['不要', '注文設計', '注文テスト', '注文FB', '注文BrSE', 'user_edited_status']:
                     df[col] = 0
 
+        # Calculate status for each project
         for index, row in df.iterrows():
             project = row.to_dict()
             df.at[index, 'ステータス'] = calculate_status(project, current_date)
@@ -459,7 +476,6 @@ def get_mail_templates():
 
 
 def update_project(project_id, updates):
-    """Update project in database with new values."""
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
 
@@ -491,9 +507,9 @@ def update_project(project_id, updates):
 
     # Handle ステータス and user_edited_status
     if 'ステータス' in updates and updates['ステータス'] in VALID_STATUSES:
-        updates['user_edited_status'] = 1  # Mark as user-edited
+        updates['user_edited_status'] = 1
     else:
-        updates['user_edited_status'] = 0  # Reset if status is not provided or invalid
+        updates['user_edited_status'] = 0
 
     if '開発完了' in updates and updates['開発完了']:
         try:
@@ -504,10 +520,29 @@ def update_project(project_id, updates):
     elif '開発完了' in updates and not updates['開発完了']:
         updates['テスト開始日'] = ''
 
-    page_count = updates.get('페이지수')
+    # Calculate テスト完了日 and FB完了予定日
+    page_count = updates.get('ページ数')
     test_start_date = updates.get('テスト開始日')
-    updates['テスト完了日'] = calculate_test_completion_date(page_count, test_start_date)
-    updates['FB完了予定日'] = calculate_fb_completion_date(updates.get('テスト完了日'))
+    logging.debug(f"Calculating test dates: page_count={page_count}, test_start_date={test_start_date}")
+
+    # Use values from form if available and valid
+    if 'テスト完了日' in updates and updates['テスト完了日']:
+        try:
+            datetime.strptime(updates['テスト完了日'], '%Y-%m-%d')
+            logging.debug(f"Using テスト完了日 from form: {updates['テスト完了日']}")
+        except ValueError:
+            updates['テスト完了日'] = ''
+    else:
+        updates['テスト完了日'] = calculate_test_completion_date(page_count, test_start_date) if page_count and test_start_date else ''
+
+    if 'FB完了予定日' in updates and updates['FB完了予定日']:
+        try:
+            datetime.strptime(updates['FB完了予定日'], '%Y-%m-%d')
+            logging.debug(f"Using FB完了予定日 from form: {updates['FB完了予定日']}")
+        except ValueError:
+            updates['FB完了予定日'] = ''
+    else:
+        updates['FB完了予定日'] = calculate_fb_completion_date(updates['テスト完了日']) if updates['テスト完了日'] else ''
 
     # Only calculate status if not user-edited
     if updates.get('user_edited_status', 0) == 0:
@@ -526,6 +561,7 @@ def update_project(project_id, updates):
         SET {set_clause}
         WHERE id = ?
     '''
+    logging.debug(f"Executing SQL: {sql} with values: {values}")
     cursor.execute(sql, values)
     conn.commit()
     conn.close()
