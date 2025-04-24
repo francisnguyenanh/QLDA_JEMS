@@ -306,31 +306,41 @@ def add_working_days(start_date, working_days):
 
 
 def calculate_test_completion_date(page_count, test_start_date):
-    """Calculate test completion date based on page count and test start date."""
+    logging.debug(f"Calculating test completion date: page_count={page_count}, test_start_date={test_start_date}")
     if not page_count or not test_start_date:
+        logging.error("Invalid inputs: page_count or test_start_date is empty")
         return ''
     try:
         page_count = int(page_count)
         test_start_date = datetime.strptime(test_start_date, '%Y-%m-%d')
-    except (ValueError, TypeError):
+    except (ValueError, TypeError) as e:
+        logging.error(f"Input parsing error: {str(e)}")
         return ''
 
     ranges = read_pages_ranges()
+    logging.debug(f"Page ranges from pages.txt: {ranges}")
     for from_page, to_page, days in ranges:
         if from_page <= page_count <= to_page:
-            return add_working_days(test_start_date, days)
+            result = add_working_days(test_start_date, days)
+            logging.debug(f"Test completion date calculated: {result}")
+            return result
+    logging.warning(f"No matching range found for page_count={page_count}")
     return ''
 
 
 def calculate_fb_completion_date(test_completion_date):
-    """Calculate FB completion date based on test completion date."""
+    logging.debug(f"Calculating FB completion date: test_completion_date={test_completion_date}")
     if not test_completion_date:
+        logging.error("Test completion date is empty")
         return ''
     try:
         test_completion_date = datetime.strptime(test_completion_date, '%Y-%m-%d')
         working_days = read_working_days()
-        return add_working_days(test_completion_date, working_days)
-    except (ValueError, TypeError):
+        result = add_working_days(test_completion_date, working_days)
+        logging.debug(f"FB completion date calculated: {result}")
+        return result
+    except (ValueError, TypeError) as e:
+        logging.error(f"Error parsing test_completion_date: {str(e)}")
         return ''
 
 
@@ -835,27 +845,33 @@ def get_copied_templates(project_id):
 
 @app.route('/calculate_test_dates', methods=['POST'])
 def calculate_test_dates():
-    """Calculate test completion and FB completion dates."""
     try:
         data = request.get_json()
         page_count = data.get('page_count')
         test_start_date = data.get('test_start_date')
 
+        logging.debug(f"Received calculate_test_dates request: page_count={page_count}, test_start_date={test_start_date}")
+
         if not page_count or not test_start_date:
+            logging.error("Missing page_count or test_start_date")
             return jsonify({'error': 'Missing page_count or test_start_date'}), 400
 
         page_count = int(page_count)
         test_start_date = datetime.strptime(test_start_date, '%Y-%m-%d')
 
-        test_completion_date = calculate_test_completion_date(page_count, test_start_date)
+        logging.debug(f"Parsed inputs: page_count={page_count}, test_start_date={test_start_date}")
+
+        test_completion_date = calculate_test_completion_date(page_count, test_start_date.strftime('%Y-%m-%d'))
         fb_completion_date = calculate_fb_completion_date(test_completion_date)
+
+        logging.debug(f"Calculated dates: test_completion_date={test_completion_date}, fb_completion_date={fb_completion_date}")
 
         return jsonify({
             'test_completion_date': test_completion_date,
             'fb_completion_date': fb_completion_date
         })
     except Exception as e:
-        logging.error(f"Error calculating test dates: {e}")
+        logging.error(f"Error calculating test dates: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
 
