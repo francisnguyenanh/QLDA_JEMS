@@ -230,9 +230,22 @@
             padding: 10px;
         }
 
+        .daily-report-table-container {
+            max-height: 60vh;
+            overflow-y: auto;
+            position: relative;
+        }
+
         .daily-report-table {
             width: 100%;
             border-collapse: collapse;
+        }
+
+        .daily-report-table thead {
+            position: sticky;
+            top: 0;
+            z-index: 2;
+            background: white;
         }
 
         .daily-report-table th, .daily-report-table td {
@@ -253,8 +266,8 @@
             width: 200px;
             position: sticky;
             left: 0;
-            background: white;
-            z-index: 1;
+            background: #f1f3f5;
+            z-index: 3;
         }
 
         .daily-report-table td.project-cell {
@@ -262,6 +275,51 @@
             left: 0;
             background: white;
             z-index: 1;
+        }
+
+        /* Tô màu xen kẽ các ngày trong header */
+        .daily-report-table thead tr:first-child th:not(.project-header):nth-child(4n-2),
+        .daily-report-table thead tr:first-child th:not(.project-header):nth-child(8n-6),
+        .daily-report-table thead tr:first-child th:not(.project-header):nth-child(8n-4),
+        .daily-report-table thead tr:first-child th:not(.project-header):nth-child(4n),
+        .daily-report-table thead tr:first-child th:not(.project-header):nth-child(4n+1) {
+            background-color: #e6f3ff;
+        }
+
+        .daily-report-table thead tr:first-child th:not(.project-header):nth-child(4n-1),
+        .daily-report-table thead tr:first-child th:not(.project-header):nth-child(8n-5),
+        .daily-report-table thead tr:first-child th:not(.project-header):nth-child(8n-3) {
+            background-color: #ffe6e6;
+        }
+
+        /* Tô màu xen kẽ các cột ngày trong body */
+        .daily-report-table tbody td:not(.project-cell):nth-child(4n-2),
+        .daily-report-table tbody td:not(.project-cell):nth-child(8n-6),
+        .daily-report-table tbody td:not(.project-cell):nth-child(8n-4),
+        .daily-report-table tbody td:not(.project-cell):nth-child(4n),
+        .daily-report-table tbody td:not(.project-cell):nth-child(4n+1) {
+            background-color: #e6f3ff;
+        }
+
+        .daily-report-table tbody td:not(.project-cell):nth-child(4n-1),
+        .daily-report-table tbody td:not(.project-cell):nth-child(8n-5),
+        .daily-report-table tbody td:not(.project-cell):nth-child(8n-3) {
+            background-color: #ffe6e6;
+        }
+
+        /* Tô màu xen kẽ các hàng dự án */
+        .daily-report-table tbody tr:nth-child(even) td:not(.project-cell) {
+            background-color: #f1f3f5;
+        }
+
+        .daily-report-table tbody tr:nth-child(odd) td:not(.project-cell) {
+            background-color: white;
+        }
+
+        /* Đảm bảo cột project-cell không bị ảnh hưởng bởi màu xen kẽ của hàng */
+        .daily-report-table tbody tr:nth-child(even) td.project-cell,
+        .daily-report-table tbody tr:nth-child(odd) td.project-cell {
+            background-color: white;
         }
 
         .week-nav-buttons {
@@ -394,7 +452,7 @@
             </div>
             <div class="btn-group-responsive">
                 <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#uploadModal">Excel</button>
-                <button class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#dailyReportModal">日報</button>
+                <button class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#dailyReportModal" onclick="openDailyReportModal()">日報</button>
                 <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#uploadMailTemplateModal">メール</button>
                 <button class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteAllModal">全削除</button>
                 <a href="{{ url_for('logout') }}" class="btn btn-danger">Logout</a>
@@ -732,7 +790,7 @@
                         <button class="btn btn-outline-primary" onclick="navigateWeek('current')">今週</button>
                         <button class="btn btn-outline-primary" onclick="navigateWeek('next')">次週</button>
                     </div>
-                    <div class="table-responsive">
+                    <div class="daily-report-table-container">
                         <table class="daily-report-table">
                             <thead id="dailyReportTableHead"></thead>
                             <tbody id="dailyReportTableBody"></tbody>
@@ -1258,7 +1316,7 @@
                 }
             })
             .catch(error => {
-                console.error('Error saving daily hours приложения:', error);
+                console.error('Error saving daily hours:', error);
                 alert('エラー: 日報の登録に失敗しました');
             });
         }
