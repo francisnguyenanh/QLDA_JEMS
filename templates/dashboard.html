@@ -21,9 +21,10 @@
             overflow-x: auto;
         }
 
-        .table {
+        .table table-bordered {
             font-size: 0.9rem;
             width: 100%;
+            min-width: 2000px;
         }
 
         th, td {
@@ -31,28 +32,85 @@
             padding: 8px;
         }
 
-        th:nth-child(1), td:nth-child(1) { width: 180px; } /* 操作 */
-        th:nth-child(2), td:nth-child(2) { width: 150px; } /* ステータス */
-        th:nth-child(3), td:nth-child(3) { width: 180px; } /* タスク */
-        th:nth-child(4), td:nth-child(4) { width: 400px; } /* 案件名 */
-        th:nth-child(18), td:nth-child(18) { width: 140px; }
-        th:nth-child(20), td:nth-child(20) { width: 180px; }
-        th:nth-child(6), td:nth-child(6) { width: 150px; }
-        th:nth-child(7), td:nth-child(7) { width: 150px; }
-        th:nth-child(22), td:nth-child(22) { width: 140px; } /* ページ数 */
-        th:nth-child(23), td:nth-child(23) { width: 100px; } /* 注文設計 */
-        th:nth-child(24), td:nth-child(24) { width: 100px; } /* 注文テスト */
-        th:nth-child(25), td:nth-child(25) { width: 100px; } /* 注文FB */
-        th:nth-child(26), td:nth-child(26) { width: 100px; } /* 注文BrSE */
-        th:nth-child(27), td:nth-child(27) { width: 250px; } /* 備考 */
-        th:nth-child(28), td:nth-child(28) { width: 100px; } /* 設計実績 */
-        th:nth-child(29), td:nth-child(29) { width: 100px; } /* テスト実績 */
-        th:nth-child(30), td:nth-child(30) { width: 100px; } /* FB実績 */
-        th:nth-child(31), td:nth-child(31) { width: 100px; } /* BrSE実績 */
+        /* Kích thước cột cho bảng dashboard */
+        .table.table-bordered th:nth-child(1),
+        .table.table-bordered td:nth-child(1) { width: 180px; } /* 操作 */
+        .table.table-bordered th:nth-child(2),
+        .table.table-bordered td:nth-child(2) { width: 150px; } /* ステータス */
+        .table.table-bordered th:nth-child(3),
+        .table.table-bordered td:nth-child(3) { width: 180px; } /* タスク */
+        .table.table-bordered th:nth-child(4),
+        .table.table-bordered td:nth-child(4) { width: 400px; } /* 案件名 */
+        .table.table-bordered th:nth-child(18),
+        .table.table-bordered td:nth-child(18) { width: 140px; }
+        .table.table-bordered th:nth-child(20),
+        .table.table-bordered td:nth-child(20) { width: 180px; }
+        .table.table-bordered th:nth-child(6),
+        .table.table-bordered td:nth-child(6) { width: 150px; }
+        .table.table-bordered th:nth-child(7),
+        .table.table-bordered td:nth-child(7) { width: 150px; }
+        .table.table-bordered th:nth-child(22),
+        .table.table-bordered td:nth-child(22) { width: 140px; } /* ページ数 */
+        .table.table-bordered th:nth-child(23),
+        .table.table-bordered td:nth-child(23) { width: 100px; } /* 注文設計 */
+        .table.table-bordered th:nth-child(24),
+        .table.table-bordered td:nth-child(24) { width: 100px; } /* 注文テスト */
+        .table.table-bordered th:nth-child(25),
+        .table.table-bordered td:nth-child(25) { width: 100px; } /* 注文FB */
+        .table.table-bordered th:nth-child(26),
+        .table.table-bordered td:nth-child(26) { width: 100px; } /* 注文BrSE */
+        .table.table-bordered th:nth-child(27),
+        .table.table-bordered td:nth-child(27) { width: 250px; } /* 備考 */
+        .table.table-bordered th:nth-child(28),
+        .table.table-bordered td:nth-child(28) { width: 100px; } /* 設計実績 */
+        .table.table-bordered th:nth-child(29),
+        .table.table-bordered td:nth-child(29) { width: 100px; } /* テスト実績 */
+        .table.table-bordered th:nth-child(30),
+        .table.table-bordered td:nth-child(30) { width: 100px; } /* FB実績 */
+        .table.table-bordered th:nth-child(31),
+        .table.table-bordered td:nth-child(31) { width: 100px; } /* BrSE実績 */
 
-        .past-date { background-color: #f0f0f0 !important; }
-        .highlight-date { background-color: yellow !important; color: red !important; }
-        .fb-late { background-color: red !important; color: white !important; }
+        .table.table-bordered th:nth-child(1),
+        .table.table-bordered td:nth-child(1) {
+            position: sticky;
+            left: 0;
+            background: #e6f3ff;
+            z-index: 1;
+        }
+
+        .table.table-bordered th:nth-child(2),
+        .table.table-bordered td:nth-child(2) {
+            position: sticky;
+            left: 115px;
+            background: #e6f3ff;
+            z-index: 1;
+        }
+
+        .table.table-bordered th:nth-child(3),
+        .table.table-bordered td:nth-child(3) {
+            position: sticky;
+            left: 214px;
+            background: #e6f3ff;
+            z-index: 1;
+        }
+
+        .table.table-bordered thead th:nth-child(1),
+        .table.table-bordered thead th:nth-child(2),
+        .table.table-bordered thead th:nth-child(3) {
+            z-index: 3;
+        }
+
+        /* Cố định header khi cuộn dọc cho bảng dashboard */
+        .table.table-bordered thead {
+            position: sticky;
+            top: 0;
+            z-index: 2;
+            background: white;
+        }
+
+        .table.table-bordered .past-date { background-color: #f0f0f0 !important; }
+        .table.table-bordered .highlight-date { background-color: yellow !important; color: red !important; }
+        .table.table-bordered .fb-late { background-color: red !important; color: white !important; }
 
         .modal-body .row {
             margin-left: -5px;
@@ -380,11 +438,12 @@
                 max-width: 90%;
             }
 
-            .table {
+            .table.table-bordered {
                 font-size: 0.9rem;
             }
 
-            th, td {
+            .table.table-bordered th,
+            .table.table-bordered td {
                 padding: 10px;
             }
 
