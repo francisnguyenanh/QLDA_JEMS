@@ -10,7 +10,6 @@
             font-size: 16px;
         }
 
-        /* Responsive container */
         .container {
             max-width: 90%;
             padding: 15px;
@@ -18,7 +17,6 @@
             margin-right: auto;
         }
 
-        /* Responsive table */
         .table-responsive {
             overflow-x: auto;
         }
@@ -33,7 +31,6 @@
             padding: 8px;
         }
 
-        /* Column width adjustments */
         th:nth-child(1), td:nth-child(1) { width: 180px; } /* 操作 */
         th:nth-child(2), td:nth-child(2) { width: 150px; } /* ステータス */
         th:nth-child(3), td:nth-child(3) { width: 180px; } /* タスク */
@@ -48,13 +45,15 @@
         th:nth-child(25), td:nth-child(25) { width: 100px; } /* 注文FB */
         th:nth-child(26), td:nth-child(26) { width: 100px; } /* 注文BrSE */
         th:nth-child(27), td:nth-child(27) { width: 250px; } /* 備考 */
+        th:nth-child(28), td:nth-child(28) { width: 100px; } /* 設計実績 */
+        th:nth-child(29), td:nth-child(29) { width: 100px; } /* テスト実績 */
+        th:nth-child(30), td:nth-child(30) { width: 100px; } /* FB実績 */
+        th:nth-child(31), td:nth-child(31) { width: 100px; } /* BrSE実績 */
 
-        /* Styles for dates and highlights */
         .past-date { background-color: #f0f0f0 !important; }
         .highlight-date { background-color: yellow !important; color: red !important; }
         .fb-late { background-color: red !important; color: white !important; }
 
-        /* Modal responsive */
         .modal-body .row {
             margin-left: -5px;
             margin-right: -5px;
@@ -64,23 +63,22 @@
             padding: 5px;
         }
 
-        /* Căn chỉnh checkbox trong task-checkboxes và order-checkboxes */
         .task-checkboxes, .order-checkboxes {
             display: flex;
             flex-wrap: wrap;
-            gap: 15px; /* Khoảng cách đồng đều giữa các checkbox */
-            align-items: center; /* Căn chỉnh theo chiều dọc */
+            gap: 15px;
+            align-items: center;
         }
 
         .task-checkboxes .form-check, .order-checkboxes .form-check {
             display: flex;
             align-items: center;
-            margin: 0; /* Xóa margin mặc định */
-            min-width: 100px; /* Đảm bảo kích thước tối thiểu để căn chỉnh đều */
+            margin: 0;
+            min-width: 100px;
         }
 
         .task-checkboxes .form-check-label, .order-checkboxes .form-check-label {
-            margin-left: 8px; /* Khoảng cách giữa checkbox và nhãn */
+            margin-left: 8px;
             font-size: 0.85rem;
         }
 
@@ -123,7 +121,6 @@
             text-align: left;
         }
 
-        /* Style for copied button */
         .mail-buttons .btn.copied {
             background-color: #28a745;
             color: white;
@@ -144,7 +141,6 @@
             resize: vertical;
         }
 
-        /* Responsive button group */
         .btn-group-responsive {
             display: flex;
             flex-wrap: wrap;
@@ -167,7 +163,6 @@
             font-size: 0.9rem;
         }
 
-        /* Sortable style */
         .sortable {
             cursor: pointer;
             position: relative;
@@ -197,7 +192,6 @@
             border-top: 3px solid #000;
         }
 
-        /* Modal header styling for buttons */
         .modal-header {
             display: flex;
             justify-content: space-between;
@@ -215,7 +209,6 @@
             padding: 6px 12px;
         }
 
-        /* Style for 不要 checkbox */
         .modal-header .form-check {
             margin: 0 10px;
             display: flex;
@@ -227,15 +220,55 @@
             margin-left: 5px;
         }
 
-        /* Modal scrollable adjustments */
         .modal-dialog-scrollable .modal-content {
-            max-height: 90vh; /* Limit modal height to 90% of viewport */
+            max-height: 90vh;
         }
 
         .modal-dialog-scrollable .modal-body {
-            max-height: calc(90vh - 120px); /* Adjust for header height */
-            overflow-y: auto; /* Enable vertical scrolling */
+            max-height: calc(90vh - 120px);
+            overflow-y: auto;
             padding: 10px;
+        }
+
+        .daily-report-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .daily-report-table th, .daily-report-table td {
+            border: 1px solid #dee2e6;
+            padding: 6px;
+            text-align: center;
+            font-size: 0.85rem;
+        }
+
+        .daily-report-table input {
+            width: 60px;
+            padding: 2px;
+            font-size: 0.85rem;
+            text-align: center;
+        }
+
+        .daily-report-table th.project-header {
+            width: 200px;
+            position: sticky;
+            left: 0;
+            background: white;
+            z-index: 1;
+        }
+
+        .daily-report-table td.project-cell {
+            position: sticky;
+            left: 0;
+            background: white;
+            z-index: 1;
+        }
+
+        .week-nav-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 10px;
         }
 
         @media (max-width: 576px) {
@@ -264,20 +297,23 @@
             }
 
             .modal-dialog-scrollable .modal-body {
-                max-height: calc(90vh - 150px); /* Adjust for header on smaller screens */
+                max-height: calc(90vh - 150px);
             }
 
             .modal-dialog {
-                margin: 10px; /* Reduce margin for small screens */
+                margin: 10px;
             }
 
-            /* Điều chỉnh checkbox trên màn hình nhỏ */
             .task-checkboxes, .order-checkboxes {
                 gap: 10px;
             }
 
             .task-checkboxes .form-check, .order-checkboxes .form-check {
                 min-width: 80px;
+            }
+
+            .daily-report-table input {
+                width: 50px;
             }
         }
 
@@ -358,6 +394,7 @@
             </div>
             <div class="btn-group-responsive">
                 <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#uploadModal">Excel</button>
+                <button class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#dailyReportModal">日報</button>
                 <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#uploadMailTemplateModal">メール</button>
                 <button class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteAllModal">全削除</button>
                 <a href="{{ url_for('logout') }}" class="btn btn-danger">Logout</a>
@@ -383,6 +420,10 @@
                                 <span class="sort-indicator"></span>
                             </th>
                         {% endfor %}
+                        <th class="sortable" data-column="設計実績">設計実績<span class="sort-indicator"></span></th>
+                        <th class="sortable" data-column="テスト実績">テスト実績<span class="sort-indicator"></span></th>
+                        <th class="sortable" data-column="FB実績">FB実績<span class="sort-indicator"></span></th>
+                        <th class="sortable" data-column="BrSE実績">BrSE実績<span class="sort-indicator"></span></th>
                     </tr>
                 </thead>
                 <tbody id="projectTableBody">
@@ -419,6 +460,10 @@
                                     {{ project[col] }}
                                 </td>
                             {% endfor %}
+                            <td>{{ project['設計実績'] }}</td>
+                            <td>{{ project['テスト実績'] }}</td>
+                            <td>{{ project['FB実績'] }}</td>
+                            <td>{{ project['BrSE実績'] }}</td>
                         </tr>
                     {% endfor %}
                 </tbody>
@@ -514,9 +559,6 @@
                                             <label class="form-check-label" for="task_FB">FB</label>
                                         </div>
                                     </div>
-                                </div>
-                                <div class="mb-3">
-
                                 </div>
                                 <div class="mb-3">
                                     <label class="form-label">案件名</label>
@@ -673,6 +715,34 @@
         </div>
     </div>
 
+    <!-- Daily Report Modal -->
+    <div class="modal fade" id="dailyReportModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-scrollable modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">日報</h5>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">閉じる</button>
+                        <button type="button" class="btn btn-primary" onclick="saveDailyReport()">登録</button>
+                    </div>
+                </div>
+                <div class="modal-body">
+                    <div class="week-nav-buttons">
+                        <button class="btn btn-outline-primary" onclick="navigateWeek('prev')">前週</button>
+                        <button class="btn btn-outline-primary" onclick="navigateWeek('current')">今週</button>
+                        <button class="btn btn-outline-primary" onclick="navigateWeek('next')">次週</button>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="daily-report-table">
+                            <thead id="dailyReportTableHead"></thead>
+                            <tbody id="dailyReportTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Delete All Data Modal -->
     <div class="modal fade" id="deleteAllModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-scrollable modal-dialog-centered">
@@ -704,26 +774,22 @@
         let currentProjectId = null;
         let sortColumn = null;
         let sortDirection = 'asc';
+        let currentWeekStart = null;
 
         // Sorting functionality
         document.querySelectorAll('.sortable').forEach(header => {
             header.addEventListener('click', function() {
                 const column = this.getAttribute('data-column');
-                // Toggle sort direction if clicking the same column
                 if (sortColumn === column) {
                     sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
                 } else {
                     sortDirection = 'asc';
                 }
                 sortColumn = column;
-
-                // Update sort indicators
                 document.querySelectorAll('.sortable').forEach(h => {
                     h.classList.remove('sort-asc', 'sort-desc');
                 });
                 this.classList.add(`sort-${sortDirection}`);
-
-                // Fetch sorted data
                 fetchSortedData(column, sortDirection);
             });
         });
@@ -761,12 +827,10 @@
 
         function updateTable(projects) {
             const tbody = document.getElementById('projectTableBody');
-            tbody.innerHTML = ''; // Clear existing rows
+            tbody.innerHTML = '';
 
             projects.forEach(project => {
                 const row = document.createElement('tr');
-
-                // Operation column
                 const opCell = document.createElement('td');
                 opCell.innerHTML = `
                     <div class="d-flex gap-2">
@@ -786,7 +850,6 @@
                 `;
                 row.appendChild(opCell);
 
-                // Other columns
                 const displayColumns = {{ display_columns | tojson | safe }};
                 displayColumns.forEach(col => {
                     const cell = document.createElement('td');
@@ -806,12 +869,17 @@
                     row.appendChild(cell);
                 });
 
+                ['設計実績', 'テスト実績', 'FB実績', 'BrSE実績'].forEach(col => {
+                    const cell = document.createElement('td');
+                    cell.textContent = project[col] || '0';
+                    row.appendChild(cell);
+                });
+
                 tbody.appendChild(row);
             });
         }
 
         function updateTestDates() {
-            console.log('updateTestDates triggered');
             const pageCountInput = document.getElementById('edit_ページ数');
             const testStartInput = document.getElementById('edit_テスト開始日');
             const devCompleteInput = document.getElementById('edit_開発完了');
@@ -821,10 +889,6 @@
             const pageCount = parseInt(pageCountInput.value);
             let testStartDate = null;
 
-            console.log('pageCount:', pageCount);
-            console.log('testStartInput.value:', testStartInput.value);
-            console.log('devCompleteInput.value:', devCompleteInput.value);
-
             if (testStartInput.value) {
                 testStartDate = new Date(testStartInput.value);
             } else if (devCompleteInput.value) {
@@ -832,25 +896,20 @@
                 testStartDate.setDate(testStartDate.getDate() + 1);
             }
 
-            console.log('testStartDate:', testStartDate);
-
             if (pageCount > 0 && testStartDate && !isNaN(testStartDate)) {
                 const testStartDateYMD = testStartDate.toISOString().split('T')[0];
-                console.log('Sending to /calculate_test_dates:', { page_count: pageCount, test_start_date: testStartDateYMD });
                 fetch('/calculate_test_dates', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ page_count: pageCount, test_start_date: testStartDateYMD })
                 })
                 .then(response => {
-                    console.log('Response status:', response.status);
                     if (!response.ok) {
                         throw new Error(`HTTP error! Status: ${response.status}`);
                     }
                     return response.json();
                 })
                 .then(data => {
-                    console.log('Response data:', data);
                     if (data.error) {
                         console.error('Error calculating dates:', data.error);
                         testCompletionInput.value = '';
@@ -858,8 +917,6 @@
                     } else {
                         testCompletionInput.value = data.test_completion_date || '';
                         fbCompletionInput.value = data.fb_completion_date || '';
-                        console.log('Set testCompletionInput:', testCompletionInput.value);
-                        console.log('Set fbCompletionInput:', fbCompletionInput.value);
                     }
                 })
                 .catch(error => {
@@ -868,7 +925,6 @@
                     fbCompletionInput.value = '';
                 });
             } else {
-                console.log('Clearing dates due to invalid input');
                 testCompletionInput.value = '';
                 fbCompletionInput.value = '';
             }
@@ -908,7 +964,6 @@
                 'テスト開始日', 'テスト完了日', 'FB完了予定日', 'SE納品'
             ];
 
-            // Populate text and number fields
             fields.forEach(field => {
                 const element = document.getElementById(`edit_${field}`);
                 if (element) {
@@ -916,7 +971,6 @@
                 }
             });
 
-            // Populate date fields
             dateFields.forEach(field => {
                 const element = document.getElementById(`edit_${field}`);
                 if (element) {
@@ -925,7 +979,6 @@
                 }
             });
 
-            // Populate task checkboxes
             const taskCheckboxes = ['設計', 'Brse', 'テスト', 'FB'];
             taskCheckboxes.forEach(task => {
                 const checkbox = document.getElementById(`task_${task}`);
@@ -934,13 +987,11 @@
                 }
             });
 
-            // Populate 不要 checkbox
             const unnecessaryCheckbox = document.getElementById('edit_不要');
             if (unnecessaryCheckbox) {
                 unnecessaryCheckbox.checked = project['不要'] === 1 || project['不要'] === '1';
             }
 
-            // Populate 注文 checkboxes
             const orderCheckboxes = ['注文設計', '注文テスト', '注文FB', '注文BrSE'];
             orderCheckboxes.forEach(order => {
                 const checkbox = document.getElementById(`edit_${order}`);
@@ -949,7 +1000,6 @@
                 }
             });
 
-            // Populate ステータス dropdown
             const statusSelect = document.getElementById('edit_ステータス');
             if (statusSelect) {
                 statusSelect.value = project['ステータス'] || '要件引継待ち';
@@ -1020,8 +1070,6 @@
                             .catch(error => {
                                 console.error('Error saving copied template:', error);
                             });
-                        } else {
-                            console.warn('No active button found');
                         }
                     })
                     .catch(err => {
@@ -1057,6 +1105,161 @@
             .catch(error => {
                 console.error('Error:', error);
                 alert('エラー: データの削除に失敗しました');
+            });
+        }
+
+        // Daily Report Functions
+        function openDailyReportModal() {
+            currentWeekStart = getMonday(new Date());
+            loadDailyReportData();
+        }
+
+        function getMonday(date) {
+            const d = new Date(date);
+            const day = d.getDay();
+            const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+            return new Date(d.setDate(diff));
+        }
+
+        function formatDateYMD(date) {
+            return date.toISOString().split('T')[0];
+        }
+
+        function navigateWeek(direction) {
+            const d = new Date(currentWeekStart);
+            if (direction === 'prev') {
+                d.setDate(d.getDate() - 7);
+            } else if (direction === 'next') {
+                d.setDate(d.getDate() + 7);
+            } else {
+                d.setTime(new Date().getTime());
+            }
+            currentWeekStart = getMonday(d);
+            loadDailyReportData();
+        }
+
+        function loadDailyReportData() {
+            const weekStartStr = formatDateYMD(currentWeekStart);
+            fetch(`/get_daily_report_data?week_start=${weekStartStr}`, {
+                method: 'GET',
+                headers: { 'Content-Type': 'application/json' }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    console.error('Error loading daily report data:', data.error);
+                    alert('エラー: 日報データの取得に失敗しました - ' + data.error);
+                    return;
+                }
+                renderDailyReportTable(data.projects, data.week_dates, data.hours);
+            })
+            .catch(error => {
+                console.error('Error fetching daily report data:', error);
+                alert('エラー: 日報データの取得に失敗しました - ' + error.message);
+            });
+        }
+
+        function renderDailyReportTable(projects, weekDates, hours) {
+            const thead = document.getElementById('dailyReportTableHead');
+            const tbody = document.getElementById('dailyReportTableBody');
+            thead.innerHTML = '';
+            tbody.innerHTML = '';
+
+            // Header row
+            const headerRow = document.createElement('tr');
+            const projectHeader = document.createElement('th');
+            projectHeader.className = 'project-header';
+            projectHeader.textContent = '案件名';
+            headerRow.appendChild(projectHeader);
+
+            const taskTypes = ['設計', 'テスト', 'FB', 'BrSE'];
+            weekDates.forEach(date => {
+                const dateTh = document.createElement('th');
+                dateTh.colSpan = taskTypes.length;
+                dateTh.textContent = date.display;
+                headerRow.appendChild(dateTh);
+            });
+            thead.appendChild(headerRow);
+
+            // Sub-header row
+            const subHeaderRow = document.createElement('tr');
+            subHeaderRow.appendChild(document.createElement('th')); // Empty cell for project column
+            weekDates.forEach(() => {
+                taskTypes.forEach(task => {
+                    const th = document.createElement('th');
+                    th.textContent = task;
+                    subHeaderRow.appendChild(th);
+                });
+            });
+            thead.appendChild(subHeaderRow);
+
+            // Data rows
+            projects.forEach(project => {
+                const row = document.createElement('tr');
+                const projectCell = document.createElement('td');
+                projectCell.className = 'project-cell';
+                projectCell.textContent = project['案件名'];
+                row.appendChild(projectCell);
+
+                weekDates.forEach(date => {
+                    taskTypes.forEach(task => {
+                        const td = document.createElement('td');
+                        const input = document.createElement('input');
+                        input.type = 'number';
+                        input.step = '0.1';
+                        input.min = '0';
+                        input.className = 'form-control';
+                        input.dataset.projectId = project.id;
+                        input.dataset.date = date.date;
+                        input.dataset.task = task;
+                        const hourData = hours.find(h =>
+                            h.project_id === project.id &&
+                            h.date === date.date &&
+                            h.task_type === task
+                        );
+                        input.value = hourData ? hourData.hours : '';
+                        td.appendChild(input);
+                        row.appendChild(td);
+                    });
+                });
+
+                tbody.appendChild(row);
+            });
+        }
+
+        function saveDailyReport() {
+            const inputs = document.querySelectorAll('.daily-report-table input');
+            const hoursData = [];
+            inputs.forEach(input => {
+                const hours = parseFloat(input.value);
+                if (!isNaN(hours) && hours > 0) {
+                    hoursData.push({
+                        project_id: parseInt(input.dataset.projectId),
+                        date: input.dataset.date,
+                        task_type: input.dataset.task,
+                        hours: hours
+                    });
+                }
+            });
+
+            fetch('/save_daily_hours', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ hours: hoursData })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('日報が正常に登録されました');
+                    document.getElementById('dailyReportModal').querySelector('.btn-secondary').click();
+                    window.location.reload(); // Refresh to update dashboard
+                } else {
+                    alert('エラー: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error saving daily hours приложения:', error);
+                alert('エラー: 日報の登録に失敗しました');
             });
         }
 
