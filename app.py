@@ -613,6 +613,17 @@ def login():
             flash('ユーザー名またはパスワードが正しくありません', 'danger')
     return render_template('login.html')
 
+# Thêm từ điển ánh xạ trạng thái với mức độ ưu tiên
+STATUS_PRIORITY = {
+    '要件引継待ち': 6,
+    '設計中': 1,
+    'SE送付済': 2,
+    '開発中': 3,
+    'テスト中': 4,
+    'FB対応中': 5,
+    'SE納品済': 7
+}
+
 @app.route('/dashboard', methods=['GET', 'POST'])
 def dashboard():
     """Render dashboard with project data and handle project updates."""
@@ -670,6 +681,32 @@ def dashboard():
 
         project = convert_nat_to_none(project)
         filtered_projects.append(project)
+
+    # Sắp xếp mặc định theo yêu cầu
+    def safe_get(project, key):
+        if key == 'ステータス':
+            # Trả về mức độ ưu tiên của trạng thái
+            return STATUS_PRIORITY.get(project.get(key, '要件引継待ち'), 8)
+        elif key in ['設計開始', '設計完了']:
+            # Xử lý ngày, trả về datetime.max nếu trống để xếp cuối khi tăng dần
+            date_obj = parse_date_for_comparison(project.get(key, ''))
+            return date_obj if date_obj else datetime.max
+        elif key == '設計工数（h）':
+            # Xử lý số thực, trả về 0 nếu trống để xếp cuối khi giảm dần
+            try:
+                return float(project.get(key, 0)) if project.get(key, '') != '' else 0
+            except ValueError:
+                return 0
+        return project.get(key, '')
+
+    filtered_projects.sort(
+        key=lambda x: (
+            safe_get(x, 'ステータス'),           # 1. ステータス (theo thứ tự ưu tiên)
+            safe_get(x, '設計開始'),            # 2. 設計開始 (tăng dần)
+            safe_get(x, '設計完了'),            # 3. 設計完了 (tăng dần)
+            -safe_get(x, '設計工数（h）')       # 4. 設計工数（h） (giảm dần, dùng dấu - để đảo ngược)
+        )
+    )
 
     if request.method == 'POST' and 'index' in request.form:
         try:
