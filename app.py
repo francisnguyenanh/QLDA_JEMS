@@ -929,7 +929,7 @@ def calculate_test_dates():
 
 @app.route('/sort_projects', methods=['POST'])
 def sort_projects():
-    """Sort projects based on column and direction."""
+    """Sort and filter projects based on column, direction, and search criteria."""
     if 'username' not in session:
         return jsonify({'error': 'Unauthorized'}), 401
 
@@ -939,6 +939,7 @@ def sort_projects():
         direction = data.get('direction', 'asc').lower()
         show_all = data.get('show_all', False)
         show_unnecessary = data.get('show_unnecessary', False)
+        search_project_name = data.get('search_project_name', '').strip()  # Lấy giá trị tìm kiếm 案件名
 
         valid_columns = DISPLAY_COLUMNS + ['id', '設計実績', 'テスト実績', 'FB実績', 'BrSE実績']
         if column not in valid_columns:
@@ -951,11 +952,16 @@ def sort_projects():
         filtered_projects = []
 
         for _, row in df.iterrows():
+            # Áp dụng bộ lọc: include project if (不要 = 0 OR show_unnecessary) AND (SE納品 not past OR show_all)
             if not show_unnecessary and row.get('不要', 0) == 1:
                 continue
 
             se_delivery_date = parse_date_from_db(row['SE納品'])
             if not show_all and se_delivery_date and se_delivery_date.date() < current_date.date():
+                continue
+
+            # Lọc theo 案件名
+            if search_project_name and search_project_name.lower() not in str(row['案件名']).lower():
                 continue
 
             project = row.to_dict()

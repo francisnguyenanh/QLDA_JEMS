@@ -221,6 +221,26 @@
             font-size: 0.9rem;
         }
 
+        /* CSS để căn chỉnh checkbox và input trên cùng một hàng */
+        .header-controls {
+            display: flex;
+            align-items: center;
+            gap: 35px;
+            flex-wrap: nowrap; /* Không cho phép xuống dòng */
+        }
+
+        .search-project-name {
+            max-width: 300px;
+            min-width: 200px;
+            flex: 0 0 auto; /* Giữ kích thước cố định */
+        }
+
+        .form-check-container {
+            flex: 0 0 auto; /* Giữ kích thước cố định */
+            display: flex;
+            align-items: center;
+        }
+
         .sortable {
             cursor: pointer;
             position: relative;
@@ -431,6 +451,22 @@
             .daily-report-table input {
                 width: 50px;
             }
+
+            /* Responsive cho header controls trên màn hình nhỏ */
+            .header-controls {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+
+            .search-project-name {
+                width: 100%;
+                max-width: none;
+            }
+
+            .form-check-container {
+                width: 100%;
+            }
         }
 
         @media (min-width: 768px) {
@@ -500,18 +536,26 @@
         <div class="d-flex justify-content-between align-items-center mb-3 flex-column flex-md-row">
             <div class="mb-2 mb-md-0">
                 <h2 class="h4">とも管理</h2>
-                <form id="showUnnecessaryForm" method="POST">
-                    <div class="form-check d-flex align-items-center">
-                        <label class="show-unnecessary-label" for="showUnnecessary">不要も表示</label>
-                        <input type="checkbox" class="form-check-input" id="showUnnecessary" name="show_unnecessary"
-                               {% if show_unnecessary %}checked{% endif %}
-                               onchange="document.getElementById('showUnnecessaryForm').submit()">
+                <div class="header-controls">
+                    <div class="form-check-container">
+                        <form id="showUnnecessaryForm" method="POST">
+                            <div class="form-check d-flex align-items-center">
+                                <label class="show-unnecessary-label" for="showUnnecessary">不要も表示</label>
+                                <input type="checkbox" class="form-check-input" id="showUnnecessary" name="show_unnecessary"
+                                       {% if show_unnecessary %}checked{% endif %}
+                                       onchange="document.getElementById('showUnnecessaryForm').submit()">
+                            </div>
+                        </form>
                     </div>
-                </form>
+                    <div class="input-group search-project-name">
+                        <span class="input-group-text">案件名</span>
+                        <input type="text" class="form-control" id="searchProjectName" placeholder="案件名を入力" aria-label="案件名">
+                    </div>
+                </div>
             </div>
             <div class="btn-group-responsive">
-                <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#uploadModal">Excel</button>
                 <button class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#dailyReportModal" onclick="openDailyReportModal()">日報</button>
+                <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#uploadModal">Excel</button>
                 <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#uploadMailTemplateModal">メール</button>
                 <button class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteAllModal">全削除</button>
                 <a href="{{ url_for('logout') }}" class="btn btn-danger">Logout</a>
@@ -893,6 +937,12 @@
         let sortDirection = 'asc';
         let currentWeekStart = null;
 
+        // Thêm sự kiện focusout cho trường tìm kiếm 案件名
+        document.getElementById('searchProjectName').addEventListener('focusout', function() {
+            const searchValue = this.value.trim();
+            fetchSortedData(sortColumn, sortDirection, searchValue);
+        });
+
         // Sorting functionality
         document.querySelectorAll('.sortable').forEach(header => {
             header.addEventListener('click', function() {
@@ -907,19 +957,21 @@
                     h.classList.remove('sort-asc', 'sort-desc');
                 });
                 this.classList.add(`sort-${sortDirection}`);
-                fetchSortedData(column, sortDirection);
+                const searchValue = document.getElementById('searchProjectName').value.trim();
+                fetchSortedData(column, sortDirection, searchValue);
             });
         });
 
-        function fetchSortedData(column, direction) {
+        function fetchSortedData(column, direction, searchProjectName = '') {
             const showUnnecessary = document.getElementById('showUnnecessary').checked;
             fetch('/sort_projects', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    column: column,
-                    direction: direction,
-                    show_unnecessary: showUnnecessary
+                    column: column || 'id',
+                    direction: direction || 'asc',
+                    show_unnecessary: showUnnecessary,
+                    search_project_name: searchProjectName
                 })
             })
             .then(response => {
