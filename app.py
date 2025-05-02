@@ -9,7 +9,7 @@ from pandas import isna
 import logging
 
 # Configure logging
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+#logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'
@@ -429,7 +429,7 @@ def import_excel_to_sqlite(file_path):
                     project.get('案件番号', ''),
                     project.get('PJNo.', ''),
                     project.get('備考', ''),
-                    project.get('テスト`test_start_date', ''),
+                    project.get('テスト開始日', ''),
                     project.get('テスト完了日', ''),
                     project.get('FB完了予定日', ''),
                     project.get('ページ数', None),
@@ -449,7 +449,7 @@ def import_excel_to_sqlite(file_path):
         logging.info(f"Imported {imported_count} new projects from {file_path}")
         return True
     except Exception as e:
-        logging.error(f"Failed to import Excel file {file_path}: {e}")
+        #logging.error(f"Failed to import Excel file {file_path}: {e}")
         return False
 
 def read_projects():
@@ -478,6 +478,7 @@ def read_projects():
 
     conn.close()
     df = pd.DataFrame(projects)
+    print(df)
     return df
 
 def get_mail_templates():
@@ -486,7 +487,7 @@ def get_mail_templates():
         os.makedirs(MAIL_DIR)
     templates = [f for f in os.listdir(MAIL_DIR) if f.endswith('.txt')]
     templates = [(f, f[:-4]) for f in sorted(templates)]
-    logging.debug(f"Mail templates: {templates}")
+    #logging.debug(f"Mail templates: {templates}")
     return templates
 
 def get_week_dates(week_start):
@@ -538,23 +539,25 @@ def update_project(project_id, updates):
 
     if '開発完了' in updates and updates['開発完了']:
         try:
+            print("update test date")
             dev_complete_date = datetime.strptime(updates['開発完了'], '%Y-%m-%d')
             updates['テスト開始日'] = (dev_complete_date + timedelta(days=1)).strftime('%Y-%m-%d')
         except ValueError:
             updates['テスト開始日'] = ''
     elif '開発完了' in updates and not updates['開発完了']:
+        print("NOT update test date")
         updates['テスト開始日'] = ''
 
     # Calculate テスト完了日 and FB完了予定日
     page_count = updates.get('ページ数')
     test_start_date = updates.get('テスト開始日')
-    logging.debug(f"Calculating test dates: page_count={page_count}, test_start_date={test_start_date}")
+    #logging.debug(f"Calculating test dates: page_count={page_count}, test_start_date={test_start_date}")
 
     # Use values from form if available and valid
     if 'テスト完了日' in updates and updates['テスト完了日']:
         try:
             datetime.strptime(updates['テスト完了日'], '%Y-%m-%d')
-            logging.debug(f"Using テスト完了日 from form: {updates['テスト完了日']}")
+            #logging.debug(f"Using テスト完了日 from form: {updates['テスト完了日']}")
         except ValueError:
             updates['テスト完了日'] = ''
     else:
@@ -563,7 +566,7 @@ def update_project(project_id, updates):
     if 'FB完了予定日' in updates and updates['FB完了予定日']:
         try:
             datetime.strptime(updates['FB完了予定日'], '%Y-%m-%d')
-            logging.debug(f"Using FB完了予定日 from form: {updates['FB完了予定日']}")
+            #logging.debug(f"Using FB完了予定日 from form: {updates['FB完了予定日']}")
         except ValueError:
             updates['FB完了予定日'] = ''
     else:
@@ -586,7 +589,7 @@ def update_project(project_id, updates):
         SET {set_clause}
         WHERE id = ?
     '''
-    logging.debug(f"Executing SQL: {sql} with values: {values}")
+    #logging.debug(f"Executing SQL: {sql} with values: {values}")
     cursor.execute(sql, values)
     conn.commit()
     conn.close()
@@ -783,7 +786,7 @@ def upload():
             flash('エラー: ファイルのインポートに失敗しました', 'danger')
 
     except Exception as e:
-        logging.error(f"Error uploading file: {e}")
+        #logging.error(f"Error uploading file: {e}")
         if os.path.exists(file_path):
             os.remove(file_path)
         flash(f'エラー: ファイルのアップロードに失敗しました: {str(e)}', 'danger')
@@ -819,25 +822,25 @@ def upload_mail_template():
                 f"{os.path.splitext(file.filename)[0]}_{datetime.now().strftime('%Y%m%d_%H%M%S')}{os.path.splitext(file.filename)[1]}"
             )
             shutil.move(file_path, old_file_path)
-            logging.info(f"Moved existing file to: {old_file_path}")
+            #logging.info(f"Moved existing file to: {old_file_path}")
 
         file.save(file_path)
-        logging.info(f"Uploaded new mail template: {file_path}")
+        #logging.info(f"Uploaded new mail template: {file_path}")
         return jsonify({'success': True})
 
     except Exception as e:
-        logging.error(f"Error uploading mail template: {e}")
+        #logging.error(f"Error uploading mail template: {e}")
         return jsonify({'error': f'ファイルのアップロードに失敗しました: {str(e)}'}), 500
 
 @app.route('/get_mail_content/<int:project_id>/<filename>', methods=['GET'])
 def get_mail_content(project_id, filename):
     """Get mail template content and replace placeholders."""
     if '..' in filename or filename.startswith('/') or filename.startswith('\\'):
-        logging.error(f"Invalid filename detected: {filename}")
+        #logging.error(f"Invalid filename detected: {filename}")
         return jsonify({'error': 'Invalid filename'}), 400
     file_path = os.path.join(MAIL_DIR, filename)
     if not os.path.exists(file_path) or not filename.endswith('.txt'):
-        logging.error(f"File not found or invalid: {file_path}")
+        #logging.error(f"File not found or invalid: {file_path}")
         return jsonify({'error': 'File not found or not a .txt file'}), 404
 
     try:
@@ -848,11 +851,11 @@ def get_mail_content(project_id, filename):
         columns = [description[0] for description in cursor.description]
         conn.close()
     except sqlite3.Error as e:
-        logging.error(f"Database error: {e}")
+        #logging.error(f"Database error: {e}")
         return jsonify({'error': 'Database error'}), 500
 
     if not project:
-        logging.error(f"Project not found for ID: {project_id}")
+        #logging.error(f"Project not found for ID: {project_id}")
         return jsonify({'error': 'プロジェクトが見つかりません'}), 404
 
     project_dict = {col: project[i] for i, col in enumerate(columns)}
@@ -862,7 +865,7 @@ def get_mail_content(project_id, filename):
         with open(file_path, 'r', encoding='utf-8') as f:
             content = f.read()
     except Exception as e:
-        logging.error(f"Failed to read file {file_path}: {e}")
+        #logging.error(f"Failed to read file {file_path}: {e}")
         return jsonify({'error': f'ファイルの読み込みに失敗しました: {str(e)}'}), 500
 
     pjno_value = project_dict.get('PJNo.', '')
@@ -896,7 +899,7 @@ def save_copied_template():
     project_id = data.get('project_id')
     filename = data.get('filename')
     if not project_id or not filename:
-        logging.error(f"Missing project_id or filename: project_id={project_id}, filename={filename}")
+        #logging.error(f"Missing project_id or filename: project_id={project_id}, filename={filename}")
         return jsonify({'error': 'Missing project_id or filename'}), 400
     try:
         conn = sqlite3.connect(DB_FILE)
@@ -907,10 +910,10 @@ def save_copied_template():
         ''', (project_id, filename, datetime.now().strftime('%Y-%m-%d %H:%M:%S')))
         conn.commit()
         conn.close()
-        logging.debug(f"Saved copied template: project_id={project_id}, filename={filename}")
+        #logging.debug(f"Saved copied template: project_id={project_id}, filename={filename}")
         return jsonify({'success': True})
     except sqlite3.Error as e:
-        logging.error(f"Database error while saving copied template: {e}")
+        #logging.error(f"Database error while saving copied template: {e}")
         return jsonify({'error': 'Database error'}), 500
 
 @app.route('/get_copied_templates/<int:project_id>', methods=['GET'])
@@ -927,10 +930,10 @@ def get_copied_templates(project_id):
         ''', (project_id,))
         templates = [row[0] for row in cursor.fetchall()]
         conn.close()
-        logging.debug(f"Copied templates for project_id={project_id}: {templates}")
+        #logging.debug(f"Copied templates for project_id={project_id}: {templates}")
         return jsonify({'templates': templates})
     except sqlite3.Error as e:
-        logging.error(f"Database error while fetching copied templates: {e}")
+        #logging.error(f"Database error while fetching copied templates: {e}")
         return jsonify({'error': 'Database error'}), 500
 
 @app.route('/calculate_test_dates', methods=['POST'])
@@ -940,28 +943,28 @@ def calculate_test_dates():
         page_count = data.get('page_count')
         test_start_date = data.get('test_start_date')
 
-        logging.debug(f"Received calculate_test_dates request: page_count={page_count}, test_start_date={test_start_date}")
+        #logging.debug(f"Received calculate_test_dates request: page_count={page_count}, test_start_date={test_start_date}")
 
         if not page_count or not test_start_date:
-            logging.error("Missing page_count or test_start_date")
+            #logging.error("Missing page_count or test_start_date")
             return jsonify({'error': 'Missing page_count or test_start_date'}), 400
 
         page_count = int(page_count)
         test_start_date = datetime.strptime(test_start_date, '%Y-%m-%d')
 
-        logging.debug(f"Parsed inputs: page_count={page_count}, test_start_date={test_start_date}")
+        #logging.debug(f"Parsed inputs: page_count={page_count}, test_start_date={test_start_date}")
 
         test_completion_date = calculate_test_completion_date(page_count, test_start_date.strftime('%Y-%m-%d'))
         fb_completion_date = calculate_fb_completion_date(test_completion_date)
 
-        logging.debug(f"Calculated dates: test_completion_date={test_completion_date}, fb_completion_date={fb_completion_date}")
+        #logging.debug(f"Calculated dates: test_completion_date={test_completion_date}, fb_completion_date={fb_completion_date}")
 
         return jsonify({
             'test_completion_date': test_completion_date,
             'fb_completion_date': fb_completion_date
         })
     except Exception as e:
-        logging.error(f"Error calculating test dates: {str(e)}")
+        #logging.error(f"Error calculating test dates: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
 @app.route('/sort_projects', methods=['POST'])
@@ -1046,7 +1049,7 @@ def sort_projects():
 
         return jsonify({'projects': filtered_projects})
     except Exception as e:
-        logging.error(f"Error sorting projects: {e}")
+        #logging.error(f"Error sorting projects: {e}")
         return jsonify({'error': str(e)}), 500
 
 @app.route('/get_daily_report_data', methods=['GET'])
@@ -1146,10 +1149,10 @@ def delete_all_data():
         cursor.execute('DELETE FROM sqlite_sequence')  # Reset auto-increment
         conn.commit()
         conn.close()
-        logging.info("All data deleted successfully")
+        #logging.info("All data deleted successfully")
         return jsonify({'success': True})
     except sqlite3.Error as e:
-        logging.error(f"Database error while deleting all data: {e}")
+        #logging.error(f"Database error while deleting all data: {e}")
         return jsonify({'error': 'Database error'}), 500
 
 @app.route('/logout')
