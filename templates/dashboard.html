@@ -667,7 +667,8 @@
                     </div>
                 </div>
                 <div class="modal-body">
-                    <p>Thay các cụm sau vào trong template mail: {案件名}, {se名}, {pj}, {開発完了}, {SE納品}</p>
+                    <p>Thay các cụm sau vào trong template mail: </p>
+                    <p>{案件名}, {se名}, {pj}, {開発完了}, {SE納品}, {PH}</p>
                     <form id="uploadMailTemplateForm" enctype="multipart/form-data">
                         <div class="mb-3">
                             <label for="mailTemplateFile" class="form-label">テキストファイルを選択 (.txt)</label>
@@ -1356,7 +1357,13 @@
                 const row = document.createElement('tr');
                 const projectCell = document.createElement('td');
                 projectCell.className = 'project-cell';
-                projectCell.textContent = project['案件名'];
+                if(project['PH']!=''){
+                    ct = project['案件名'] + ' ' + project['PJNo.'] + ' PH' + project['PH'];
+                }
+                else{
+                    ct = ct = project['案件名'] + ' ' + project['PJNo.'];
+                }
+                projectCell.textContent = ct;
                 row.appendChild(projectCell);
 
                 weekDates.forEach(date => {

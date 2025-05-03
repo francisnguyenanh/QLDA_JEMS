@@ -1,6 +1,6 @@
 宛先：bse_hcm@j-ems.jp
 CC：設計チーム <pjpromotion@j-ems.jp> 担当SEのメールアドレス
-タイトル：【新規】PJNo.{pj} {案件名}様：カスタマイズ設計書送付
+タイトル：【新規】PJNo.{pj} {案件名}様{PH}：カスタマイズ設計書送付
  
  
 本文

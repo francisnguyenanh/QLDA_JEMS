@@ -1,6 +1,6 @@
 宛先：各担当SE
 CC：設計チーム <pjpromotion@j-ems.jp>
-タイトル：【設計書送付】　PJNo.{pj}　{案件名}様
+タイトル：【設計書送付】　PJNo.{pj}　{案件名}様 {PH}
 
 
 本文

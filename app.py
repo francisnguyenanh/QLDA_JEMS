@@ -373,6 +373,13 @@ def import_excel_to_sqlite(file_path):
                     x) if pd.notna(x) else ''
             )
 
+        # Handle PH formatting
+        if 'PH' in df.columns:
+            df['PH'] = df['PH'].apply(
+                lambda x: str(int(float(x))) if pd.notna(x) and x != '' and isinstance(x, (int, float)) else str(
+                    x) if pd.notna(x) else ''
+            )
+
         # Process 案件名: Remove "株式会社"
         if '案件名' in df.columns:
             df['案件名'] = df['案件名'].apply(
@@ -478,7 +485,6 @@ def read_projects():
 
     conn.close()
     df = pd.DataFrame(projects)
-    print(df)
     return df
 
 def get_mail_templates():
@@ -539,13 +545,11 @@ def update_project(project_id, updates):
 
     if '開発完了' in updates and updates['開発完了']:
         try:
-            print("update test date")
             dev_complete_date = datetime.strptime(updates['開発完了'], '%Y-%m-%d')
             updates['テスト開始日'] = (dev_complete_date + timedelta(days=1)).strftime('%Y-%m-%d')
         except ValueError:
             updates['テスト開始日'] = ''
     elif '開発完了' in updates and not updates['開発完了']:
-        print("NOT update test date")
         updates['テスト開始日'] = ''
 
     # Calculate テスト完了日 and FB完了予定日
@@ -652,9 +656,12 @@ def dashboard():
         if not show_unnecessary and row.get('不要', 0) == 1:
             continue
 
-        se_delivery_date = parse_date_from_db(row['SE納品'])
-        if not show_all and se_delivery_date and se_delivery_date.date() < current_date.date():
-            continue
+        # se_delivery_date = parse_date_from_db(row['SE納品'])
+        # if not show_all and se_delivery_date and se_delivery_date.date() < current_date.date():
+        #     continue
+
+        # if not show_all:
+        #     continue
 
         project = row.to_dict()
         project['ステータス'] = calculate_status(project, current_date)
@@ -874,11 +881,16 @@ def get_mail_content(project_id, filename):
     else:
         pjno_value = str(pjno_value)
 
+    ph = project_dict.get('PH', '')
+    if ph != '':
+        ph = ' PH'+ph
+
     placeholders = {
         '{案件名}': project_dict.get('案件名', ''),
         '{se名}': project_dict.get('SE', ''),
         '{pj}': pjno_value,
-        '{開発工数}': project_dict.get('開発工数（h）', '')
+        '{開発工数}': project_dict.get('開発工数（h）', ''),
+        '{PH}': ph
     }
 
     for date_col in DATE_COLUMNS_DB:
@@ -996,9 +1008,9 @@ def sort_projects():
             if not show_unnecessary and row.get('不要', 0) == 1:
                 continue
 
-            se_delivery_date = parse_date_from_db(row['SE納品'])
-            if not show_all and se_delivery_date and se_delivery_date.date() < current_date.date():
-                continue
+            # se_delivery_date = parse_date_from_db(row['SE納品'])
+            # if not show_all and se_delivery_date and se_delivery_date.date() < current_date.date():
+            #     continue
 
             # Lọc theo 案件名
             if search_project_name and search_project_name.lower() not in str(row['案件名']).lower():
@@ -1071,8 +1083,8 @@ def get_daily_report_data():
         conn = sqlite3.connect(DB_FILE)
         cursor = conn.cursor()
 
-        cursor.execute('SELECT id, 案件名 FROM projects WHERE 不要 = 0')
-        projects = [{'id': row[0], '案件名': row[1]} for row in cursor.fetchall()]
+        cursor.execute('SELECT id, 案件名, "PJNo.", PH FROM projects WHERE 不要 = 0')
+        projects = [{'id': row[0], '案件名': row[1], 'PJNo.': row[2], 'PH': row[3]} for row in cursor.fetchall()]
 
         week_dates = get_week_dates(week_start)
         date_range = [d['date'] for d in week_dates]
