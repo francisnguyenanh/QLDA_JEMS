@@ -933,6 +933,38 @@ def save_copied_template():
         #logging.error(f"Database error while saving copied template: {e}")
         return jsonify({'error': 'Database error'}), 500
 
+@app.route('/remove_copied_template', methods=['POST'])
+def remove_copied_template():
+    """Remove a copied mail template from the database."""
+    if 'username' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+    data = request.get_json()
+    project_id = data.get('project_id')
+    filename = data.get('filename')
+    if not project_id or not filename:
+        #logging.error(f"Missing project_id or filename: project_id={project_id}, filename={filename}")
+        return jsonify({'error': 'Missing project_id or filename'}), 400
+    try:
+        conn = sqlite3.connect(DB_FILE)
+        cursor = conn.cursor()
+        cursor.execute('''
+            DELETE FROM copied_templates
+            WHERE project_id = ? AND filename = ?
+        ''', (project_id, filename))
+        if cursor.rowcount == 0:
+            conn.close()
+            #logging.debug(f"No copied template found: project_id={project_id}, filename={filename}")
+            return jsonify({'error': 'Template not found'}), 404
+        conn.commit()
+        conn.close()
+        #logging.debug(f"Removed copied template: project_id={project_id}, filename={filename}")
+        return jsonify({'success': True})
+    except sqlite3.Error as e:
+        conn.close()
+        #logging.error(f"Database error while removing copied template: {e}")
+        return jsonify({'error': 'Database error'}), 500
+
+
 @app.route('/get_copied_templates/<int:project_id>', methods=['GET'])
 def get_copied_templates(project_id):
     """Get list of copied templates for a project."""

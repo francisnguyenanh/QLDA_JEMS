@@ -665,6 +665,10 @@
                 overflow-y: auto;
             }
         }
+
+        #copyMailCheckbox:checked + .form-check-label {
+            color: #28a745; /* Green when checked */
+        }
     </style>
 </head>
 <body>
@@ -989,8 +993,10 @@
                 <div class="modal-header">
                     <h5 class="modal-title">メールテンプレート</h5>
                     <div class="d-flex gap-2">
+                        <label class="form-check-label" title="このテンプレートをプロジェクトにマークします">
+                            <input class="form-check-input" type="checkbox" id="copyMailCheckbox" onchange="handleCopyMailChange(this)">　コピー済み
+                        </label>
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">閉じる</button>
-                        <button type="button" class="btn btn-primary" onclick="copyMailContent()">コピー</button>
                     </div>
                 </div>
                 <div class="modal-body">
@@ -1377,6 +1383,11 @@
         function openMailModal(projectId) {
             currentProjectId = projectId;
             document.getElementById('mailContent').value = '';
+            document.getElementById('copyMailCheckbox').checked = false; // Ensure checkbox is OFF
+            document.querySelectorAll('.mail-buttons .btn').forEach(btn => {
+                btn.classList.remove('active'); // Ensure no template is selected
+            });
+
             fetch(`/get_copied_templates/${projectId}`)
                 .then(response => response.json())
                 .then(data => {
@@ -1396,6 +1407,7 @@
             document.querySelectorAll('.mail-buttons .btn').forEach(btn => btn.classList.remove('active'));
             button.classList.add('active');
 
+            // Fetch mail content
             fetch(`/get_mail_content/${projectId}/${filename}`)
                 .then(response => response.json())
                 .then(data => {
@@ -1408,41 +1420,26 @@
                 .catch(error => {
                     alert('エラー: メールコンテンツの取得に失敗しました');
                 });
+
+            // Update checkbox state based on copied status
+            fetch(`/get_copied_templates/${projectId}`)
+                .then(response => response.json())
+                .then(data => {
+                    const checkbox = document.getElementById('copyMailCheckbox');
+                    if (data.templates.includes(filename)) {
+                        checkbox.checked = true;
+                        button.classList.add('copied');
+                    } else {
+                        checkbox.checked = false;
+                        button.classList.remove('copied');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching copied templates:', error);
+                });
         }
 
-        function copyMailContent() {
-            const mailContent = document.getElementById('mailContent').value;
-            if (mailContent) {
-                navigator.clipboard.writeText(mailContent)
-                    .then(() => {
-                        const activeButton = document.querySelector('.mail-buttons .btn.active');
-                        if (activeButton) {
-                            const filename = activeButton.getAttribute('data-filename');
-                            fetch('/save_copied_template', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ project_id: currentProjectId, filename: filename })
-                            })
-                            .then(response => response.json())
-                            .then(data => {
-                                if (data.success) {
-                                    activeButton.classList.add('copied');
-                                } else {
-                                    console.error('Failed to save copied template:', data.error);
-                                }
-                            })
-                            .catch(error => {
-                                console.error('Error saving copied template:', error);
-                            });
-                        }
-                    })
-                    .catch(err => {
-                        alert('コピーに失敗しました');
-                    });
-            } else {
-                alert('コピーするコンテンツがありません');
-            }
-        }
+
 
         function deleteAllData() {
             const password = document.getElementById('confirmPassword').value;
@@ -2174,6 +2171,95 @@
                     console.error('Save changes error:', error);
                     alert('エラー: 変更の保存に失敗しました - ' + error.message);
                 });
+        }
+
+        function showConfirmDialog(filename, callback) {
+            const modalHtml = `
+                <div class="modal fade" id="confirmModal" tabindex="-1">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">確認</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                テンプレート「${filename}」のコピー状態を解除しますか？
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+                                <button type="button" class="btn btn-primary" id="confirmOk">OK</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+            const modal = new bootstrap.Modal(document.getElementById('confirmModal'));
+            modal.show();
+            document.getElementById('confirmOk').onclick = () => {
+                callback(true);
+                modal.hide();
+            };
+            document.getElementById('confirmModal').addEventListener('hidden.bs.modal', () => {
+                callback(false);
+                document.getElementById('confirmModal').remove();
+            }, { once: true });
+        }
+
+        function handleCopyMailChange(checkbox) {
+            const activeButton = document.querySelector('.mail-buttons .btn.active');
+            if (!activeButton) {
+                checkbox.checked = false;
+                return;
+            }
+
+            const filename = activeButton.getAttribute('data-filename');
+            if (checkbox.checked) {
+                fetch('/save_copied_template', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ project_id: currentProjectId, filename: filename })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        activeButton.classList.add('copied');
+                    } else {
+                        console.error('Failed to save copied template:', data.error);
+                        checkbox.checked = false;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error saving copied template:', error);
+                    checkbox.checked = false;
+                });
+            } else if (activeButton.classList.contains('copied')) {
+                showConfirmDialog(filename, (confirmed) => {
+                    if (confirmed) {
+                        fetch('/remove_copied_template', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ project_id: currentProjectId, filename: filename })
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                activeButton.classList.remove('copied');
+                                checkbox.checked = false;
+                            } else {
+                                console.error('Failed to remove copied template:', data.error);
+                                checkbox.checked = true;
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error removing copied template:', error);
+                            checkbox.checked = true;
+                        });
+                    } else {
+                        checkbox.checked = true;
+                    }
+                });
+            }
         }
     </script>
 </body>
