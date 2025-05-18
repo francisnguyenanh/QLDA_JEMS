@@ -1,15 +1,19 @@
-import os
-import shutil
 import sqlite3
 from datetime import datetime, timedelta
-from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
+from flask import render_template, redirect, url_for, flash
 import pandas as pd
-import openpyxl
 from pandas import isna
 import logging
+import zipfile
+import io
+from charset_normalizer import detect
+import re
+from flask import Flask, jsonify, request, session
+import os
+import shutil
 
 # Configure logging
-#logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'
@@ -166,7 +170,7 @@ def parse_date_from_db(date_str):
             logging.debug(f"Successfully parsed date: {date_str} -> {parsed_date}")
             return parsed_date
         except (ValueError, TypeError) as e:
-            logging.error(f"Failed to parse date: {date_str}, error: {e}")
+            #logging.error(f"Failed to parse date: {date_str}, error: {e}")
             return None
 
 def parse_date_for_comparison(date_str):
@@ -188,7 +192,7 @@ def parse_date_for_comparison(date_str):
             logging.debug(f"Successfully parsed date for comparison: {date_str} -> {parsed_date}")
             return parsed_date
         except (ValueError, TypeError) as e:
-            logging.error(f"Failed to parse date for comparison: {date_str}, error: {e}")
+            #logging.error(f"Failed to parse date for comparison: {date_str}, error: {e}")
             return None
 
 def format_date_jp(date):
@@ -280,7 +284,7 @@ def read_working_days(file_path='config.txt'):
                         value = int(line.split('=')[1].strip())
                         return value
                     except (IndexError, ValueError):
-                        logging.error(f"Invalid workingDays format in {file_path}: {line}")
+                        #logging.error(f"Invalid workingDays format in {file_path}: {line}")
                         return 9
         logging.warning(f"workingDays not found in {file_path}")
         return 9
@@ -288,7 +292,7 @@ def read_working_days(file_path='config.txt'):
         logging.warning(f"File {file_path} not found")
         return 9
     except Exception as e:
-        logging.error(f"Error reading {file_path}: {e}")
+        #logging.error(f"Error reading {file_path}: {e}")
         return 9
 
 def add_working_days(start_date, working_days):
@@ -306,13 +310,13 @@ def add_working_days(start_date, working_days):
 def calculate_test_completion_date(page_count, test_start_date):
     logging.debug(f"Calculating test completion date: page_count={page_count}, test_start_date={test_start_date}")
     if not page_count or not test_start_date:
-        logging.error("Invalid inputs: page_count or test_start_date is empty")
+        #logging.error("Invalid inputs: page_count or test_start_date is empty")
         return ''
     try:
         page_count = int(page_count)
         test_start_date = datetime.strptime(test_start_date, '%Y-%m-%d')
     except (ValueError, TypeError) as e:
-        logging.error(f"Input parsing error: {str(e)}")
+        #logging.error(f"Input parsing error: {str(e)}")
         return ''
 
     ranges = read_pages_ranges()
@@ -328,7 +332,7 @@ def calculate_test_completion_date(page_count, test_start_date):
 def calculate_fb_completion_date(test_completion_date):
     logging.debug(f"Calculating FB completion date: test_completion_date={test_completion_date}")
     if not test_completion_date:
-        logging.error("Test completion date is empty")
+        #logging.error("Test completion date is empty")
         return ''
     try:
         test_completion_date = datetime.strptime(test_completion_date, '%Y-%m-%d')
@@ -337,7 +341,7 @@ def calculate_fb_completion_date(test_completion_date):
         logging.debug(f"FB completion date calculated: {result}")
         return result
     except (ValueError, TypeError) as e:
-        logging.error(f"Error parsing test_completion_date: {str(e)}")
+        #logging.error(f"Error parsing test_completion_date: {str(e)}")
         return ''
 
 def import_excel_to_sqlite(file_path):
@@ -868,8 +872,9 @@ def get_mail_content(project_id, filename):
     project_dict = {col: project[i] for i, col in enumerate(columns)}
     project_dict = convert_nat_to_none(project_dict)
 
+    encoding = detect_file_encoding(file_path)
     try:
-        with open(file_path, 'r', encoding='utf-8') as f:
+        with open(file_path, 'r', encoding=encoding) as f:
             content = f.read()
     except Exception as e:
         #logging.error(f"Failed to read file {file_path}: {e}")
@@ -886,8 +891,8 @@ def get_mail_content(project_id, filename):
         ph = ' PH'+ph
 
     placeholders = {
-        '{案件名}': project_dict.get('案件名', ''),
-        '{se名}': project_dict.get('SE', ''),
+        '{anken_name}': project_dict.get('案件名', ''),
+        '{se_name}': project_dict.get('SE', ''),
         '{pj}': pjno_value,
         '{開発工数}': project_dict.get('開発工数（h）', ''),
         '{PH}': ph
@@ -1173,6 +1178,394 @@ def logout():
     session.pop('username', None)
     flash('ログアウトしました', 'success')
     return redirect(url_for('login'))
+
+def get_temp_dir(project_id):
+    """Get the temporary directory path for a project."""
+    return os.path.join('temp', str(project_id))
+
+def get_replaced_dir(project_id):
+    """Get the replaced files directory path for a project."""
+    return os.path.join('replaced', str(project_id))
+
+def read_placeholders(file_path='placeholders.txt'):
+    """Read placeholder mappings from a text file, supporting context-dependent rules."""
+    placeholders = {'simple': {}, 'context': []}
+    try:
+        encoding = detect_file_encoding(file_path)
+        logging.debug(f"Detected encoding for {file_path}: {encoding}")
+        with open(file_path, 'r', encoding=encoding) as f:
+            for line_number, line in enumerate(f, 1):
+                line = line.strip()
+                if not line or '=' not in line:
+                    logging.debug(f"Skipping empty or invalid line {line_number}: {line}")
+                    continue
+                try:
+                    # Split on the first '=' to handle values containing '='
+                    key, value = map(str.strip, line.split('=', 1))
+                    if not key or not value:
+                        logging.warning(f"Empty key or value at line {line_number}: {line}. Skipping.")
+                        continue
+                    # Check for context-dependent rule: [context|target]
+                    if key.startswith('[') and key.endswith(']') and '|' in key[1:-1]:
+                        try:
+                            context, target = key[1:-1].split('|', 1)
+                            if not context.strip() or not target.strip():
+                                logging.warning(f"Empty context or target at line {line_number}: {line}. Skipping.")
+                                continue
+                            placeholders['context'].append({
+                                'context': context.strip(),
+                                'target': target.strip(),
+                                'replacement': value.strip()
+                            })
+                        except ValueError:
+                            logging.warning(f"Malformed context-dependent rule at line {line_number}: {line}. Skipping.")
+                            continue
+                    else:
+                        # Handle as simple replacement, removing brackets if present
+                        clean_key = key[1:-1].strip() if key.startswith('[') and key.endswith(']') else key.strip()
+                        placeholders['simple'][clean_key] = value.strip()
+                except Exception as e:
+                    logging.warning(f"Error parsing line {line_number}: {line}. Skipping. Error: {str(e)}")
+                    continue
+        if not placeholders['simple'] and not placeholders['context']:
+            logging.error(f"No valid rules found in {file_path}")
+            return None
+        logging.debug(f"Parsed placeholders: {placeholders}")
+        return placeholders
+    except UnicodeDecodeError as e:
+        logging.error(f"Failed to decode {file_path} with {encoding}: {str(e)}")
+        return None
+    except FileNotFoundError:
+        logging.error(f"Placeholder file {file_path} not found")
+        return None
+    except Exception as e:
+        logging.error(f"Error reading placeholder file {file_path}: {str(e)}")
+        return None
+
+@app.route('/upload_mail_edit_files', methods=['POST'])
+def upload_mail_edit_files():
+    """Handle multiple text file uploads for mail editing."""
+    if 'username' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    if 'files' not in request.files:
+        return jsonify({'error': 'ファイルが選択されていません'}), 400
+
+    files = request.files.getlist('files')
+    if not files or all(file.filename == '' for file in files):
+        return jsonify({'error': 'ファイルが選択されていません'}), 400
+
+    temp_dir = 'temp'
+    if not os.path.exists(temp_dir):
+        os.makedirs(temp_dir)
+
+    filenames = []
+    try:
+        for file in files:
+            if not file.filename.endswith('.txt'):
+                return jsonify({'error': 'テキストファイル（.txt）のみアップロード可能です'}), 400
+            file_path = os.path.join(temp_dir, file.filename)
+            file.save(file_path)
+            filenames.append(file.filename)
+        return jsonify({'success': True, 'filenames': filenames})
+    except Exception as e:
+        return jsonify({'error': f'ファイルのアップロードに失敗しました: {str(e)}'}), 500
+
+def detect_file_encoding(file_path):
+    """Detect the encoding of a file, prioritizing UTF-8 or Shift-JIS."""
+    try:
+        with open(file_path, 'rb') as f:
+            raw_data = f.read()
+        result = detect(raw_data)
+        encoding = result.get('encoding', 'shift-jis')  # Default to Shift-JIS
+        confidence = result.get('confidence', 0)
+        # Restrict to UTF-8 or Shift-JIS, fallback to Shift-JIS if uncertain
+        if encoding not in ['utf-8', 'shift-jis'] or confidence < 0.8:
+            return 'shift-jis'
+        return encoding
+    except Exception as e:
+        logging.error(f"Error detecting encoding for {file_path}: {str(e)}")
+        return 'shift-jis'
+
+@app.route('/replace_mail_content', methods=['POST'])
+def replace_mail_content():
+    """Replace strings in a specific uploaded text file (UTF-8 or Shift-JIS) and output in Shift-JIS, falling back to UTF-8 if needed."""
+    if 'username' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    data = request.get_json()
+    filename = data.get('filename')
+    if not filename:
+        return jsonify({'error': 'Missing filename'}), 400
+
+    temp_dir = 'temp'
+    replaced_dir = 'replaced'
+
+    # Check if temp directory and file exist
+    file_path = os.path.join(temp_dir, filename)
+    if not os.path.exists(temp_dir) or not os.path.exists(file_path) or not filename.endswith('.txt'):
+        return jsonify({'error': f'ファイル {filename} が見つかりません'}), 404
+
+    # Create or clear replaced directory
+    if os.path.exists(replaced_dir):
+        shutil.rmtree(replaced_dir)
+    os.makedirs(replaced_dir)
+
+    # Read placeholders from file
+    placeholders = read_placeholders()
+    if not placeholders:
+        return jsonify({'error': 'プレースホルダーファイルの読み込みに失敗しました。ファイルのエンコーディングを確認してください。'}), 500
+
+    results = []
+    failed_files = []
+    try:
+        # Detect file encoding
+        encoding = detect_file_encoding(file_path)
+        logging.debug(f"Detected encoding for {filename}: {encoding}")
+        with open(file_path, 'r', encoding=encoding) as f:
+            content = f.read()
+
+        # Apply context-dependent replacements
+        for rule in placeholders['context']:
+            try:
+                if not isinstance(rule, dict) or 'context' not in rule or 'target' not in rule or 'replacement' not in rule:
+                    logging.error(f"Invalid context-dependent rule: {rule}. Skipping.")
+                    failed_files.append(f"{filename}: 無効なコンテキスト依存ルールが見つかりました。placeholders.txtを確認してください。")
+                    continue
+                context = re.escape(rule['context'])
+                target = re.escape(rule['target'])
+                pattern = f'{context}\n{target}'
+                replacement = f"{rule['context']}\n{rule['replacement']}"
+                content = re.sub(pattern, replacement, content)
+            except Exception as e:
+                logging.error(f"Error applying context-dependent rule {rule}: {str(e)}")
+                failed_files.append(f"{filename}: コンテキスト依存ルールの適用中にエラーが発生しました: {str(e)}")
+                continue
+
+        # Apply simple replacements
+        for key, value in placeholders['simple'].items():
+            content = content.replace(key, value)
+
+        replaced_file_path = os.path.join(replaced_dir, filename)
+        # Try writing in Shift-JIS first
+        try:
+            with open(replaced_file_path, 'w', encoding='shift-jis') as f:
+                f.write(content)
+            output_encoding = 'shift-jis'
+        except UnicodeEncodeError as e:
+            # Fallback to UTF-8 if Shift-JIS fails
+            logging.warning(f"Failed to encode {filename} in Shift-JIS: {str(e)}. Falling back to UTF-8.")
+            with open(replaced_file_path, 'w', encoding='utf-8') as f:
+                f.write(content)
+            output_encoding = 'utf-8'
+            failed_files.append(
+                f"{filename}: Shift-JISでサポートされていない文字（例: ①）が含まれています。UTF-8で出力されました。"
+            )
+
+        # Convert content to UTF-8 for JSON response (for UI display)
+        results.append(f"ファイル: {filename} (出力エンコーディング: {output_encoding})\n{content.encode('utf-8', errors='replace').decode('utf-8', errors='replace')}")
+
+        if failed_files:
+            error_message = "ファイルで問題が発生しました:\n" + "\n".join(failed_files)
+            return jsonify({'success': True, 'results': results, 'warnings': error_message})
+
+        return jsonify({'success': True, 'results': results})
+    except UnicodeDecodeError as e:
+        logging.error(f"Failed to decode {filename} with {encoding}: {str(e)}")
+        return jsonify({'error': f"{filename}: エンコーディングが無効です（UTF-8またはShift-JISを期待）"}), 500
+    except Exception as e:
+        logging.error(f"Error processing {filename}: {str(e)}")
+        return jsonify({'error': f"{filename}: 処理中にエラーが発生しました: {str(e)}"}), 500
+
+@app.route('/download_replaced_files', methods=['GET'])
+def download_replaced_files():
+    """Download replaced files (Shift-JIS) as a ZIP archive."""
+    if 'username' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    replaced_dir = 'replaced'
+    if not os.path.exists(replaced_dir):
+        return jsonify({'error': 'リプレースされたファイルが見つかりません'}), 404
+
+    try:
+        memory_file = io.BytesIO()
+        with zipfile.ZipFile(memory_file, 'w', zipfile.ZIP_DEFLATED) as zf:
+            for filename in os.listdir(replaced_dir):
+                if filename.endswith('.txt'):
+                    file_path = os.path.join(replaced_dir, filename)
+                    zf.write(file_path, filename)
+        memory_file.seek(0)
+
+        # Clean up temp and replaced directories
+        temp_dir = 'temp'
+        if os.path.exists(temp_dir):
+            shutil.rmtree(temp_dir)
+        if os.path.exists(replaced_dir):
+            shutil.rmtree(replaced_dir)
+
+        return app.response_class(
+            memory_file,
+            mimetype='application/zip',
+            headers={'Content-Disposition': 'attachment; filename=replaced_mail_templates.zip'}
+        )
+    except Exception as e:
+        return jsonify({'error': f'ダウンロードに失敗しました: {str(e)}'}), 500
+
+@app.route('/get_mail_template_list', methods=['GET'])
+def get_mail_template_list():
+    """Lấy danh sách các file txt trong thư mục mail."""
+    if 'username' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+    try:
+        templates = get_mail_templates()
+        return jsonify({'templates': [full_name for full_name, _ in templates]})
+    except Exception as e:
+        logging.error(f"Error fetching mail template list: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/save_replaced_file', methods=['POST'])
+def save_replaced_file():
+    """Lưu nội dung đã replace vào thư mục mail với tên file được chỉ định."""
+    if 'username' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    data = request.get_json()
+    filename = data.get('filename')
+    content = data.get('content')
+    overwrite = data.get('overwrite', False)
+
+    if not filename or not content:
+        return jsonify({'error': 'Missing filename or content'}), 400
+
+    if not filename.endswith('.txt'):
+        filename += '.txt'
+
+    file_path = os.path.join(MAIL_DIR, filename)
+    try:
+        if os.path.exists(file_path) and not overwrite:
+            return jsonify({'error': f'File {filename} already exists. Use overwrite option.'}), 400
+
+        if not os.path.exists(MAIL_DIR):
+            os.makedirs(MAIL_DIR)
+
+        # Viết file với encoding Shift-JIS, fallback sang UTF-8 nếu cần
+        try:
+            with open(file_path, 'w', encoding='shift-jis') as f:
+                f.write(content)
+            encoding = 'shift-jis'
+        except UnicodeEncodeError:
+            with open(file_path, 'w', encoding='utf-8') as f:
+                f.write(content)
+            encoding = 'utf-8'
+
+        return jsonify({'success': True, 'encoding': encoding})
+    except Exception as e:
+        logging.error(f"Error saving replaced file {filename}: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/clear_temp_files', methods=['POST'])
+def clear_temp_files():
+    """Xóa tất cả file trong thư mục temp và replaced."""
+    if 'username' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    temp_dir = 'temp'
+    replaced_dir = 'replaced'
+    try:
+        if os.path.exists(temp_dir):
+            shutil.rmtree(temp_dir)
+        if os.path.exists(replaced_dir):
+            shutil.rmtree(replaced_dir)
+        return jsonify({'success': True})
+    except Exception as e:
+        logging.error(f"Error clearing temp files: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/delete_mail_template', methods=['POST'])
+def delete_mail_template():
+    """Delete a mail template file from the mail directory."""
+    if 'username' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    data = request.get_json()
+    filename = data.get('filename')
+
+    print(f"file name: {filename}")
+
+    if not filename:
+        logging.error("Missing filename in delete_mail_template request")
+        return jsonify({'error': 'Missing filename'}), 400
+
+    if not filename.endswith('.txt'):
+        logging.error(f"Invalid file extension for {filename}: Only .txt files are allowed")
+        return jsonify({'error': 'Only .txt files are allowed'}), 400
+
+    # Prevent path traversal attacks
+    if '..' in filename or filename.startswith('/') or filename.startswith('\\'):
+        logging.error(f"Invalid filename detected: {filename}")
+        return jsonify({'error': 'Invalid filename'}), 400
+
+    file_path = os.path.join(MAIL_DIR, filename)
+    print(f"file path: {file_path}")
+
+    if not os.path.exists(file_path):
+        print("go 4")
+        logging.error(f"File not found: {file_path}")
+        return jsonify({'error': 'File not found'}), 404
+
+    try:
+        print("go 1")
+        os.remove(file_path)
+        print("go 2")
+        logging.info(f"Successfully deleted mail template: {file_path}")
+        return jsonify({'success': True})
+    except Exception as e:
+        print("go 3")
+        logging.error(f"Error deleting mail template {filename}: {str(e)}")
+        return jsonify({'error': f'Failed to delete file: {str(e)}'}), 500
+
+@app.route('/rename_mail_template', methods=['POST'])
+def rename_mail_template():
+    """Rename a mail template file in the mail directory."""
+    if 'username' not in session:
+        logging.error("Unauthorized access to /rename_mail_template")
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    data = request.get_json()
+    old_filename = data.get('old_filename')
+    new_filename = data.get('new_filename')
+
+    logging.info(f"Received rename request: old_filename={old_filename}, new_filename={new_filename}")
+
+    if not old_filename or not new_filename:
+        logging.error("Missing old_filename or new_filename")
+        return jsonify({'error': 'Old and new filenames are required'}), 400
+
+    old_filepath = os.path.join(MAIL_DIR, old_filename)
+    new_filepath = os.path.join(MAIL_DIR, new_filename)
+
+    logging.info(f"Attempting to rename {old_filepath} to {new_filepath}")
+
+    try:
+        if not os.path.exists(MAIL_DIR):
+            logging.error(f"Mail directory does not exist: {MAIL_DIR}")
+            return jsonify({'error': f'Mail directory does not exist'}), 500
+
+        if not os.path.exists(old_filepath):
+            logging.error(f"Source file does not exist: {old_filepath}")
+            return jsonify({'error': f'File {old_filename} does not exist'}), 404
+
+        if os.path.exists(new_filepath):
+            logging.error(f"Destination file already exists: {new_filepath}")
+            return jsonify({'error': f'File {new_filename} already exists'}), 400
+
+        os.rename(old_filepath, new_filepath)
+        logging.info(f"Successfully renamed {old_filename} to {new_filename}")
+        return jsonify({'success': True})
+    except Exception as e:
+        logging.error(f"Error renaming mail template: {str(e)}")
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)

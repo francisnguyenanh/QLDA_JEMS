@@ -469,7 +469,143 @@
             }
         }
 
+        /* Thêm vào phần <style> trong dashboard.html */
+        #mailEditContent {
+            width: 100%;
+            height: 100%;
+            font-size: 0.85rem;
+            resize: vertical;
+        }
+        .uploaded-file-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px;
+        }
+        .uploaded-file-item input.form-control {
+            font-size: 0.85rem;
+            padding: 6px;
+        }
+        .uploaded-file-item .btn {
+            font-size: 0.85rem;
+            padding: 6px 12px;
+        }
+        #overwriteFileModal .form-select {
+            font-size: 0.85rem;
+            padding: 6px;
+        }
+        .mail-content-container {
+            display: flex;
+            gap: 20px;
+            width: 100%; /* Chiếm 100% chiều rộng của modal-body */
+            max-height: 80vh;
+            height: 100%;
+        }
+        .uploaded-files-section {
+            flex: 0 0 40%; /* 40% chiều rộng của mail-content-container */
+            overflow-y: auto;
+            height: 90%;
+        }
+        .replaced-content-section {
+            flex: 0 0 60%; /* 60% chiều rộng của mail-content-container */
+            display: flex;
+            flex-direction: column;
+            height: 90%;
+        }
+        #uploadedFilesList {
+            height: 100%;
+            overflow-y: auto;
+        }
+        /* Style cho modal Mail Edit */
+        #mailEditModal .modal-dialog {
+            width: 90vw;
+            max-width: none;
+            height: 90vh;
+            margin: 5vh auto;
+        }
+        #mailEditModal .modal-content {
+            height: 100%;
+            width: 100%;
+            padding: 0;
+            margin: 0;
+            box-sizing: border-box;
+        }
+        #mailEditModal .modal-body {
+            overflow-y: auto;
+            height: 100%;
+            width: 100%;
+            padding: 0 !important; /* Ghi đè padding từ .modal-dialog-scrollable */
+            margin: 0;
+            box-sizing: border-box;
+        }
+        #mailEditModal .modal-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            padding: 10px;
+        }
+        #mailEditModal .mail-content-container {
+            display: flex;
+            gap: 20px;
+            width: 100% !important; /* Ghi đè max-width từ media query */
+            max-width: 100% !important;
+            max-height: 80vh;
+            height: 100%;
+            box-sizing: border-box;
+        }
+        #mailEditModal .uploaded-files-section {
+            flex: 0 0 40%;
+            overflow-y: auto;
+            height: 90%;
+            box-sizing: border-box;
+        }
+        #mailEditModal .replaced-content-section {
+            flex: 0 0 60%;
+            display: flex;
+            flex-direction: column;
+            height: 90%;
+            box-sizing: border-box;
+        }
+        #mailEditModal #uploadedFilesList {
+            height: 100%;
+            overflow-y: auto;
+        }
+        #mailEditModal #mailEditContent {
+            width: 100%;
+            height: 100%;
+            font-size: 0.85rem;
+            resize: vertical;
+        }
+        #mailEditModal .uploaded-file-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px;
+        }
+        #mailEditModal .uploaded-file-item input.form-control {
+            font-size: 0.85rem;
+            padding: 6px;
+        }
+        #mailEditModal .uploaded-file-item .btn {
+            font-size: 0.85rem;
+            padding: 6px 12px;
+        }
+        #mailEditFiles {
+            flex: 1;
+            min-width: 300px;
+        }
+
         @media (min-width: 768px) {
+            #mailEditModal .mail-content-container {
+                    flex: none !important;
+                    max-width: 100% !important;
+                    width: 100% !important;
+            }
+            #mailEditModal .modal-body {
+                padding: 30px !important;
+                max-height: none !important; /* Ghi đè max-height từ .modal-dialog-scrollable */
+            }
             .container {
                 max-width: 90%;
             }
@@ -556,7 +692,7 @@
             <div class="btn-group-responsive">
                 <button class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#dailyReportModal" onclick="openDailyReportModal()">日報</button>
                 <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#uploadModal">Excel</button>
-                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#uploadMailTemplateModal">メール</button>
+                <button class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#mailEditModal">メール編集</button>
                 <button class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteAllModal">全削除</button>
                 <a href="{{ url_for('logout') }}" class="btn btn-danger">Logout</a>
             </div>
@@ -924,6 +1060,71 @@
                             <input type="password" class="form-control" id="confirmPassword" name="password" required>
                         </div>
                     </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mail Edit Modal -->
+    <div class="modal fade mail-edit-modal" id="mailEditModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">メールテンプレート編集</h5>
+                    <div class="d-flex align-items-center gap-2 flex-grow-1">
+                        <input type="file" class="form-control" id="mailEditFiles" name="files" accept=".txt" multiple onchange="uploadMailEditFiles()">
+                    </div>
+                    <button type="button" class="btn btn-outline-primary me-2" onclick="openTemplateManagementModal()">テンプレート管理</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" onclick="clearTempFiles()">閉じる</button>
+                </div>
+                <div class="modal-body">
+                    <div class="mail-content-container">
+                        <div class="uploaded-files-section">
+                            <h6>アップロードされたファイル</h6>
+                            <ul id="uploadedFilesList" class="list-group mb-3"></ul>
+                        </div>
+                        <div class="replaced-content-section">
+                            <h6>リプレース結果</h6>
+                            <textarea id="mailEditContent" class="form-control" placeholder="リプレース結果がここに表示されます"></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="templateManagementModal" tabindex="-1" aria-labelledby="templateManagementModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="templateManagementModalLabel">メールテンプレート管理</h5>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">閉じる</button>
+                </div>
+                <div class="modal-body">
+                    <ul id="templateFilesList" class="list-group"></ul>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" onclick="saveTemplateChanges()">OK</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Overwrite -->
+    <div class="modal fade" id="overwriteFileModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-scrollable modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">既存のテンプレートを選択</h5>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+                        <button type="button" class="btn btn-primary" onclick="confirmOverwrite()">OK</button>
+                    </div>
+                </div>
+                <div class="modal-body">
+                    <select id="existingTemplateSelect" class="form-select">
+                        <option value="">テンプレートを選択してください</option>
+                    </select>
                 </div>
             </div>
         </div>
@@ -1460,7 +1661,6 @@
                 if (data.error) {
                     alert('エラー: ' + data.error);
                 } else {
-                    alert('メールテンプレートが正常にアップロードされました');
                     window.location.reload();
                 }
             })
@@ -1486,6 +1686,495 @@
         document.getElementById('edit_テスト開始日').addEventListener('change', () => {
             updateTestDates();
         });
+        function openMailEditModal() {
+            document.getElementById('mailEditFiles').value = '';
+            document.getElementById('uploadedFilesList').innerHTML = '';
+            document.getElementById('mailEditContent').value = '';
+            window.currentReplacedFilename = null;
+            window.currentOverwriteContent = '';
+            clearTempFiles(); // Clear temp files when opening modal
+        }
+
+
+        function uploadMailEditFiles() {
+            const filesInput = document.getElementById('mailEditFiles');
+            const files = filesInput.files;
+            if (files.length === 0) {
+                alert('ファイルを選択してください');
+                return;
+            }
+
+            const formData = new FormData();
+            for (let i = 0; i < files.length; i++) {
+                formData.append('files', files[i]);
+            }
+
+            fetch('/upload_mail_edit_files', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const uploadedFilesList = document.getElementById('uploadedFilesList');
+                    uploadedFilesList.innerHTML = '';
+                    data.filenames.forEach((filename, index) => {
+                        const li = document.createElement('li');
+                        li.className = 'list-group-item d-flex align-items-center';
+                        li.innerHTML = `
+                            <input type="text" class="form-control me-2" value="${filename}" data-original="${filename}" data-edited="${filename}" style="flex: 1; max-width: 600px;">
+                            <button class="btn btn-success btn-sm me-2" onclick="replaceMailContent('${filename}')">リプレース</button>
+                            <button class="btn btn-primary btn-sm me-2" onclick="saveNewFile('${filename}')">追加</button>
+                            <button class="btn btn-warning btn-sm" onclick="openOverwriteModal('${filename}')">上書き</button>
+                        `;
+                        uploadedFilesList.appendChild(li);
+                    });
+
+                    // Lưu file đầu tiên làm mặc định
+                    window.currentReplacedFilename = data.filenames[0];
+                    document.getElementById('mailEditContent').value = '';
+
+                    // Cập nhật tên file khi chỉnh sửa input
+                    document.querySelectorAll('#uploadedFilesList input[type="text"]').forEach(input => {
+                        input.addEventListener('input', function() {
+                            this.dataset.edited = this.value; // Lưu tên đã chỉnh sửa
+                            const radio = this.parentElement.querySelector('input[type="radio"]');
+                            if (radio.checked) {
+                                window.currentReplacedFilename = this.value; // Cập nhật nếu file được chọn
+                            }
+                        });
+                    });
+
+                    // Cập nhật window.currentReplacedFilename khi chọn radio
+                    document.querySelectorAll('input[name="selectedFile"]').forEach(radio => {
+                        radio.addEventListener('change', function() {
+                            const li = this.parentElement;
+                            const input = li.querySelector('input[type="text"]');
+                            window.currentReplacedFilename = input.dataset.edited || input.dataset.original;
+                            // Tùy chọn: Tự động làm mới nội dung
+                            replaceMailContent(input.dataset.original);
+                        });
+                    });
+
+                } else {
+                    alert('エラー: ファイルのアップロードに失敗しました - ' + data.error);
+                }
+            })
+            .catch(error => {
+                alert('エラー: ファイルのアップロードに失敗しました - ' + error.message);
+            });
+        }
+
+        function replaceMailContent(filename) {
+            fetch('/replace_mail_content', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ filename: filename })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const fileContent = data.results[0];
+                    if (fileContent) {
+                        const cleanedContent = fileContent.replace(`ファイル: ${filename} (出力エンコーディング: shift-jis)\n`, '')
+                                                         .replace(`ファイル: ${filename} (出力エンコーディング: utf-8)\n`, '');
+                        document.getElementById('mailEditContent').value = cleanedContent;
+                        window.currentOverwriteContent = cleanedContent; // Lưu nội dung đã thay thế
+
+                        // Cập nhật window.currentReplacedFilename từ tên đã chỉnh sửa
+                        const fileInput = Array.from(document.querySelectorAll('#uploadedFilesList input[type="text"]'))
+                            .find(input => input.dataset.original === filename);
+                        if (fileInput) {
+                            window.currentReplacedFilename = fileInput.dataset.edited || filename;
+                        } else {
+                            window.currentReplacedFilename = filename; // Fallback
+                        }
+                    } else {
+                        alert('エラー: 指定されたファイルのリプレース結果が見つかりません');
+                    }
+                } else {
+                    alert('エラー: リプレースに失敗しました - ' + data.error);
+                }
+            })
+            .catch(error => {
+                alert('エラー: リプレースに失敗しました - ' + error.message);
+            });
+        }
+
+        function saveNewFile(originalFilename) {
+            const uploadedFilesList = document.getElementById('uploadedFilesList');
+            const fileItem = Array.from(uploadedFilesList.querySelectorAll('li')).find(li =>
+                li.querySelector('input[data-original]').dataset.original === originalFilename
+            );
+            if (!fileItem) {
+                alert('エラー: ファイルが見つかりません');
+                return;
+            }
+
+            const filenameInput = fileItem.querySelector('input[type="text"]');
+            const filename = filenameInput.value;
+            const content = document.getElementById('mailEditContent').value;
+            const saveButton = fileItem.querySelector('.btn-success');
+
+            if (!content) {
+                alert('リプレース結果がありません。先にリプレースしてください');
+                return;
+            }
+
+            // Disable button and show loading
+            saveButton.disabled = true;
+            saveButton.textContent = '保存中...';
+
+            fetch('/save_replaced_file', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ filename: filename, content: content, overwrite: true })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    fileItem.remove();
+                    if (uploadedFilesList.children.length === 0) {
+                        document.getElementById('mailEditContent').value = '';
+                        window.currentReplacedFilename = null;
+                        window.currentOverwriteContent = '';
+                    }
+                    updateMailTemplateList();
+                } else {
+                    alert('エラー: ファイルの保存に失敗しました - ' + data.error);
+                }
+            })
+            .catch(error => {
+                alert('エラー: ファイルの保存に失敗しました - ' + error.message);
+            })
+            .finally(() => {
+                // Re-enable button
+                saveButton.disabled = false;
+                saveButton.textContent = 'リプレース';
+            });
+        }
+
+        function openOverwriteModal(originalFilename) {
+            const uploadedFilesList = document.getElementById('uploadedFilesList');
+            const fileItem = Array.from(uploadedFilesList.querySelectorAll('li')).find(li =>
+                li.querySelector('input[data-original]').dataset.original === originalFilename
+            );
+            if (!fileItem) {
+                alert('エラー: 選択されたファイルが見つかりません。再度アップロードしてください。');
+                return;
+            }
+
+            const filenameInput = fileItem.querySelector('input[type="text"]');
+            const filename = filenameInput.value;
+            const content = document.getElementById('mailEditContent').value;
+
+            if (!filename) {
+                alert('エラー: ファイル名が空です。有効な名前を入力してください。');
+                return;
+            }
+
+            if (!content) {
+                alert('エラー: リプレース結果がありません。先に「リプレース」を実行してください。');
+                return;
+            }
+
+            // Lưu tên file đã chỉnh sửa và nội dung vào biến toàn cục
+            window.currentReplacedFilename = filename;
+            window.currentOverwriteContent = content;
+
+            // Lấy danh sách template hiện có
+            fetch('/get_mail_template_list')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        alert('エラー: テンプレートリストの取得に失敗しました - ' + data.error);
+                        return;
+                    }
+                    const select = document.getElementById('existingTemplateSelect');
+                    select.innerHTML = '<option value="">テンプレートを選択してください</option>';
+                    data.templates.forEach(template => {
+                        const option = document.createElement('option');
+                        option.value = template;
+                        option.textContent = template;
+                        select.appendChild(option);
+                    });
+                    const modal = new bootstrap.Modal(document.getElementById('overwriteFileModal'));
+                    modal.show();
+                })
+                .catch(error => {
+                    alert('エラー: テンプレートリストの取得に失敗しました - ' + error.message);
+                });
+        }
+
+        function updateMailTemplateList() {
+            fetch('/get_mail_template_list')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        console.error('Failed to fetch mail template list:', data.error);
+                        return;
+                    }
+                    // Update the mail buttons in the mailModal if it's open
+                    const mailButtonsContainer = document.querySelector('#mailModal .mail-buttons');
+                    if (mailButtonsContainer) {
+                        mailButtonsContainer.innerHTML = '';
+                        data.templates.forEach(template => {
+                            const button = document.createElement('button');
+                            button.className = 'btn btn-outline-primary mb-2';
+                            button.setAttribute('data-filename', template);
+                            button.textContent = template.replace('.txt', '');
+                            button.onclick = () => loadMailContent(currentProjectId, template, button);
+                            mailButtonsContainer.appendChild(button);
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching mail template list:', error);
+                });
+        }
+
+        function confirmOverwrite() {
+            const selectedTemplate = document.getElementById('existingTemplateSelect').value;
+            if (!selectedTemplate) {
+                alert('テンプレートを選択してください');
+                return;
+            }
+
+            if (!window.currentReplacedFilename) {
+                alert('エラー: リプレースされたファイルが見つかりません。ファイルを再度選択してください。');
+                return;
+            }
+
+            fetch('/delete_mail_template', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ filename: selectedTemplate })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (!data.success) {
+                    alert('エラー: テンプレートの削除に失敗しました - ' + data.error);
+                    return Promise.reject(data.error);
+                }
+                return fetch('/save_replaced_file', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        filename: selectedTemplate,
+                        content: window.currentOverwriteContent,
+                        overwrite: true
+                    })
+                });
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const overwriteModal = bootstrap.Modal.getInstance(document.getElementById('overwriteFileModal'));
+                    overwriteModal.hide();
+                    // Remove the file from the uploaded files list
+                    const uploadedFilesList = document.getElementById('uploadedFilesList');
+                    const fileItem = Array.from(uploadedFilesList.querySelectorAll('li')).find(li =>
+                        li.querySelector('input[data-edited]').dataset.edited === window.currentReplacedFilename
+                    );
+                    if (fileItem) {
+                        fileItem.remove();
+                    }
+                    // Clear the content if no files remain
+                    if (uploadedFilesList.children.length === 0) {
+                        document.getElementById('mailEditContent').value = '';
+                        window.currentReplacedFilename = null;
+                        window.currentOverwriteContent = '';
+                    }
+                    // Optionally, refresh the mail template list in other modals
+                    updateMailTemplateList();
+                } else {
+                    alert('エラー: ファイルの保存に失敗しました - ' + data.error);
+                }
+            })
+            .catch(error => {
+                alert('エラー: 処理に失敗しました - ' + error);
+            });
+        }
+
+        function downloadReplacedFiles() {
+            fetch('/download_replaced_files', {
+                method: 'GET'
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(data => {
+                        throw new Error(data.error || 'ダウンロードに失敗しました');
+                    });
+                }
+                return response.blob();
+            })
+            .then(blob => {
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `replaced_mail_templates.zip`;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                window.URL.revokeObjectURL(url);
+                // Clear uploaded files list and content after download
+                document.getElementById('uploadedFilesList').innerHTML = '';
+                document.getElementById('mailEditContent').value = '';
+            })
+            .catch(error => {
+                alert('エラー: ダウンロードに thất bạiしました - ' + error.message);
+            });
+        }
+
+        function clearTempFiles() {
+            fetch('/clear_temp_files', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    console.log('Temp files cleared successfully');
+                } else {
+                    console.error('Error clearing temp files:', data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error clearing temp files:', error);
+            });
+        }
+        // Cập nhật nội dung khi người dùng chỉnh sửa textarea
+        document.getElementById('mailEditContent').addEventListener('input', function() {
+            window.currentOverwriteContent = this.value;
+        });
+
+        // Tùy chọn: Hiển thị danh sách file nếu hỗ trợ nhiều file
+        function updateFileList(filenames) {
+            const select = document.createElement('select');
+            select.id = 'replacedFileSelect';
+            filenames.forEach(filename => {
+                const option = document.createElement('option');
+                option.value = filename;
+                option.text = filename;
+                select.appendChild(option);
+            });
+            select.addEventListener('change', function() {
+                window.currentReplacedFilename = this.value;
+                replaceMailContent(this.value); // Cập nhật lại nội dung
+            });
+            const container = document.getElementById('fileListContainer') || document.createElement('div');
+            container.id = 'fileListContainer';
+            container.innerHTML = '';
+            container.appendChild(select);
+            document.getElementById('mailEditModal').querySelector('.modal-body').appendChild(container);
+        }
+
+        function openTemplateManagementModal() {
+            const templateFilesList = document.getElementById('templateFilesList');
+            templateFilesList.innerHTML = ''; // Clear existing list
+
+            fetch('/get_mail_template_list')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        alert('エラー: テンプレートリストの取得に失敗しました - ' + data.error);
+                        return;
+                    }
+                    data.templates.forEach(template => {
+                        const li = document.createElement('li');
+                        li.className = 'list-group-item d-flex align-items-center';
+                        li.innerHTML = `
+                            <input type="text" class="form-control me-2" value="${template}" data-original="${template}">
+                            <button class="btn btn-danger btn-sm" onclick="deleteTemplateFile(this, '${template}')">削除</button>
+                        `;
+                        templateFilesList.appendChild(li);
+                    });
+                })
+                .catch(error => {
+                    alert('エラー: テンプレートリストの取得に失敗しました - ' + error.message);
+                });
+
+            const modal = new bootstrap.Modal(document.getElementById('templateManagementModal'));
+            modal.show();
+        }
+
+        function deleteTemplateFile(button, filename) {
+            if (!confirm(`テンプレート ${filename} を削除しますか？`)) return;
+
+            fetch('/delete_mail_template', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ filename: filename })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert(`テンプレート ${filename} が削除されました`);
+                        button.closest('li').remove();
+                    } else {
+                        alert('エラー: テンプレートの削除に失敗しました - ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    alert('エラー: テンプレートの削除に失敗しました - ' + error.message);
+                });
+        }
+
+        function saveTemplateChanges() {
+            const templateFilesList = document.getElementById('templateFilesList');
+            const renamePromises = Array.from(templateFilesList.querySelectorAll('li')).map(li => {
+                const input = li.querySelector('input');
+                const originalFilename = input.dataset.original;
+                const newFilename = input.value;
+
+                if (originalFilename === newFilename) return Promise.resolve({ success: true });
+
+                console.log(`Renaming ${originalFilename} to ${newFilename}`); // Log request details
+
+                return fetch('/rename_mail_template', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ old_filename: originalFilename, new_filename: newFilename })
+                })
+                .then(response => {
+                    console.log('Response status:', response.status); // Log status
+                    console.log('Response headers:', response.headers.get('content-type')); // Log content type
+                    return response.text().then(text => ({ response, text })); // Get raw text
+                })
+                .then(({ response, text }) => {
+                    console.log('Raw response:', text); // Log raw response
+                    if (!response.ok) {
+                        throw new Error(`HTTP error ${response.status}: ${text}`);
+                    }
+                    try {
+                        const data = JSON.parse(text);
+                        if (!data.success) {
+                            return { success: false, error: `テンプレート ${originalFilename} のリネームに失敗しました - ${data.error}` };
+                        }
+                        return { success: true };
+                    } catch (e) {
+                        throw new Error(`Invalid JSON: ${text}`);
+                    }
+                });
+            });
+
+            Promise.all(renamePromises)
+                .then(results => {
+                    const errors = results.filter(r => !r.success).map(r => r.error);
+                    if (errors.length > 0) {
+                        alert('一部の変更に失敗しました:\n' + errors.join('\n'));
+                    } else {
+                        alert('すべての変更が保存されました');
+                    }
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('templateManagementModal'));
+                    modal.hide();
+                    updateMailTemplateList();
+                })
+                .catch(error => {
+                    console.error('Save changes error:', error);
+                    alert('エラー: 変更の保存に失敗しました - ' + error.message);
+                });
+        }
     </script>
 </body>
 </html>
