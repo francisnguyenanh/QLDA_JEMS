@@ -28,7 +28,7 @@ OLD_DIR = 'old'
 DISPLAY_COLUMNS = [
     'ステータス', '案件名', '要件引継', '設計開始',
     '設計完了', '設計書送付', '開発開始', '開発完了', 'テスト開始日', 'テスト完了日',
-    'FB完了予定日', 'SE納品', 'タスク', 'SE', 'BSE', '案件番号', 'PJNo.', 'PH',
+    'FB完了予定日', 'SE納品', 'タスク', 'SE', 'SE(sub)', 'BSE', '案件番号', 'PJNo.', 'PH',
     '開発工数（h）', '設計工数（h）', 'ページ数', '注文設計', '注文テスト', '注文FB', '注文BrSE', '備考'
 ]
 DATE_COLUMNS_DB = [
@@ -115,6 +115,9 @@ def init_db():
         cursor.execute('ALTER TABLE projects ADD COLUMN 注文BrSE INTEGER DEFAULT 0')
     if 'user_edited_status' not in columns:
         cursor.execute('ALTER TABLE projects ADD COLUMN user_edited_status INTEGER DEFAULT 0')
+    if 'SE(sub)' not in columns:
+        cursor.execute('ALTER TABLE projects ADD COLUMN "SE(sub)" TEXT')
+
     conn.commit()
     conn.close()
 
@@ -358,6 +361,9 @@ def import_excel_to_sqlite(file_path):
         available_columns = [col for col in DISPLAY_COLUMNS if col in df.columns]
         df = df[available_columns].copy()
 
+        if 'SE(sub)' not in df.columns:
+            df['SE(sub)'] = ''
+
         current_date = datetime.now()
 
         # Process date columns
@@ -366,6 +372,7 @@ def import_excel_to_sqlite(file_path):
                 df[col] = pd.to_datetime(df[col], errors='coerce').dt.strftime('%Y-%m-%d').fillna('')
             else:
                 df[col] = ''
+
 
         # Set test start date based on development completion
         if '開発完了' in df.columns:
@@ -412,6 +419,12 @@ def import_excel_to_sqlite(file_path):
                 lambda x: str(x).split()[0] if pd.notna(x) and isinstance(x, str) and str(x).strip() else str(x)
             )
 
+        if 'SE(sub)' in df.columns:
+            df['SE(sub)'] = df['SE(sub)'].apply(
+                lambda x: str(x).split()[0] if pd.notna(x) and isinstance(x, str) and str(x).strip() else str(x)
+            )
+
+
         # Initialize missing columns
         for col in ['ページ数', 'タスク', 'ステータス', '不要', '注文設計', '注文テスト', '注文FB', '注文BrSE',
                     'user_edited_status']:
@@ -433,14 +446,15 @@ def import_excel_to_sqlite(file_path):
             project = row.to_dict()
             if not project_exists(cursor, project):
                 cursor.execute('''
-                    INSERT INTO projects (
-                        SE, 案件名, PH, "開発工数（h）", "設計工数（h）", 要件引継, 設計開始,
-                        設計完了, 設計書送付, 開発開始, 開発完了, SE納品, BSE, 案件番号, "PJNo.",
-                        備考, テスト開始日, テスト完了日, FB完了予定日, ページ数, タスク, ステータス,
-                        不要, 注文設計, 注文テスト, 注文FB, 注文BrSE, user_edited_status
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ''', (
+                            INSERT INTO projects (
+                                SE, "SE(sub)", 案件名, PH, "開発工数（h）", "設計工数（h）", 要件引継, 設計開始,
+                                設計完了, 設計書送付, 開発開始, 開発完了, SE納品, BSE, 案件番号, "PJNo.",
+                                備考, テスト開始日, テスト完了日, FB完了予定日, ページ数, タスク, ステータス,
+                                不要, 注文設計, 注文テスト, 注文FB, 注文BrSE, user_edited_status
+                            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        ''', (
                     project.get('SE', ''),
+                    project.get('SE(sub)', ''),
                     project.get('案件名', ''),
                     project.get('PH', ''),
                     project.get('開発工数（h）', None),
@@ -532,6 +546,11 @@ def update_project(project_id, updates):
     cursor = conn.cursor()
 
     current_date = datetime.now()
+
+    if 'SE(sub)' in updates:
+        updates['SE(sub)'] = updates['SE(sub)'].split()[0] if updates['SE(sub)'] and isinstance(updates['SE(sub)'],
+                                                                                                str) else updates[
+            'SE(sub)']
 
     if 'ページ数' in updates:
         if updates['ページ数'] == '':
@@ -1491,17 +1510,22 @@ def validate_email(email):
 
 @app.route('/get_email_data', methods=['GET'])
 def get_email_data():
-    """Fetch SE email addresses and manager info."""
+    """Fetch SE and SE(sub) email addresses and manager info."""
     if 'username' not in session:
         return jsonify({'error': 'Unauthorized'}), 401
 
     try:
-        # Fetch unique SE names from projects table
+        # Fetch unique SE and SE(sub) names from projects table
         conn = sqlite3.connect(DB_FILE)
         cursor = conn.cursor()
         cursor.execute('SELECT DISTINCT SE FROM projects WHERE SE IS NOT NULL AND SE != ""')
         se_names = [row[0] for row in cursor.fetchall()]
+        cursor.execute('SELECT DISTINCT "SE(sub)" FROM projects WHERE "SE(sub)" IS NOT NULL AND "SE(sub)" != ""')
+        se_sub_names = [row[0] for row in cursor.fetchall()]
         conn.close()
+
+        # Kết hợp SE và SE(sub)
+        all_se_names = list(set(se_names + se_sub_names))
 
         # Read SE_email.csv
         se_email_file = os.path.join(MAIL_DIR, 'SE_email.csv')
@@ -1509,17 +1533,15 @@ def get_email_data():
         if os.path.exists(se_email_file):
             df = pd.read_csv(se_email_file, encoding='utf-8')
             df = df.fillna({'email': ''})
-            # Include all SE names from DB, even if not in CSV
             existing_se = set(df['SE'].tolist())
-            for se in se_names:
+            for se in all_se_names:
                 if se in existing_se:
                     email = df[df['SE'] == se]['email'].iloc[0]
                 else:
                     email = ''
                 se_emails.append({'SE': se, 'email': email})
         else:
-            # If CSV doesn't exist, create entries with empty emails
-            se_emails = [{'SE': se, 'email': ''} for se in se_names]
+            se_emails = [{'SE': se, 'email': ''} for se in all_se_names]
 
         # Read kanrisha.csv
         kanrisha_file = os.path.join(MAIL_DIR, 'kanrisha.csv')
@@ -1604,7 +1626,7 @@ def convert_nat_to_none(project_dict):
     return project_dict
 
 def read_se_emails():
-    """Read SE emails from mail/SE_email.csv."""
+    """Read SE and SE(sub) emails from mail/SE_email.csv."""
     se_emails = {}
     file_path = os.path.join(MAIL_DIR, 'SE_email.csv')
     if not os.path.exists(file_path):
@@ -1614,10 +1636,10 @@ def read_se_emails():
     try:
         with open(file_path, 'r', encoding=encoding) as f:
             reader = csv.DictReader(f)
-            if not reader.fieldnames:  # Kiểm tra nếu file rỗng
+            if not reader.fieldnames:
                 return se_emails
             for row in reader:
-                if row['email']:  # Chỉ thêm nếu email không rỗng
+                if row['email']:
                     se_emails[row['SE']] = row['email']
         return se_emails
     except Exception as e:
@@ -1665,7 +1687,6 @@ def get_copied_templates(project_id):
 
 @app.route('/get_mail_content/<int:project_id>/<filename>', methods=['GET'])
 def get_mail_content(project_id, filename):
-    """Get mail template content and replace placeholders including {se_mail} and {mail}."""
     if '..' in filename or filename.startswith('/') or filename.startswith('\\'):
         #logging.error(f"Invalid filename detected: {filename}")
         return jsonify({'error': 'Invalid filename'}), 400
@@ -1700,10 +1721,11 @@ def get_mail_content(project_id, filename):
         #logging.error(f"Failed to read file {file_path}: {e}")
         return jsonify({'error': f'ファイルの読み込みに失敗しました: {str(e)}'}), 500
 
-    # Đọc email của SE và quản lý
+    # Đọc email của SE và SE(sub)
     se_emails = read_se_emails()
     manager_email = read_manager_email()
     se_name = project_dict.get('SE', '')
+    se_sub_name = project_dict.get('SE(sub)', '')
 
     # Chuẩn bị placeholders
     pjno_value = project_dict.get('PJNo.', '')
@@ -1724,9 +1746,15 @@ def get_mail_content(project_id, filename):
         '{PH}': ph
     }
 
-    # Thêm {se_mail} nếu tìm thấy email của SE
+    # Thêm {se_mail} với định dạng 'email SE, email SE(sub)'
+    se_mail_value = ''
     if se_emails and se_name in se_emails and se_emails[se_name]:
-        placeholders['{se_mail}'] = se_emails[se_name]
+        se_mail_value += se_emails[se_name]
+    if se_emails and se_sub_name in se_emails and se_emails[se_sub_name]:
+        if se_mail_value:
+            se_mail_value += ', '
+        se_mail_value += se_emails[se_sub_name]
+    placeholders['{se_mail}'] = se_mail_value
 
     # Thêm {mail}: luôn thay bằng '設計チーム <pjpromotion@j-ems.jp>', thêm manager_email nếu có
     mail_value = '設計チーム <pjpromotion@j-ems.jp>'

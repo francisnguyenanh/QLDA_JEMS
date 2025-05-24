@@ -886,6 +886,10 @@
                                     <input type="text" name="SE" id="edit_SE" class="form-control">
                                 </div>
                                 <div class="mb-3">
+                                    <label class="form-label">SE(sub)</label>
+                                    <input type="text" name="SE(sub)" id="edit_SE(sub)" class="form-control">
+                                </div>
+                                <div class="mb-3">
                                     <label class="form-label">BSE</label>
                                     <input type="text" name="BSE" id="edit_BSE" class="form-control">
                                 </div>
@@ -1149,11 +1153,11 @@
                 </div>
                 <div class="modal-body">
                     <div class="mb-3">
-                        <h6>SEメールアドレス</h6>
+                        <h6>SEおよびSE(sub)メールアドレス</h6>
                         <table class="table table-bordered" id="seEmailTable">
                             <thead>
                                 <tr>
-                                    <th>SE名</th>
+                                    <th>名前 (SE/SE(sub))</th>
                                     <th>メールアドレス</th>
                                 </tr>
                             </thead>
@@ -1411,7 +1415,7 @@
             document.getElementById('editIndex').value = projectId;
 
             const fields = [
-                '案件名', '案件番号', 'PJNo.', 'PH', 'SE', 'BSE', '開発工数（h）', '設計工数（h）', 'ページ数',
+                '案件名', '案件番号', 'PJNo.', 'PH', 'SE', 'SE(sub)', 'BSE', '開発工数（h）', '設計工数（h）', 'ページ数',
                 '備考'
             ];
             const dateFields = [
@@ -2426,7 +2430,7 @@
                         alert('エラー: ' + data.error);
                         return;
                     }
-                    // Populate SE email table
+                    // Populate SE and SE(sub) email table
                     const tableBody = document.getElementById('seEmailTableBody');
                     tableBody.innerHTML = '';
                     data.se_emails.forEach(se => {
