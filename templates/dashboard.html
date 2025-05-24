@@ -843,9 +843,12 @@
                             <thead>
                                 <tr>
                                     <th style="width: 50px;">完了済</th>
-                                    <th style="width: 400px;">案件名</th>
+                                    <th style="width: 150px;">日付</th>
                                     <th style="width: 150px;">タスク</th>
-                                    <th style="width: 120px;">日付</th>
+                                    <th style="width: 300px;">案件名</th>
+                                    <th style="width: 100px;">SE</th>
+                                    <th style="width: 100px;">PH</th>
+                                    <th style="width: 100px;">開発工数（h）</th>
                                 </tr>
                             </thead>
                             <tbody id="scheduleTableBody"></tbody>
@@ -2698,7 +2701,6 @@
 
             sortedProjects.forEach(project => {
                 const row = document.createElement('tr');
-                // Kết hợp date_value và day_name thành dd/mm/yyyy(aaa)
                 const dateDisplay = project.date_value && project.day_name ? `${project.date_value}(${project.day_name})` : project.date_value || '';
                 row.innerHTML = `
                     <td>
@@ -2708,9 +2710,12 @@
                                ${project.schedule_done ? 'checked' : ''}
                                onchange="updateScheduleDone(this)">
                     </td>
-                    <td>${project.案件名 || ''}</td>
-                    <td>${project.date_column || ''}</td>
                     <td>${dateDisplay}</td>
+                    <td>${project.date_column || ''}</td>
+                    <td>${project.案件名 || ''}</td>
+                    <td>${project.SE || ''}</td>
+                    <td>${project.PH || ''}</td>
+                    <td>${project['開発工数（h）'] || ''}</td>
                 `;
                 tbody.appendChild(row);
             });
@@ -2743,7 +2748,7 @@
         function copyScheduleTable() {
             const table = document.querySelector('.schedule-table');
             let csv = '';
-            const headers = ['Done', '案件名', '日付項目', '日付'];
+            const headers = ['完了済', '日付', 'タスク', '案件名', 'SE', 'PH', '開発工数（h）'];
             csv += headers.join('\t') + '\n';
 
             const rows = table.querySelectorAll('tbody tr');
@@ -2753,7 +2758,10 @@
                     cells[0].querySelector('input').checked ? '✓' : '',
                     cells[1].textContent,
                     cells[2].textContent,
-                    cells[3].textContent
+                    cells[3].textContent,
+                    cells[4].textContent,
+                    cells[5].textContent,
+                    cells[6].textContent
                 ];
                 csv += rowData.join('\t') + '\n';
             });

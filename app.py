@@ -1860,7 +1860,7 @@ def get_schedule_data():
         conn = sqlite3.connect(DB_FILE)
         cursor = conn.cursor()
         cursor.execute(
-            'SELECT id, 案件名, 要件引継, 設計開始, 設計完了, 設計書送付, 開発開始, 開発完了, テスト開始日, テスト完了日, FB完了予定日, SE納品 FROM projects WHERE 不要 = 0')
+            'SELECT id, 案件名, 要件引継, 設計開始, 設計完了, 設計書送付, 開発開始, 開発完了, テスト開始日, テスト完了日, FB完了予定日, SE納品, SE, PH, "開発工数（h）" FROM projects WHERE 不要 = 0')
         projects = [dict(zip([desc[0] for desc in cursor.description], row)) for row in cursor.fetchall()]
 
         cursor.execute('SELECT project_id, date_column, done FROM schedule_done_status')
@@ -1870,7 +1870,7 @@ def get_schedule_data():
 
         date_columns = ['要件引継', '設計開始', '設計完了', '設計書送付', '開発開始', '開発完了', 'テスト開始日',
                         'テスト完了日', 'FB完了予定日', 'SE納品']
-        japanese_days = ['日', '月', '火', '水', '木', '金', '土']
+        japanese_days = ['月', '火', '水', '木', '金', '土', '日']
         filtered_projects = []
 
         for project in projects:
@@ -1889,7 +1889,10 @@ def get_schedule_data():
                                 'date_column': date_col,
                                 'date_value': date_value,
                                 'day_name': day_name,
-                                'schedule_done': done_statuses.get(done_key, False)
+                                'schedule_done': done_statuses.get(done_key, False),
+                                'SE': project['SE'] or '',
+                                'PH': project['PH'] or '',
+                                '開発工数（h）': project['開発工数（h）'] if project['開発工数（h）'] is not None else ''
                             })
                     except ValueError:
                         logging.warning(f"Invalid date format for {date_col} in project {project['id']}: {date_str}")
