@@ -11,6 +11,8 @@ import re
 from flask import Flask, jsonify, request, session
 import os
 import shutil
+import chardet
+import csv
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -37,6 +39,8 @@ DATE_COLUMNS_DISPLAY = DATE_COLUMNS_DB.copy()
 VALID_STATUSES = [
     '要件引継待ち', '設計中', 'SE送付済', '開発中', 'テスト中', 'FB対応中', 'SE納品済'
 ]
+
+MAIL_DIR = 'mail'
 
 def init_db():
     """Initialize SQLite database with projects, copied_templates, and daily_hours tables."""
@@ -365,10 +369,22 @@ def import_excel_to_sqlite(file_path):
 
         # Set test start date based on development completion
         if '開発完了' in df.columns:
-            df['テスト開始日'] = df['開発完了'].apply(
-                lambda x: (pd.to_datetime(x, errors='coerce') + timedelta(days=1)).strftime('%Y-%m-%d')
-                if pd.notna(x) and x != '' else ''
-            )
+            def calculate_test_start_date(dev_complete):
+                if pd.notna(dev_complete) and dev_complete != '':
+                    try:
+                        dev_complete_date = pd.to_datetime(dev_complete)
+                        test_start_date = dev_complete_date + timedelta(days=1)
+                        # Kiểm tra nếu là cuối tuần
+                        if test_start_date.weekday() == 5:  # Thứ Bảy
+                            test_start_date += timedelta(days=2)
+                        elif test_start_date.weekday() == 6:  # Chủ Nhật
+                            test_start_date += timedelta(days=1)
+                        return test_start_date.strftime('%Y-%m-%d')
+                    except (ValueError, TypeError):
+                        return ''
+                return ''
+
+            df['テスト開始日'] = df['開発完了'].apply(calculate_test_start_date)
 
         # Handle PJNo. formatting
         if 'PJNo.' in df.columns:
@@ -550,7 +566,13 @@ def update_project(project_id, updates):
     if '開発完了' in updates and updates['開発完了']:
         try:
             dev_complete_date = datetime.strptime(updates['開発完了'], '%Y-%m-%d')
-            updates['テスト開始日'] = (dev_complete_date + timedelta(days=1)).strftime('%Y-%m-%d')
+            test_start_date = dev_complete_date + timedelta(days=1)
+            # Kiểm tra nếu là cuối tuần
+            if test_start_date.weekday() == 5:  # Thứ Bảy
+                test_start_date += timedelta(days=2)
+            elif test_start_date.weekday() == 6:  # Chủ Nhật
+                test_start_date += timedelta(days=1)
+            updates['テスト開始日'] = test_start_date.strftime('%Y-%m-%d')
         except ValueError:
             updates['テスト開始日'] = ''
     elif '開発完了' in updates and not updates['開発完了']:
@@ -843,147 +865,8 @@ def upload_mail_template():
         #logging.error(f"Error uploading mail template: {e}")
         return jsonify({'error': f'ファイルのアップロードに失敗しました: {str(e)}'}), 500
 
-@app.route('/get_mail_content/<int:project_id>/<filename>', methods=['GET'])
-def get_mail_content(project_id, filename):
-    """Get mail template content and replace placeholders."""
-    if '..' in filename or filename.startswith('/') or filename.startswith('\\'):
-        #logging.error(f"Invalid filename detected: {filename}")
-        return jsonify({'error': 'Invalid filename'}), 400
-    file_path = os.path.join(MAIL_DIR, filename)
-    if not os.path.exists(file_path) or not filename.endswith('.txt'):
-        #logging.error(f"File not found or invalid: {file_path}")
-        return jsonify({'error': 'File not found or not a .txt file'}), 404
-
-    try:
-        conn = sqlite3.connect(DB_FILE)
-        cursor = conn.cursor()
-        cursor.execute('SELECT * FROM projects WHERE id = ?', (project_id,))
-        project = cursor.fetchone()
-        columns = [description[0] for description in cursor.description]
-        conn.close()
-    except sqlite3.Error as e:
-        #logging.error(f"Database error: {e}")
-        return jsonify({'error': 'Database error'}), 500
-
-    if not project:
-        #logging.error(f"Project not found for ID: {project_id}")
-        return jsonify({'error': 'プロジェクトが見つかりません'}), 404
-
-    project_dict = {col: project[i] for i, col in enumerate(columns)}
-    project_dict = convert_nat_to_none(project_dict)
-
-    encoding = detect_file_encoding(file_path)
-    try:
-        with open(file_path, 'r', encoding=encoding) as f:
-            content = f.read()
-    except Exception as e:
-        #logging.error(f"Failed to read file {file_path}: {e}")
-        return jsonify({'error': f'ファイルの読み込みに失敗しました: {str(e)}'}), 500
-
-    pjno_value = project_dict.get('PJNo.', '')
-    if isinstance(pjno_value, (float, int)):
-        pjno_value = str(int(pjno_value))
-    else:
-        pjno_value = str(pjno_value)
-
-    ph = project_dict.get('PH', '')
-    if ph != '':
-        ph = ' PH'+ph
-
-    placeholders = {
-        '{anken_name}': project_dict.get('案件名', ''),
-        '{se_name}': project_dict.get('SE', ''),
-        '{pj}': pjno_value,
-        '{開発工数}': project_dict.get('開発工数（h）', ''),
-        '{PH}': ph
-    }
-
-    for date_col in DATE_COLUMNS_DB:
-        date_str = project_dict.get(date_col, '')
-        date_obj = parse_date_from_db(date_str)
-        placeholders[f'{{{date_col}}}'] = format_date_jp(date_obj)
-
-    for key, value in placeholders.items():
-        content = content.replace(key, value)
-    return jsonify({'content': content})
-
-@app.route('/save_copied_template', methods=['POST'])
-def save_copied_template():
-    """Save copied mail template to database."""
-    if 'username' not in session:
-        return jsonify({'error': 'Unauthorized'}), 401
-    data = request.get_json()
-    project_id = data.get('project_id')
-    filename = data.get('filename')
-    if not project_id or not filename:
-        #logging.error(f"Missing project_id or filename: project_id={project_id}, filename={filename}")
-        return jsonify({'error': 'Missing project_id or filename'}), 400
-    try:
-        conn = sqlite3.connect(DB_FILE)
-        cursor = conn.cursor()
-        cursor.execute('''
-            INSERT INTO copied_templates (project_id, filename, copied_at)
-            VALUES (?, ?, ?)
-        ''', (project_id, filename, datetime.now().strftime('%Y-%m-%d %H:%M:%S')))
-        conn.commit()
-        conn.close()
-        #logging.debug(f"Saved copied template: project_id={project_id}, filename={filename}")
-        return jsonify({'success': True})
-    except sqlite3.Error as e:
-        #logging.error(f"Database error while saving copied template: {e}")
-        return jsonify({'error': 'Database error'}), 500
-
-@app.route('/remove_copied_template', methods=['POST'])
-def remove_copied_template():
-    """Remove a copied mail template from the database."""
-    if 'username' not in session:
-        return jsonify({'error': 'Unauthorized'}), 401
-    data = request.get_json()
-    project_id = data.get('project_id')
-    filename = data.get('filename')
-    if not project_id or not filename:
-        #logging.error(f"Missing project_id or filename: project_id={project_id}, filename={filename}")
-        return jsonify({'error': 'Missing project_id or filename'}), 400
-    try:
-        conn = sqlite3.connect(DB_FILE)
-        cursor = conn.cursor()
-        cursor.execute('''
-            DELETE FROM copied_templates
-            WHERE project_id = ? AND filename = ?
-        ''', (project_id, filename))
-        if cursor.rowcount == 0:
-            conn.close()
-            #logging.debug(f"No copied template found: project_id={project_id}, filename={filename}")
-            return jsonify({'error': 'Template not found'}), 404
-        conn.commit()
-        conn.close()
-        #logging.debug(f"Removed copied template: project_id={project_id}, filename={filename}")
-        return jsonify({'success': True})
-    except sqlite3.Error as e:
-        conn.close()
-        #logging.error(f"Database error while removing copied template: {e}")
-        return jsonify({'error': 'Database error'}), 500
 
 
-@app.route('/get_copied_templates/<int:project_id>', methods=['GET'])
-def get_copied_templates(project_id):
-    """Get list of copied templates for a project."""
-    if 'username' not in session:
-        return jsonify({'error': 'Unauthorized'}), 401
-    try:
-        conn = sqlite3.connect(DB_FILE)
-        cursor = conn.cursor()
-        cursor.execute('''
-            SELECT filename FROM copied_templates
-            WHERE project_id = ?
-        ''', (project_id,))
-        templates = [row[0] for row in cursor.fetchall()]
-        conn.close()
-        #logging.debug(f"Copied templates for project_id={project_id}: {templates}")
-        return jsonify({'templates': templates})
-    except sqlite3.Error as e:
-        #logging.error(f"Database error while fetching copied templates: {e}")
-        return jsonify({'error': 'Database error'}), 500
 
 @app.route('/calculate_test_dates', methods=['POST'])
 def calculate_test_dates():
@@ -1598,6 +1481,320 @@ def rename_mail_template():
     except Exception as e:
         logging.error(f"Error renaming mail template: {str(e)}")
         return jsonify({'error': str(e)}), 500
+
+def validate_email(email):
+    """Validate email format."""
+    if not email:
+        return True  # Allow empty emails
+    email_regex = r'^[^\s@]+@[^\s@]+\.[^\s@]+$'
+    return bool(re.match(email_regex, email))
+
+@app.route('/get_email_data', methods=['GET'])
+def get_email_data():
+    """Fetch SE email addresses and manager info."""
+    if 'username' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    try:
+        # Fetch unique SE names from projects table
+        conn = sqlite3.connect(DB_FILE)
+        cursor = conn.cursor()
+        cursor.execute('SELECT DISTINCT SE FROM projects WHERE SE IS NOT NULL AND SE != ""')
+        se_names = [row[0] for row in cursor.fetchall()]
+        conn.close()
+
+        # Read SE_email.csv
+        se_email_file = os.path.join(MAIL_DIR, 'SE_email.csv')
+        se_emails = []
+        if os.path.exists(se_email_file):
+            df = pd.read_csv(se_email_file, encoding='utf-8')
+            df = df.fillna({'email': ''})
+            # Include all SE names from DB, even if not in CSV
+            existing_se = set(df['SE'].tolist())
+            for se in se_names:
+                if se in existing_se:
+                    email = df[df['SE'] == se]['email'].iloc[0]
+                else:
+                    email = ''
+                se_emails.append({'SE': se, 'email': email})
+        else:
+            # If CSV doesn't exist, create entries with empty emails
+            se_emails = [{'SE': se, 'email': ''} for se in se_names]
+
+        # Read kanrisha.csv
+        kanrisha_file = os.path.join(MAIL_DIR, 'kanrisha.csv')
+        manager = None
+        if os.path.exists(kanrisha_file):
+            df = pd.read_csv(kanrisha_file, encoding='utf-8')
+            if not df.empty:
+                manager = {'name': df['name'].iloc[0], 'email': df['email'].iloc[0]}
+
+        return jsonify({'se_emails': se_emails, 'manager': manager})
+    except Exception as e:
+        logging.error(f"Error fetching email data: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/save_email_data', methods=['POST'])
+def save_email_data():
+    """Save SE email addresses and manager info to CSV files."""
+    if 'username' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    try:
+        data = request.get_json()
+        se_emails = data.get('se_emails', [])
+        manager = data.get('manager', {})
+
+        # Validate SE emails
+        for se in se_emails:
+            if not validate_email(se.get('email')):
+                return jsonify({'error': f"無効なメールアドレスです: {se.get('SE')} のメールアドレスを確認してください"}), 400
+
+        # Validate manager email
+        if manager.get('email') and not validate_email(manager.get('email')):
+            return jsonify({'error': '無効な管理者メールアドレスです。メールアドレスを確認してください'}), 400
+
+        # Ensure MAIL_DIR exists
+        if not os.path.exists(MAIL_DIR):
+            os.makedirs(MAIL_DIR)
+
+        # Save SE_email.csv
+        se_email_file = os.path.join(MAIL_DIR, 'SE_email.csv')
+        df_se = pd.DataFrame(se_emails)
+        df_se.to_csv(se_email_file, index=False, encoding='utf-8')
+
+        # Save kanrisha.csv
+        kanrisha_file = os.path.join(MAIL_DIR, 'kanrisha.csv')
+        df_manager = pd.DataFrame([manager] if manager else [], columns=['name', 'email'])
+        df_manager.to_csv(kanrisha_file, index=False, encoding='utf-8')
+
+        return jsonify({'success': True})
+    except Exception as e:
+        logging.error(f"Error saving email data: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+# Hàm hỗ trợ
+def detect_file_encoding(file_path):
+    """Detect file encoding using chardet."""
+    with open(file_path, 'rb') as f:
+        raw_data = f.read()
+        result = chardet.detect(raw_data)
+        return result['encoding'] or 'utf-8'
+
+def parse_date_from_db(date_str):
+    """Parse date string from database."""
+    if not date_str or date_str == '':
+        return None
+    try:
+        return datetime.strptime(date_str, '%Y-%m-%d')
+    except ValueError:
+        return None
+
+def format_date_jp(date_obj):
+    """Format date to Japanese format (YYYY/MM/DD)."""
+    if date_obj is None:
+        return ''
+    return date_obj.strftime('%Y/%m/%d')
+
+def convert_nat_to_none(project_dict):
+    """Convert NaT or None-like values to None."""
+    for key, value in project_dict.items():
+        if value is None or value != value:  # NaN/NaT check
+            project_dict[key] = ''
+    return project_dict
+
+def read_se_emails():
+    """Read SE emails from mail/SE_email.csv."""
+    se_emails = {}
+    file_path = os.path.join(MAIL_DIR, 'SE_email.csv')
+    if not os.path.exists(file_path):
+        return se_emails
+
+    encoding = detect_file_encoding(file_path)
+    try:
+        with open(file_path, 'r', encoding=encoding) as f:
+            reader = csv.DictReader(f)
+            if not reader.fieldnames:  # Kiểm tra nếu file rỗng
+                return se_emails
+            for row in reader:
+                if row['email']:  # Chỉ thêm nếu email không rỗng
+                    se_emails[row['SE']] = row['email']
+        return se_emails
+    except Exception as e:
+        #logging.error(f"Failed to read SE_email.csv: {e}")
+        return se_emails
+
+def read_manager_email():
+    """Read manager email from mail/kanrisha.csv."""
+    file_path = os.path.join(MAIL_DIR, 'kanrisha.csv')
+    if not os.path.exists(file_path):
+        return ''
+
+    encoding = detect_file_encoding(file_path)
+    try:
+        with open(file_path, 'r', encoding=encoding) as f:
+            reader = csv.DictReader(f)
+            if not reader.fieldnames:  # Kiểm tra nếu file rỗng
+                return ''
+            for row in reader:
+                return row['email'] if row['email'] else ''  # Trả về email đầu tiên, nếu có
+        return ''
+    except Exception as e:
+        #logging.error(f"Failed to read kanrisha.csv: {e}")
+        return ''
+
+@app.route('/get_copied_templates/<int:project_id>', methods=['GET'])
+def get_copied_templates(project_id):
+    """Get list of copied templates for a project."""
+    if 'username' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+    try:
+        conn = sqlite3.connect(DB_FILE)
+        cursor = conn.cursor()
+        cursor.execute('''
+            SELECT filename FROM copied_templates
+            WHERE project_id = ?
+        ''', (project_id,))
+        templates = [row[0] for row in cursor.fetchall()]
+        conn.close()
+        #logging.debug(f"Copied templates for project_id={project_id}: {templates}")
+        return jsonify({'templates': templates})
+    except sqlite3.Error as e:
+        #logging.error(f"Database error while fetching copied templates: {e}")
+        return jsonify({'error': 'Database error'}), 500
+
+@app.route('/get_mail_content/<int:project_id>/<filename>', methods=['GET'])
+def get_mail_content(project_id, filename):
+    """Get mail template content and replace placeholders including {mail}."""
+    if '..' in filename or filename.startswith('/') or filename.startswith('\\'):
+        #logging.error(f"Invalid filename detected: {filename}")
+        return jsonify({'error': 'Invalid filename'}), 400
+    file_path = os.path.join(MAIL_DIR, filename)
+    if not os.path.exists(file_path) or not filename.endswith('.txt'):
+        #logging.error(f"File not found or invalid: {file_path}")
+        return jsonify({'error': 'File not found or not a .txt file'}), 404
+
+    try:
+        conn = sqlite3.connect(DB_FILE)
+        cursor = conn.cursor()
+        cursor.execute('SELECT * FROM projects WHERE id = ?', (project_id,))
+        project = cursor.fetchone()
+        columns = [description[0] for description in cursor.description]
+        conn.close()
+    except sqlite3.Error as e:
+        #logging.error(f"Database error: {e}")
+        return jsonify({'error': 'Database error'}), 500
+
+    if not project:
+        #logging.error(f"Project not found for ID: {project_id}")
+        return jsonify({'error': 'プロジェクトが見つかりません'}), 404
+
+    project_dict = {col: project[i] for i, col in enumerate(columns)}
+    project_dict = convert_nat_to_none(project_dict)
+
+    encoding = detect_file_encoding(file_path)
+    try:
+        with open(file_path, 'r', encoding=encoding) as f:
+            content = f.read()
+    except Exception as e:
+        #logging.error(f"Failed to read file {file_path}: {e}")
+        return jsonify({'error': f'ファイルの読み込みに失敗しました: {str(e)}'}), 500
+
+    # Đọc email của SE và quản lý
+    se_emails = read_se_emails()
+    manager_email = read_manager_email()
+    se_name = project_dict.get('SE', '')
+
+    # Chuẩn bị placeholders
+    pjno_value = project_dict.get('PJNo.', '')
+    if isinstance(pjno_value, (float, int)):
+        pjno_value = str(int(pjno_value))
+    else:
+        pjno_value = str(pjno_value)
+
+    ph = project_dict.get('PH', '')
+    if ph != '':
+        ph = ' PH' + ph
+
+    placeholders = {
+        '{anken_name}': project_dict.get('案件名', ''),
+        '{se_name}': se_name,
+        '{pj}': pjno_value,
+        '{開発工数}': project_dict.get('開発工数（h）', ''),
+        '{PH}': ph
+    }
+
+    # Chỉ thêm {mail} vào placeholders nếu cả se_emails và manager_email đều hợp lệ
+    if se_emails and manager_email and se_name in se_emails and se_emails[se_name]:
+        mail_value = f"{se_emails[se_name]}, {manager_email}"
+        placeholders['{mail}'] = mail_value
+
+    for date_col in DATE_COLUMNS_DB:
+        date_str = project_dict.get(date_col, '')
+        date_obj = parse_date_from_db(date_str)
+        placeholders[f'{{{date_col}}}'] = format_date_jp(date_obj)
+
+    for key, value in placeholders.items():
+        content = content.replace(key, str(value))
+    return jsonify({'content': content})
+
+@app.route('/save_copied_template', methods=['POST'])
+def save_copied_template():
+    """Save copied mail template to database."""
+    if 'username' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+    data = request.get_json()
+    project_id = data.get('project_id')
+    filename = data.get('filename')
+    if not project_id or not filename:
+        #logging.error(f"Missing project_id or filename: project_id={project_id}, filename={filename}")
+        return jsonify({'error': 'Missing project_id or filename'}), 400
+    try:
+        conn = sqlite3.connect(DB_FILE)
+        cursor = conn.cursor()
+        cursor.execute('''
+            INSERT INTO copied_templates (project_id, filename, copied_at)
+            VALUES (?, ?, ?)
+        ''', (project_id, filename, datetime.now().strftime('%Y-%m-%d %H:%M:%S')))
+        conn.commit()
+        conn.close()
+        #logging.debug(f"Saved copied template: project_id={project_id}, filename={filename}")
+        return jsonify({'success': True})
+    except sqlite3.Error as e:
+        #logging.error(f"Database error while saving copied template: {e}")
+        return jsonify({'error': 'Database error'}), 500
+
+@app.route('/remove_copied_template', methods=['POST'])
+def remove_copied_template():
+    """Remove a copied mail template from the database."""
+    if 'username' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+    data = request.get_json()
+    project_id = data.get('project_id')
+    filename = data.get('filename')
+    if not project_id or not filename:
+        #logging.error(f"Missing project_id or filename: project_id={project_id}, filename={filename}")
+        return jsonify({'error': 'Missing project_id or filename'}), 400
+    try:
+        conn = sqlite3.connect(DB_FILE)
+        cursor = conn.cursor()
+        cursor.execute('''
+            DELETE FROM copied_templates
+            WHERE project_id = ? AND filename = ?
+        ''', (project_id, filename))
+        if cursor.rowcount == 0:
+            conn.close()
+            #logging.debug(f"No copied template found: project_id={project_id}, filename={filename}")
+            return jsonify({'error': 'Template not found'}), 404
+        conn.commit()
+        conn.close()
+        #logging.debug(f"Removed copied template: project_id={project_id}, filename={filename}")
+        return jsonify({'success': True})
+    except sqlite3.Error as e:
+        conn.close()
+        #logging.error(f"Database error while removing copied template: {e}")
+        return jsonify({'error': 'Database error'}), 500
+
 
 if __name__ == '__main__':
     app.run(debug=True)

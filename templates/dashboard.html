@@ -1110,7 +1110,7 @@
         </div>
     </div>
 
-    <!-- Mail Edit Modal -->
+    <!-- Update Mail Edit Modal Header -->
     <div class="modal fade mail-edit-modal" id="mailEditModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-scrollable">
             <div class="modal-content">
@@ -1119,6 +1119,7 @@
                     <div class="d-flex align-items-center gap-2 flex-grow-1">
                         <input type="file" class="form-control" id="mailEditFiles" name="files" accept=".txt" multiple onchange="uploadMailEditFiles()">
                     </div>
+                    <button type="button" class="btn btn-outline-primary me-2" onclick="openEmailAddressModal()">メールアドレス管理</button>
                     <button type="button" class="btn btn-outline-primary me-2" onclick="openTemplateManagementModal()">テンプレート管理</button>
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" onclick="clearTempFiles()">閉じる</button>
                 </div>
@@ -1133,6 +1134,49 @@
                             <textarea id="mailEditContent" class="form-control" placeholder="リプレース結果がここに表示されます"></textarea>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- New Email Address Modal -->
+    <div class="modal fade" id="emailAddressModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">メールアドレス管理</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <h6>SEメールアドレス</h6>
+                        <table class="table table-bordered" id="seEmailTable">
+                            <thead>
+                                <tr>
+                                    <th>SE名</th>
+                                    <th>メールアドレス</th>
+                                </tr>
+                            </thead>
+                            <tbody id="seEmailTableBody"></tbody>
+                        </table>
+                    </div>
+                    <div class="mb-3">
+                        <h6>管理者情報</h6>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label for="managerName" class="form-label">管理者名</label>
+                                <input type="text" class="form-control" id="managerName" placeholder="管理者名を入力">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="managerEmail" class="form-label">管理者メールアドレス</label>
+                                <input type="text" class="form-control" id="managerEmail" placeholder="メールアドレスを入力">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" onclick="saveEmailData()">保存</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">閉じる</button>
                 </div>
             </div>
         </div>
@@ -2367,6 +2411,84 @@
             a.download = 'TicketList.csv';
             a.click();
             URL.revokeObjectURL(url);
+        }
+
+        function validateEmail(email) {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return emailRegex.test(email) || email === '';
+        }
+
+        function openEmailAddressModal() {
+            fetch('/get_email_data')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        alert('エラー: ' + data.error);
+                        return;
+                    }
+                    // Populate SE email table
+                    const tableBody = document.getElementById('seEmailTableBody');
+                    tableBody.innerHTML = '';
+                    data.se_emails.forEach(se => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${se.SE}</td>
+                            <td><input type="text" class="form-control" value="${se.email || ''}" data-se="${se.SE}"></td>
+                        `;
+                        tableBody.appendChild(row);
+                    });
+                    // Populate manager fields
+                    document.getElementById('managerName').value = data.manager?.name || '';
+                    document.getElementById('managerEmail').value = data.manager?.email || '';
+                    // Show modal
+                    const modal = new bootstrap.Modal(document.getElementById('emailAddressModal'));
+                    modal.show();
+                })
+                .catch(error => {
+                    console.error('Error fetching email data:', error);
+                    alert('メールデータの取得に失敗しました');
+                });
+        }
+
+        function saveEmailData() {
+            const seEmails = [];
+            const rows = document.querySelectorAll('#seEmailTableBody tr');
+            for (const row of rows) {
+                const se = row.cells[0].textContent;
+                const email = row.cells[1].querySelector('input').value;
+                if (email && !validateEmail(email)) {
+                    alert(`無効なメールアドレスです: ${se} のメールアドレスを確認してください`);
+                    return;
+                }
+                seEmails.push({ SE: se, email: email });
+            }
+            const managerEmail = document.getElementById('managerEmail').value;
+            if (managerEmail && !validateEmail(managerEmail)) {
+                alert('無効な管理者メールアドレスです。メールアドレスを確認してください');
+                return;
+            }
+            const manager = {
+                name: document.getElementById('managerName').value,
+                email: managerEmail
+            };
+            fetch('/save_email_data', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ se_emails: seEmails, manager: manager })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('メールデータが正常に保存されました');
+                    bootstrap.Modal.getInstance(document.getElementById('emailAddressModal')).hide();
+                } else {
+                    alert('エラー: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error saving email data:', error);
+                alert('メールデータの保存に失敗しました');
+            });
         }
     </script>
 </body>
