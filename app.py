@@ -13,6 +13,7 @@ import os
 import shutil
 import chardet
 import csv
+from dateutil.parser import parse
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -117,6 +118,16 @@ def init_db():
         cursor.execute('ALTER TABLE projects ADD COLUMN user_edited_status INTEGER DEFAULT 0')
     if 'SE(sub)' not in columns:
         cursor.execute('ALTER TABLE projects ADD COLUMN "SE(sub)" TEXT')
+
+    cursor.execute('''
+            CREATE TABLE IF NOT EXISTS schedule_done_status (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                project_id INTEGER,
+                date_column TEXT,
+                done INTEGER DEFAULT 0,
+                FOREIGN KEY (project_id) REFERENCES projects(id)
+            )
+        ''')
 
     conn.commit()
     conn.close()
@@ -1827,6 +1838,104 @@ def remove_copied_template():
         conn.close()
         #logging.error(f"Database error while removing copied template: {e}")
         return jsonify({'error': 'Database error'}), 500
+
+
+@app.route('/get_schedule_data', methods=['GET'])
+def get_schedule_data():
+    try:
+        week_start_str = request.args.get('week_start')
+        logging.info(f"Received week_start: {week_start_str}")
+        if not week_start_str:
+            logging.error("Week start date is missing")
+            return jsonify({'error': 'Week start date is required'}), 400
+
+        try:
+            week_start = datetime.strptime(week_start_str, '%Y-%m-%d')
+        except ValueError as ve:
+            logging.error(f"Invalid week_start format: {week_start_str}")
+            return jsonify({'error': 'Invalid week start date format'}), 400
+
+        week_end = week_start + timedelta(days=6)
+
+        conn = sqlite3.connect(DB_FILE)
+        cursor = conn.cursor()
+        cursor.execute(
+            'SELECT id, 案件名, 要件引継, 設計開始, 設計完了, 設計書送付, 開発開始, 開発完了, テスト開始日, テスト完了日, FB完了予定日, SE納品 FROM projects WHERE 不要 = 0')
+        projects = [dict(zip([desc[0] for desc in cursor.description], row)) for row in cursor.fetchall()]
+
+        cursor.execute('SELECT project_id, date_column, done FROM schedule_done_status')
+        done_statuses = {f"{row[0]}_{row[1]}": bool(row[2]) for row in cursor.fetchall()}
+
+        conn.close()
+
+        date_columns = ['要件引継', '設計開始', '設計完了', '設計書送付', '開発開始', '開発完了', 'テスト開始日',
+                        'テスト完了日', 'FB完了予定日', 'SE納品']
+        japanese_days = ['日', '月', '火', '水', '木', '金', '土']
+        filtered_projects = []
+
+        for project in projects:
+            for date_col in date_columns:
+                date_str = project.get(date_col)
+                if date_str and isinstance(date_str, str):
+                    try:
+                        date_obj = parse(date_str)
+                        if week_start.date() <= date_obj.date() <= week_end.date():
+                            done_key = f"{project['id']}_{date_col}"
+                            date_value = date_obj.strftime('%d/%m/%Y')
+                            day_name = japanese_days[date_obj.weekday()]
+                            filtered_projects.append({
+                                'id': project['id'],
+                                '案件名': project['案件名'],
+                                'date_column': date_col,
+                                'date_value': date_value,
+                                'day_name': day_name,
+                                'schedule_done': done_statuses.get(done_key, False)
+                            })
+                    except ValueError:
+                        logging.warning(f"Invalid date format for {date_col} in project {project['id']}: {date_str}")
+                        continue
+
+        return jsonify({'projects': filtered_projects})
+    except Exception as e:
+        logging.error(f"Error fetching schedule data: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/save_schedule_done', methods=['POST'])
+def save_schedule_done():
+    try:
+        data = request.get_json()
+        projects = data.get('projects', [])
+
+        conn = sqlite3.connect(DB_FILE)
+        cursor = conn.cursor()
+
+        for project in projects:
+            project_id = project.get('id')
+            date_column = project.get('date_column')
+            done = 1 if project.get('schedule_done') else 0
+
+            # Kiểm tra xem bản ghi đã tồn tại chưa
+            cursor.execute('SELECT id FROM schedule_done_status WHERE project_id = ? AND date_column = ?',
+                           (project_id, date_column))
+            existing = cursor.fetchone()
+
+            if existing:
+                # Cập nhật bản ghi
+                cursor.execute('UPDATE schedule_done_status SET done = ? WHERE project_id = ? AND date_column = ?',
+                               (done, project_id, date_column))
+            else:
+                # Thêm bản ghi mới
+                cursor.execute('INSERT INTO schedule_done_status (project_id, date_column, done) VALUES (?, ?, ?)',
+                               (project_id, date_column, done))
+
+        conn.commit()
+        conn.close()
+
+        return jsonify({'success': True})
+    except Exception as e:
+        logging.error(f"Error saving schedule done status: {str(e)}")
+        return jsonify({'error': str(e)}), 500
 
 
 if __name__ == '__main__':

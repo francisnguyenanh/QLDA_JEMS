@@ -671,6 +671,50 @@
         #copyMailCheckbox:checked + .form-check-label {
             color: #28a745; /* Green when checked */
         }
+
+        .schedule-table-container {
+            max-height: 60vh;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .schedule-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .schedule-table thead {
+            position: sticky;
+            top: 0;
+            z-index: 2;
+            background: white;
+        }
+
+        .schedule-table th,
+        .schedule-table td {
+            border: 1px solid #dee2e6;
+            padding: 8px;
+            text-align: left;
+            font-size: 0.85rem;
+        }
+
+        .schedule-table th:first-child,
+        .schedule-table td:first-child {
+            text-align: center;
+        }
+
+        .schedule-table input[type="checkbox"] {
+            margin: 0 auto;
+            width: 20px;
+            height: 20px;
+        }
+
+        .week-date-range {
+            font-size: 1rem;
+            font-weight: bold;
+            color: #333;
+            text-align: center;
+        }
     </style>
 </head>
 <body>
@@ -696,6 +740,7 @@
                 </div>
             </div>
             <div class="btn-group-responsive">
+                <button class="btn btn-info" data-bs-toggle="modal" data-bs-target="#scheduleModal" onclick="openScheduleModal()">予定</button>
                 <button class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#dailyReportModal" onclick="openDailyReportModal()">日報</button>
                 <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#uploadModal">Excel</button>
                 <button class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#mailEditModal">メール編集</button>
@@ -772,6 +817,42 @@
                     {% endfor %}
                 </tbody>
             </table>
+        </div>
+    </div>
+
+    <!-- Schedule Modal -->
+    <div class="modal fade" id="scheduleModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-scrollable modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">予定</h5>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">閉じる</button>
+                        <button type="button" class="btn btn-info" onclick="copyScheduleTable()">コピー</button>
+                    </div>
+                </div>
+                <div class="modal-body">
+                    <div class="week-nav-buttons">
+                        <button class="btn btn-outline-primary" onclick="navigateScheduleWeek('prev')">前週</button>
+                        <button class="btn btn-outline-primary" onclick="navigateScheduleWeek('current')">今週</button>
+                        <button class="btn btn-outline-primary" onclick="navigateScheduleWeek('next')">次週</button>
+                    </div>
+                    <div class="week-date-range mt-2" id="weekDateRange"></div>
+                    <div class="schedule-table-container">
+                        <table class="table table-bordered schedule-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 50px;">完了済</th>
+                                    <th style="width: 400px;">案件名</th>
+                                    <th style="width: 150px;">タスク</th>
+                                    <th style="width: 120px;">日付</th>
+                                </tr>
+                            </thead>
+                            <tbody id="scheduleTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -2493,6 +2574,197 @@
                 console.error('Error saving email data:', error);
                 alert('メールデータの保存に失敗しました');
             });
+        }
+
+        let currentScheduleWeekStart = null;
+        const japaneseDays = ['日', '月', '火', '水', '木', '金', '土'];
+
+        function openScheduleModal() {
+            currentScheduleWeekStart = getMonday(new Date());
+            loadScheduleData();
+            updateWeekDateRange();
+        }
+
+        function navigateScheduleWeek(direction) {
+            const d = new Date(currentScheduleWeekStart || new Date());
+            if (direction === 'prev') {
+                d.setDate(d.getDate() - 7);
+            } else if (direction === 'next') {
+                d.setDate(d.getDate() + 7);
+            } else {
+                d.setTime(new Date().getTime());
+            }
+            currentScheduleWeekStart = getMonday(d);
+            loadScheduleData();
+            updateWeekDateRange();
+        }
+
+        function formatDateYMD(date) {
+            if (!(date instanceof Date) || isNaN(date)) {
+                console.error('Invalid date in formatDateYMD:', date);
+                date = new Date();
+            }
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        function formatDateWithDay(date) {
+            if (!(date instanceof Date) || isNaN(date)) {
+                console.error('Invalid date in formatDateWithDay:', date);
+                date = new Date();
+            }
+            const day = String(date.getDate()).padStart(2, '0');
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const year = date.getFullYear();
+            const dayName = japaneseDays[date.getDay()];
+            return `${day}/${month}/${year}(${dayName})`;
+        }
+
+        function getMonday(date) {
+            if (!(date instanceof Date) || isNaN(date)) {
+                console.error('Invalid date in getMonday:', date);
+                date = new Date();
+            }
+            const d = new Date(date);
+            const day = d.getDay();
+            const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+            return new Date(d.setDate(diff));
+        }
+
+        function updateWeekDateRange() {
+            const weekStart = new Date(currentScheduleWeekStart || new Date());
+            const weekEnd = new Date(weekStart);
+            weekEnd.setDate(weekEnd.getDate() + 6);
+            const rangeText = `${formatDateWithDay(weekStart)}~${formatDateWithDay(weekEnd)}`;
+            document.getElementById('weekDateRange').textContent = rangeText;
+        }
+
+        function loadScheduleData() {
+            if (!currentScheduleWeekStart || isNaN(currentScheduleWeekStart)) {
+                console.warn('currentScheduleWeekStart is invalid, resetting to current week');
+                currentScheduleWeekStart = getMonday(new Date());
+            }
+            const weekStartStr = formatDateYMD(currentScheduleWeekStart);
+            console.log('Fetching schedule data with week_start:', weekStartStr);
+            fetch(`/get_schedule_data?week_start=${weekStartStr}`, {
+                method: 'GET',
+                headers: { 'Content-Type': 'application/json' }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(err => {
+                        throw new Error(`HTTP error! Status: ${response.status}, Message: ${err.error || 'Unknown'}`);
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.error) {
+                    console.error('Server error:', data.error);
+                    alert('エラー: 予定データの取得に失敗しました - ' + data.error);
+                    return;
+                }
+                renderScheduleTable(data.projects || []);
+            })
+            .catch(error => {
+                console.error('Fetch error:', error);
+                alert('エラー: 予定データの取得に失敗しました - ' + error.message);
+            });
+        }
+
+        function renderScheduleTable(projects) {
+            const tbody = document.getElementById('scheduleTableBody');
+            tbody.innerHTML = '';
+
+            // Sắp xếp theo date_value (tăng dần)
+            const sortedProjects = [...projects].sort((a, b) => {
+                const valA = a.date_value || '';
+                const valB = b.date_value || '';
+                if (!valA || !valB) return valA ? 1 : valB ? -1 : 0;
+                try {
+                    const [dayA, monthA, yearA] = valA.split('/').map(Number);
+                    const [dayB, monthB, yearB] = valB.split('/').map(Number);
+                    const dateA = new Date(yearA, monthA - 1, dayA);
+                    const dateB = new Date(yearB, monthB - 1, dayB);
+                    if (isNaN(dateA) || isNaN(dateB)) return 0;
+                    return dateA - dateB; // Tăng dần
+                } catch (e) {
+                    console.error('Error parsing dates for sorting:', valA, valB, e);
+                    return 0;
+                }
+            });
+
+            sortedProjects.forEach(project => {
+                const row = document.createElement('tr');
+                // Kết hợp date_value và day_name thành dd/mm/yyyy(aaa)
+                const dateDisplay = project.date_value && project.day_name ? `${project.date_value}(${project.day_name})` : project.date_value || '';
+                row.innerHTML = `
+                    <td>
+                        <input type="checkbox"
+                               data-project-id="${project.id}"
+                               data-date-column="${project.date_column}"
+                               ${project.schedule_done ? 'checked' : ''}
+                               onchange="updateScheduleDone(this)">
+                    </td>
+                    <td>${project.案件名 || ''}</td>
+                    <td>${project.date_column || ''}</td>
+                    <td>${dateDisplay}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function updateScheduleDone(checkbox) {
+            const projectId = checkbox.dataset.projectId;
+            const dateColumn = checkbox.dataset.dateColumn;
+            const projects = [{
+                id: parseInt(projectId),
+                date_column: dateColumn,
+                schedule_done: checkbox.checked
+            }];
+            fetch('/save_schedule_done', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ projects })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (!data.success) {
+                    alert('エラー: ' + data.error);
+                }
+            })
+            .catch(error => {
+                alert('エラー: 予定データの保存に失敗しました - ' + error.message);
+            });
+        }
+
+        function copyScheduleTable() {
+            const table = document.querySelector('.schedule-table');
+            let csv = '';
+            const headers = ['Done', '案件名', '日付項目', '日付'];
+            csv += headers.join('\t') + '\n';
+
+            const rows = table.querySelectorAll('tbody tr');
+            rows.forEach(row => {
+                const cells = row.querySelectorAll('td');
+                const rowData = [
+                    cells[0].querySelector('input').checked ? '✓' : '',
+                    cells[1].textContent,
+                    cells[2].textContent,
+                    cells[3].textContent
+                ];
+                csv += rowData.join('\t') + '\n';
+            });
+
+            navigator.clipboard.writeText(csv)
+                .then(() => {
+                    alert('表の内容がクリップボードにコピーされました');
+                })
+                .catch(err => {
+                    alert('コピーに失敗しました: ' + err);
+                });
         }
     </script>
 </body>
