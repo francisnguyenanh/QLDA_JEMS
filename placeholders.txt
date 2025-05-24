@@ -16,3 +16,6 @@ Phx = {PH}
 設計課の【自分の名前】= Loc
 自分の署名 = Loc
 XXh = {開発工数}h
+担当SEのメールアドレス = , {se_mail}
+設計チーム <pjpromotion@j-ems.jp> = {mail}
+pjpromotion@j-ems.jp = {mail}

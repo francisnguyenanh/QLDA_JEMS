@@ -1665,7 +1665,7 @@ def get_copied_templates(project_id):
 
 @app.route('/get_mail_content/<int:project_id>/<filename>', methods=['GET'])
 def get_mail_content(project_id, filename):
-    """Get mail template content and replace placeholders including {mail}."""
+    """Get mail template content and replace placeholders including {se_mail} and {mail}."""
     if '..' in filename or filename.startswith('/') or filename.startswith('\\'):
         #logging.error(f"Invalid filename detected: {filename}")
         return jsonify({'error': 'Invalid filename'}), 400
@@ -1724,10 +1724,15 @@ def get_mail_content(project_id, filename):
         '{PH}': ph
     }
 
-    # Chỉ thêm {mail} vào placeholders nếu cả se_emails và manager_email đều hợp lệ
-    if se_emails and manager_email and se_name in se_emails and se_emails[se_name]:
-        mail_value = f"{se_emails[se_name]}, {manager_email}"
-        placeholders['{mail}'] = mail_value
+    # Thêm {se_mail} nếu tìm thấy email của SE
+    if se_emails and se_name in se_emails and se_emails[se_name]:
+        placeholders['{se_mail}'] = se_emails[se_name]
+
+    # Thêm {mail}: luôn thay bằng '設計チーム <pjpromotion@j-ems.jp>', thêm manager_email nếu có
+    mail_value = '設計チーム <pjpromotion@j-ems.jp>'
+    if manager_email:
+        mail_value += f', {manager_email}'
+    placeholders['{mail}'] = mail_value
 
     for date_col in DATE_COLUMNS_DB:
         date_str = project_dict.get(date_col, '')
