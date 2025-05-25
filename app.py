@@ -650,6 +650,7 @@ def update_project(project_id, updates):
         WHERE id = ?
     '''
     #logging.debug(f"Executing SQL: {sql} with values: {values}")
+    print(sql)
     cursor.execute(sql, values)
     conn.commit()
     conn.close()
@@ -796,6 +797,7 @@ def dashboard():
     ranges = read_pages_ranges()
     working_days = read_working_days()
 
+    print(filtered_projects)
     return render_template('dashboard.html',
                            projects=filtered_projects,
                            display_columns=DISPLAY_COLUMNS,

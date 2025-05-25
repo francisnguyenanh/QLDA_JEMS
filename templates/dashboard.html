@@ -1055,11 +1055,11 @@
                                 </div>
                                 <div class="mb-3">
                                     <label class="form-label">テスト完了日</label>
-                                    <input type="date" name="テスト完了日" id="edit_テスト完了日" class="form-control" readonly>
+                                    <input type="date" name="テスト完了日" id="edit_テスト完了日" class="form-control">
                                 </div>
                                 <div class="mb-3">
                                     <label class="form-label">FB完了予定日</label>
-                                    <input type="date" name="FB完了予定日" id="edit_FB完了予定日" class="form-control" readonly>
+                                    <input type="date" name="FB完了予定日" id="edit_FB完了予定日" class="form-control">
                                 </div>
                                 <div class="mb-3">
                                     <label class="form-label">SE納品</label>
@@ -1548,7 +1548,6 @@
                 statusSelect.value = project['ステータス'] || '要件引継待ち';
             }
 
-            updateTestDates();
         }
 
         function openMailModal(projectId) {
