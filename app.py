@@ -347,19 +347,26 @@ def calculate_test_completion_date(page_count, test_start_date):
     logging.warning(f"No matching range found for page_count={page_count}")
     return ''
 
+
 def calculate_fb_completion_date(test_completion_date):
     logging.debug(f"Calculating FB completion date: test_completion_date={test_completion_date}")
     if not test_completion_date:
-        #logging.error("Test completion date is empty")
+        logging.error("Test completion date is empty")
         return ''
     try:
-        test_completion_date = datetime.strptime(test_completion_date, '%Y-%m-%d')
+        if isinstance(test_completion_date, str):
+            test_completion = datetime.strptime(test_completion_date, '%Y-%m-%d')
+        elif isinstance(test_completion_date, datetime):
+            test_completion = test_completion_date
+        else:
+            raise ValueError("Invalid test_completion_date type")
+
         working_days = read_working_days()
-        result = add_working_days(test_completion_date, working_days)
+        result = add_working_days(test_completion, working_days)
         logging.debug(f"FB completion date calculated: {result}")
         return result
     except (ValueError, TypeError) as e:
-        #logging.error(f"Error parsing test_completion_date: {str(e)}")
+        logging.error(f"Error calculating FB completion date: {str(e)}")
         return ''
 
 def import_excel_to_sqlite(file_path):
@@ -906,29 +913,43 @@ def calculate_test_dates():
         data = request.get_json()
         page_count = data.get('page_count')
         test_start_date = data.get('test_start_date')
+        test_completion_date = data.get('test_completion_date')
 
-        #logging.debug(f"Received calculate_test_dates request: page_count={page_count}, test_start_date={test_start_date}")
+        logging.debug(f"Received calculate_test_dates request: page_count={page_count}, test_start_date={test_start_date}, test_completion_date={test_completion_date}")
 
+        # Nếu chỉ có test_completion_date, tính fb_completion_date
+        if test_completion_date and not (page_count or test_start_date):
+            fb_completion_date = calculate_fb_completion_date(test_completion_date)
+            if not fb_completion_date:
+                logging.error("Failed to calculate FB completion date")
+                return jsonify({'error': 'Failed to calculate FB completion date'}), 400
+            logging.debug(f"Calculated fb_completion_date: {fb_completion_date}")
+            return jsonify({
+                'test_completion_date': test_completion_date,
+                'fb_completion_date': fb_completion_date
+            })
+
+        # Logic hiện tại: tính cả test_completion_date và fb_completion_date
         if not page_count or not test_start_date:
-            #logging.error("Missing page_count or test_start_date")
+            logging.error("Missing page_count or test_start_date")
             return jsonify({'error': 'Missing page_count or test_start_date'}), 400
 
         page_count = int(page_count)
         test_start_date = datetime.strptime(test_start_date, '%Y-%m-%d')
 
-        #logging.debug(f"Parsed inputs: page_count={page_count}, test_start_date={test_start_date}")
+        logging.debug(f"Parsed inputs: page_count={page_count}, test_start_date={test_start_date}")
 
         test_completion_date = calculate_test_completion_date(page_count, test_start_date.strftime('%Y-%m-%d'))
         fb_completion_date = calculate_fb_completion_date(test_completion_date)
 
-        #logging.debug(f"Calculated dates: test_completion_date={test_completion_date}, fb_completion_date={fb_completion_date}")
+        logging.debug(f"Calculated dates: test_completion_date={test_completion_date}, fb_completion_date={fb_completion_date}")
 
         return jsonify({
             'test_completion_date': test_completion_date,
             'fb_completion_date': fb_completion_date
         })
     except Exception as e:
-        #logging.error(f"Error calculating test dates: {str(e)}")
+        logging.error(f"Error calculating test dates: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
 @app.route('/sort_projects', methods=['POST'])

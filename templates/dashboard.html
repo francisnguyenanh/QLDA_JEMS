@@ -1447,7 +1447,10 @@
                 fetch('/calculate_test_dates', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ page_count: pageCount, test_start_date: testStartDateYMD })
+                    body: JSON.stringify({
+                        page_count: pageCount,
+                        test_start_date: testStartDateYMD
+                    })
                 })
                 .then(response => {
                     if (!response.ok) {
@@ -1847,12 +1850,10 @@
             updateTestDates();
         });
 
-        document.getElementById('edit_開発完了').addEventListener('change', () => {
-            updateTestDates();
-        });
-        document.getElementById('edit_テスト開始日').addEventListener('change', () => {
-            updateTestDates();
-        });
+        document.getElementById('edit_ページ数').addEventListener('change', updateTestDates);
+        document.getElementById('edit_テスト開始日').addEventListener('change', updateTestDates);
+        document.getElementById('edit_開発完了').addEventListener('change', updateTestDates);
+
         function openMailEditModal() {
             document.getElementById('mailEditFiles').value = '';
             document.getElementById('uploadedFilesList').innerHTML = '';
@@ -2773,6 +2774,51 @@
                     alert('コピーに失敗しました: ' + err);
                 });
         }
+        function updateFBCompletionDate() {
+            const testCompletionInput = document.getElementById('edit_テスト完了日');
+            const fbCompletionInput = document.getElementById('edit_FB完了予定日');
+            const testCompletionDate = testCompletionInput.value;
+
+            if (testCompletionDate) {
+                // Kiểm tra định dạng ngày
+                if (!/^\d{4}-\d{2}-\d{2}$/.test(testCompletionDate)) {
+                    console.error('Invalid test completion date format');
+                    fbCompletionInput.value = '';
+                    return;
+                }
+                console.debug('Sending calculate_test_dates request for FB completion:', { test_completion_date: testCompletionDate });
+                fetch('/calculate_test_dates', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        test_completion_date: testCompletionDate
+                    })
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! Status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.error) {
+                        console.error('Error from server:', data.error);
+                        fbCompletionInput.value = '';
+                    } else {
+                        fbCompletionInput.value = data.fb_completion_date || '';
+                    }
+                })
+                .catch(error => {
+                    console.error('Fetch error:', error);
+                    fbCompletionInput.value = '';
+                });
+            } else {
+                fbCompletionInput.value = '';
+            }
+        }
+
+        // Gắn sự kiện cho テスト完了日
+        document.getElementById('edit_テスト完了日').addEventListener('change', updateFBCompletionDate);
     </script>
 </body>
 </html>
