@@ -147,6 +147,7 @@ def read_users():
     return users
 
 def project_exists(cursor, project):
+    return False
     """Check if a project already exists based on 案件名, PH, PJNo."""
     keys = ['案件名', 'PH', 'PJNo.']
     conditions = []
@@ -455,61 +456,73 @@ def import_excel_to_sqlite(file_path):
         for index, row in df.iterrows():
             project = row.to_dict()
             df.at[index, 'ステータス'] = calculate_status(project, current_date)
+            
 
         conn = sqlite3.connect(DB_FILE)
         cursor = conn.cursor()
 
+        duplicated_projects = []
         imported_count = 0
+        total_projects = len(df)
+        logging.debug(f"Total projects to import: {total_projects}")
+        
         for _, row in df.iterrows():
-            project = row.to_dict()
-            if not project_exists(cursor, project):
-                cursor.execute('''
-                            INSERT INTO projects (
-                                SE, "SE(sub)", 案件名, PH, "開発工数（h）", "設計工数（h）", 要件引継, 設計開始,
-                                設計完了, 設計書送付, 開発開始, 開発完了, SE納品, BSE, 案件番号, "PJNo.",
-                                備考, テスト開始日, テスト完了日, FB完了予定日, ページ数, タスク, ステータス,
-                                不要, 注文設計, 注文テスト, 注文FB, 注文BrSE, user_edited_status
-                            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                        ''', (
-                    project.get('SE', ''),
-                    project.get('SE(sub)', ''),
-                    project.get('案件名', ''),
-                    project.get('PH', ''),
-                    project.get('開発工数（h）', None),
-                    project.get('設計工数（h）', None),
-                    project.get('要件引継', ''),
-                    project.get('設計開始', ''),
-                    project.get('設計完了', ''),
-                    project.get('設計書送付', ''),
-                    project.get('開発開始', ''),
-                    project.get('開発完了', ''),
-                    project.get('SE納品', ''),
-                    project.get('BSE', ''),
-                    project.get('案件番号', ''),
-                    project.get('PJNo.', ''),
-                    project.get('備考', ''),
-                    project.get('テスト開始日', ''),
-                    project.get('テスト完了日', ''),
-                    project.get('FB完了予定日', ''),
-                    project.get('ページ数', None),
-                    project.get('タスク', ''),
-                    project.get('ステータス', '要件引継待ち'),
-                    project.get('不要', 0),
-                    project.get('注文設計', 0),
-                    project.get('注文テスト', 0),
-                    project.get('注文FB', 0),
-                    project.get('注文BrSE', 0),
-                    project.get('user_edited_status', 0)
-                ))
-                imported_count += 1
+            try:
+                project = row.to_dict()
+                if not project_exists(cursor, project):
+                    cursor.execute('''
+                                INSERT INTO projects (
+                                    SE, "SE(sub)", 案件名, PH, "開発工数（h）", "設計工数（h）", 要件引継, 設計開始,
+                                    設計完了, 設計書送付, 開発開始, 開発完了, SE納品, BSE, 案件番号, "PJNo.",
+                                    備考, テスト開始日, テスト完了日, FB完了予定日, ページ数, タスク, ステータス,
+                                    不要, 注文設計, 注文テスト, 注文FB, 注文BrSE, user_edited_status
+                                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                            ''', (
+                        project.get('SE', ''),
+                        project.get('SE(sub)', ''),
+                        project.get('案件名', ''),
+                        project.get('PH', ''),
+                        project.get('開発工数（h）', None),
+                        project.get('設計工数（h）', None),
+                        project.get('要件引継', ''),
+                        project.get('設計開始', ''),
+                        project.get('設計完了', ''),
+                        project.get('設計書送付', ''),
+                        project.get('開発開始', ''),
+                        project.get('開発完了', ''),
+                        project.get('SE納品', ''),
+                        project.get('BSE', ''),
+                        project.get('案件番号', ''),
+                        project.get('PJNo.', ''),
+                        project.get('備考', ''),
+                        project.get('テスト開始日', ''),
+                        project.get('テスト完了日', ''),
+                        project.get('FB完了予定日', ''),
+                        project.get('ページ数', None),
+                        project.get('タスク', ''),
+                        project.get('ステータス', '要件引継待ち'),
+                        project.get('不要', 0),
+                        project.get('注文設計', 0),
+                        project.get('注文テスト', 0),
+                        project.get('注文FB', 0),
+                        project.get('注文BrSE', 0),
+                        project.get('user_edited_status', 0)
+                    ))
+                    imported_count += 1
+                else:
+                    duplicated_projects.append(project.get('案件名', '') or f"PJNo:{project.get('PJNo.', '')}")
+            except Exception as e:
+                print("Lỗi ở dòng này:", e)
+                
 
+        logging.info(f'duplicated_projects: {duplicated_projects}')
         conn.commit()
         conn.close()
         logging.info(f"Imported {imported_count} new projects from {file_path}")
-        return True
+        return True, duplicated_projects, total_projects
     except Exception as e:
         #logging.error(f"Failed to import Excel file {file_path}: {e}")
-        return False
+        return False, [], 0
 
 def read_projects():
     """Read all projects from SQLite database with total hours worked."""
@@ -804,7 +817,6 @@ def dashboard():
     ranges = read_pages_ranges()
     working_days = read_working_days()
 
-    print(filtered_projects)
     return render_template('dashboard.html',
                            projects=filtered_projects,
                            display_columns=DISPLAY_COLUMNS,
@@ -850,15 +862,17 @@ def upload():
                 if os.path.isfile(existing_file_path):
                     os.remove(existing_file_path)
 
-        if import_excel_to_sqlite(file_path):
-            os.remove(file_path)
-            flash('ファイルが正常にアップロードされました', 'success')
+        result, duplicated_projects, total_projects = import_excel_to_sqlite(file_path)
+        os.remove(file_path)
+        if result:
+            if duplicated_projects:
+                flash(f'アップロード成功: {total_projects - len(duplicated_projects)}件追加, {len(duplicated_projects)}件は重複: {", ".join(duplicated_projects)}', 'warning')
+            else:
+                flash('ファイルが正常にアップロードされました', 'success')
         else:
-            os.remove(file_path)
             flash('エラー: ファイルのインポートに失敗しました', 'danger')
 
     except Exception as e:
-        #logging.error(f"Error uploading file: {e}")
         if os.path.exists(file_path):
             os.remove(file_path)
         flash(f'エラー: ファイルのアップロードに失敗しました: {str(e)}', 'danger')
