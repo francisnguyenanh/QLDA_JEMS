@@ -715,6 +715,39 @@
             color: #333;
             text-align: center;
         }
+
+        .table.table-bordered th:nth-child(1),
+        .table.table-bordered td:nth-child(1) { width: 60px; background: #f8f9fa; position: static; left: unset; z-index: unset; } /* No */
+
+        .table.table-bordered th:nth-child(2),
+        .table.table-bordered td:nth-child(2) {
+            position: sticky;
+            left: 40px;
+            background: #e6f3ff;
+            z-index: 1;
+        } /* 操作 */
+
+        .table.table-bordered th:nth-child(3),
+        .table.table-bordered td:nth-child(3) {
+            position: sticky;
+            left: 170px;
+            background: #e6f3ff;
+            z-index: 1;
+        } /* ステータス */
+
+        .table.table-bordered th:nth-child(4),
+        .table.table-bordered td:nth-child(4) {
+            position: sticky;
+            left: 276px;
+            background: #e6f3ff;
+            z-index: 1;
+        } /* タスク */
+
+        .table.table-bordered thead th:nth-child(2),
+        .table.table-bordered thead th:nth-child(3),
+        .table.table-bordered thead th:nth-child(4) {
+            z-index: 3;
+        }
     </style>
 </head>
 <body>
@@ -762,6 +795,7 @@
             <table class="table table-bordered">
                 <thead>
                     <tr>
+                        <th>No</th>
                         <th>操作</th>
                         {% for col in display_columns %}
                             <th class="sortable" data-column="{{ col }}">
@@ -778,6 +812,7 @@
                 <tbody id="projectTableBody">
                     {% for project in projects %}
                         <tr>
+                            <td>{{ loop.index }}</td>
                             <td>
                                 <div class="d-flex gap-2">
                                     <button class="btn btn-primary btn-sm"
