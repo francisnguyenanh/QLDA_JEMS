@@ -809,6 +809,11 @@ def dashboard():
                     updates[col] = ','.join(request.form.getlist(col))
                 else:
                     updates[col] = request.form[col]
+            # Đảm bảo các trường checkbox luôn có mặt trong updates
+        for field in ['不要', '注文設計', '注文テスト', '注文FB', '注文BrSE']:
+            if field not in updates:
+                updates[field] = 0
+            
         update_project(project_id, updates)
         flash('プロジェクトが正常に更新されました', 'success')
         return redirect(url_for('dashboard'))
@@ -1127,32 +1132,28 @@ def save_daily_hours():
 
 @app.route('/delete_all_data', methods=['POST'])
 def delete_all_data():
-    """Delete all data from projects, copied_templates, and daily_hours tables."""
-    if 'username' not in session:
-        return jsonify({'error': 'Unauthorized'}), 401
-
     data = request.get_json()
-    password = data.get('password')
-    users = read_users()
-    username = session['username']
-
-    if users.get(username) != password:
-        return jsonify({'error': 'パスワードが正しくありません'}), 400
-
+    password = data.get('password', '')
+    if 'username' not in session:
+        return jsonify({'success': False, 'error': '未認証です'})
     try:
         conn = sqlite3.connect(DB_FILE)
         cursor = conn.cursor()
-        cursor.execute('DELETE FROM projects')
-        cursor.execute('DELETE FROM copied_templates')
-        cursor.execute('DELETE FROM daily_hours')
-        cursor.execute('DELETE FROM sqlite_sequence')  # Reset auto-increment
+        # Lấy danh sách project_id cần xóa
+        cursor.execute('SELECT id FROM projects WHERE 不要 = 1 OR 不要 = "1" OR 不要 = "true"')
+        project_ids = [row[0] for row in cursor.fetchall()]
+        # Xóa dữ liệu liên quan ở các bảng khác
+        for pid in project_ids:
+            cursor.execute('DELETE FROM daily_hours WHERE project_id = ?', (pid,))
+            cursor.execute('DELETE FROM schedule_done_status WHERE project_id = ?', (pid,))
+            cursor.execute('DELETE FROM copied_templates WHERE project_id = ?', (pid,))
+        # Xóa project
+        cursor.execute('DELETE FROM projects WHERE 不要 = 1 OR 不要 = "1" OR 不要 = "true"')
         conn.commit()
         conn.close()
-        #logging.info("All data deleted successfully")
         return jsonify({'success': True})
-    except sqlite3.Error as e:
-        #logging.error(f"Database error while deleting all data: {e}")
-        return jsonify({'error': 'Database error'}), 500
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/logout')
 def logout():

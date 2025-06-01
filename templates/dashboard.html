@@ -745,7 +745,7 @@
                 <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#uploadModal">Excel</button>
                 <button class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#mailEditModal">メール編集</button>
                 <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createTaskModal">タスク作成</button>
-                <button class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteAllModal">全削除</button>
+                <button class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteAllModal">不要削除</button>
                 <a href="{{ url_for('logout') }}" class="btn btn-danger">Logout</a>
             </div>
         </div>
@@ -1179,7 +1179,7 @@
         <div class="modal-dialog modal-dialog-scrollable modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">全てのデータを削除</h5>
+                    <h5 class="modal-title">全ての不要データを削除</h5>
                     <div class="d-flex gap-2">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
                         <button type="button" class="btn btn-danger" onclick="deleteAllData()">削除</button>
