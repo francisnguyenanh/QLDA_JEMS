@@ -750,15 +750,15 @@ def dashboard():
             date_obj = parse_date_from_db(date_str_db)
             project[f'{col}_past'] = False
             if date_obj is not None:
-                diff = abs((current_date.date() - date_obj.date()).days)
-                if diff < min_diff:
+                diff = (date_obj.date() - current_date.date()).days
+                if diff >= 0 and diff < min_diff:
                     min_diff = diff
                     closest_date = col
                 if date_obj.date() < current_date.date():
                     project[f'{col}_past'] = True
             project[col] = format_date_jp(date_obj)
-
         project['highlight_column'] = closest_date if closest_date else None
+        
         fb_completion_date = parse_date_from_db(row['FB完了予定日'])
         project['fb_late'] = False
 
@@ -1018,15 +1018,15 @@ def sort_projects():
                 date_obj = parse_date_from_db(date_str_db)
                 project[f'{col}_past'] = False
                 if date_obj is not None:
-                    diff = abs((current_date.date() - date_obj.date()).days)
-                    if diff < min_diff:
+                    diff = (date_obj.date() - current_date.date()).days
+                    if diff >= 0 and diff < min_diff:
                         min_diff = diff
                         closest_date = col
                     if date_obj.date() < current_date.date():
                         project[f'{col}_past'] = True
                 project[col] = format_date_jp(date_obj)
-
             project['highlight_column'] = closest_date if closest_date else None
+            
             fb_completion_date = parse_date_from_db(row['FB完了予定日'])
             project['fb_late'] = False
 

@@ -1763,13 +1763,13 @@
                 const row = document.createElement('tr');
                 const projectCell = document.createElement('td');
                 projectCell.className = 'project-cell';
-                if(project['PH']!=''){
-                    ct = project['案件名'] + ' ' + project['PJNo.'] + ' PH' + project['PH'];
+
+                // Sửa đoạn này: chỉ hiển thị PH nếu khác null/rỗng
+                let ct = project['案件名'] + ' ' + (project['PJNo.'] || '');
+                if (project['PH'] !== null && String(project['PH']).trim() !== '') {
+                    ct += ' PH' + project['PH'];
                 }
-                else{
-                    ct = ct = project['案件名'] + ' ' + project['PJNo.'];
-                }
-                projectCell.textContent = ct;
+                projectCell.textContent = ct.trim();
                 row.appendChild(projectCell);
 
                 weekDates.forEach(date => {
