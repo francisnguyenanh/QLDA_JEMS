@@ -1410,8 +1410,15 @@
             const tbody = document.getElementById('projectTableBody');
             tbody.innerHTML = '';
 
-            projects.forEach(project => {
+            projects.forEach((project, idx) => {
                 const row = document.createElement('tr');
+
+                // Thêm cột No
+                const noCell = document.createElement('td');
+                noCell.textContent = idx + 1;
+                row.appendChild(noCell);
+
+                // Cột 操作
                 const opCell = document.createElement('td');
                 opCell.innerHTML = `
                     <div class="d-flex gap-2">
