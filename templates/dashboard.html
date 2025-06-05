@@ -35,14 +35,6 @@
         }
 
         /* Kích thước cột cho bảng dashboard */
-        .table.table-bordered th:nth-child(1),
-        .table.table-bordered td:nth-child(1) { width: 180px; } /* 操作 */
-        .table.table-bordered th:nth-child(2),
-        .table.table-bordered td:nth-child(2) { width: 150px; } /* ステータス */
-        .table.table-bordered th:nth-child(3),
-        .table.table-bordered td:nth-child(3) { width: 180px; } /* タスク */
-        .table.table-bordered th:nth-child(4),
-        .table.table-bordered td:nth-child(4) { width: 400px; } /* 案件名 */
         .table.table-bordered th:nth-child(18),
         .table.table-bordered td:nth-child(18) { width: 140px; }
         .table.table-bordered th:nth-child(20),
@@ -72,35 +64,6 @@
         .table.table-bordered th:nth-child(31),
         .table.table-bordered td:nth-child(31) { width: 100px; } /* BrSE実績 */
 
-        .table.table-bordered th:nth-child(1),
-        .table.table-bordered td:nth-child(1) {
-            position: sticky;
-            left: 0;
-            background: #e6f3ff;
-            z-index: 1;
-        }
-
-        .table.table-bordered th:nth-child(2),
-        .table.table-bordered td:nth-child(2) {
-            position: sticky;
-            left: 115px;
-            background: #e6f3ff;
-            z-index: 1;
-        }
-
-        .table.table-bordered th:nth-child(3),
-        .table.table-bordered td:nth-child(3) {
-            position: sticky;
-            left: 214px;
-            background: #e6f3ff;
-            z-index: 1;
-        }
-
-        .table.table-bordered thead th:nth-child(1),
-        .table.table-bordered thead th:nth-child(2),
-        .table.table-bordered thead th:nth-child(3) {
-            z-index: 3;
-        }
 
         /* Cố định header khi cuộn dọc cho bảng dashboard */
         .table.table-bordered thead {
@@ -716,38 +679,71 @@
             text-align: center;
         }
 
+        /* Sticky 4 cột đầu, KHÔNG gán width cứng */
         .table.table-bordered th:nth-child(1),
-        .table.table-bordered td:nth-child(1) { width: 60px; background: #f8f9fa; position: static; left: unset; z-index: unset; } /* No */
-
+        .table.table-bordered td:nth-child(1) {
+            position: sticky;
+            left: 0;
+            background: #e6f3ff;
+            z-index: 2;
+        }
         .table.table-bordered th:nth-child(2),
         .table.table-bordered td:nth-child(2) {
             position: sticky;
-            left: 40px;
+            left: 0; /* sẽ cập nhật bằng JS ở dưới */
             background: #e6f3ff;
-            z-index: 1;
-        } /* 操作 */
-
+            z-index: 2;
+        }
         .table.table-bordered th:nth-child(3),
         .table.table-bordered td:nth-child(3) {
             position: sticky;
-            left: 170px;
+            left: 0; /* sẽ cập nhật bằng JS ở dưới */
             background: #e6f3ff;
-            z-index: 1;
-        } /* ステータス */
-
+            z-index: 2;
+        }
         .table.table-bordered th:nth-child(4),
         .table.table-bordered td:nth-child(4) {
             position: sticky;
-            left: 276px;
+            left: 0; /* sẽ cập nhật bằng JS ở dưới */
             background: #e6f3ff;
-            z-index: 1;
-        } /* タスク */
-
-        .table.table-bordered thead th:nth-child(2),
-        .table.table-bordered thead th:nth-child(3),
-        .table.table-bordered thead th:nth-child(4) {
+            z-index: 2;
+        }
+        /* Đảm bảo header nổi trên cùng */
+        .table.table-bordered thead th:nth-child(-n+4) {
             z-index: 3;
         }
+        .custom-table-container {
+            height: 80vh;
+            width: 90vw;
+            overflow-y: auto;
+            overflow-x: auto;
+            margin: 0 auto;
+            background: #fff;
+            position: relative;
+        }
+        .table.table-bordered {
+            width: 100%;
+            min-width: 2000px;
+            border-collapse: collapse;
+        }
+        .table.table-bordered thead {
+            position: sticky;
+            top: 0;
+            z-index: 3;
+            background: #fff;
+        }
+        .table.table-bordered th, .table.table-bordered td {
+            white-space: nowrap;
+            padding: 8px;
+            border: 1px solid #dee2e6;
+            background: #fff;
+        }
+        /* Đảm bảo table chiếm hết chiều rộng container */
+        .custom-table-container .table {
+            width: 100%;
+            min-width: 2000px;
+        }
+
     </style>
 </head>
 <body>
@@ -791,7 +787,7 @@
             {% endif %}
         {% endwith %}
 
-        <div class="table-responsive">
+        <div class="custom-table-container">
             <table class="table table-bordered">
                 <thead>
                     <tr>
@@ -2861,6 +2857,34 @@
 
         // Gắn sự kiện cho テスト完了日
         document.getElementById('edit_テスト完了日').addEventListener('change', updateFBCompletionDate);
+
+        // ...existing code...
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const table = document.querySelector('.table.table-bordered');
+            if (!table) return;
+            const ths = table.querySelectorAll('thead th');
+            let left = 0;
+            for (let i = 0; i < 4; i++) {
+                ths[i].style.position = 'sticky';
+                ths[i].style.left = left + 'px';
+                // Tính toán left dựa trên offsetWidth thực tế
+                left += ths[i].offsetWidth;
+            }
+            // Áp dụng cho từng dòng td
+            const trs = table.querySelectorAll('tbody tr');
+            trs.forEach(tr => {
+                let left = 0;
+                for (let i = 0; i < 4; i++) {
+                    const td = tr.children[i];
+                    td.style.position = 'sticky';
+                    td.style.left = left + 'px';
+                    left += ths[i].offsetWidth;
+                }
+            });
+        });
+
+
     </script>
 </body>
 </html>

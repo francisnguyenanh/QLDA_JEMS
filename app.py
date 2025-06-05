@@ -1662,10 +1662,12 @@ def parse_date_from_db(date_str):
         return None
 
 def format_date_jp(date_obj):
-    """Format date to Japanese format (YYYY/MM/DD)."""
+    """Format date to Japanese format (YYYY/MM/DD(曜日))."""
     if date_obj is None:
         return ''
-    return date_obj.strftime('%Y/%m/%d')
+    weekdays = ['月', '火', '水', '木', '金', '土', '日']
+    weekday = weekdays[date_obj.weekday()]
+    return date_obj.strftime('%Y/%m/%d') + f'({weekday})'
 
 def convert_nat_to_none(project_dict):
     """Convert NaT or None-like values to None."""
@@ -1794,6 +1796,7 @@ def get_mail_content(project_id, filename):
         '{開発工数}': project_dict.get('開発工数（h）', ''),
         '{PH}': ph
     }
+    
 
     # Thêm {se_mail} với định dạng 'email SE, email SE(sub)'
     se_mail_value = ''
@@ -1816,6 +1819,11 @@ def get_mail_content(project_id, filename):
         date_obj = parse_date_from_db(date_str)
         placeholders[f'{{{date_col}}}'] = format_date_jp(date_obj)
 
+    if not ph.strip():
+    # Xóa các trường hợp như "({PH})", "( {PH} )", "（{PH}）", "（ {PH} ）"
+        import re
+        content = re.sub(r'[\(（]\s*\{PH\}\s*[\)）]', '', content)
+        
     for key, value in placeholders.items():
         content = content.replace(key, str(value))
     return jsonify({'content': content})
