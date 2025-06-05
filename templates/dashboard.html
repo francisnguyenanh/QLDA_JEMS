@@ -715,6 +715,39 @@
             color: #333;
             text-align: center;
         }
+
+        .table.table-bordered th:nth-child(1),
+        .table.table-bordered td:nth-child(1) { width: 60px; background: #f8f9fa; position: static; left: unset; z-index: unset; } /* No */
+
+        .table.table-bordered th:nth-child(2),
+        .table.table-bordered td:nth-child(2) {
+            position: sticky;
+            left: 40px;
+            background: #e6f3ff;
+            z-index: 1;
+        } /* 操作 */
+
+        .table.table-bordered th:nth-child(3),
+        .table.table-bordered td:nth-child(3) {
+            position: sticky;
+            left: 170px;
+            background: #e6f3ff;
+            z-index: 1;
+        } /* ステータス */
+
+        .table.table-bordered th:nth-child(4),
+        .table.table-bordered td:nth-child(4) {
+            position: sticky;
+            left: 276px;
+            background: #e6f3ff;
+            z-index: 1;
+        } /* タスク */
+
+        .table.table-bordered thead th:nth-child(2),
+        .table.table-bordered thead th:nth-child(3),
+        .table.table-bordered thead th:nth-child(4) {
+            z-index: 3;
+        }
     </style>
 </head>
 <body>
@@ -745,7 +778,7 @@
                 <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#uploadModal">Excel</button>
                 <button class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#mailEditModal">メール編集</button>
                 <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createTaskModal">タスク作成</button>
-                <button class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteAllModal">全削除</button>
+                <button class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteAllModal">不要削除</button>
                 <a href="{{ url_for('logout') }}" class="btn btn-danger">Logout</a>
             </div>
         </div>
@@ -762,6 +795,7 @@
             <table class="table table-bordered">
                 <thead>
                     <tr>
+                        <th>No</th>
                         <th>操作</th>
                         {% for col in display_columns %}
                             <th class="sortable" data-column="{{ col }}">
@@ -778,6 +812,7 @@
                 <tbody id="projectTableBody">
                     {% for project in projects %}
                         <tr>
+                            <td>{{ loop.index }}</td>
                             <td>
                                 <div class="d-flex gap-2">
                                     <button class="btn btn-primary btn-sm"
@@ -1179,7 +1214,7 @@
         <div class="modal-dialog modal-dialog-scrollable modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">全てのデータを削除</h5>
+                    <h5 class="modal-title">全ての不要データを削除</h5>
                     <div class="d-flex gap-2">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
                         <button type="button" class="btn btn-danger" onclick="deleteAllData()">削除</button>
@@ -1375,8 +1410,15 @@
             const tbody = document.getElementById('projectTableBody');
             tbody.innerHTML = '';
 
-            projects.forEach(project => {
+            projects.forEach((project, idx) => {
                 const row = document.createElement('tr');
+
+                // Thêm cột No
+                const noCell = document.createElement('td');
+                noCell.textContent = idx + 1;
+                row.appendChild(noCell);
+
+                // Cột 操作
                 const opCell = document.createElement('td');
                 opCell.innerHTML = `
                     <div class="d-flex gap-2">
@@ -1728,13 +1770,13 @@
                 const row = document.createElement('tr');
                 const projectCell = document.createElement('td');
                 projectCell.className = 'project-cell';
-                if(project['PH']!=''){
-                    ct = project['案件名'] + ' ' + project['PJNo.'] + ' PH' + project['PH'];
+
+                // Sửa đoạn này: chỉ hiển thị PH nếu khác null/rỗng
+                let ct = project['案件名'] + ' ' + (project['PJNo.'] || '');
+                if (project['PH'] !== null && String(project['PH']).trim() !== '') {
+                    ct += ' PH' + project['PH'];
                 }
-                else{
-                    ct = ct = project['案件名'] + ' ' + project['PJNo.'];
-                }
-                projectCell.textContent = ct;
+                projectCell.textContent = ct.trim();
                 row.appendChild(projectCell);
 
                 weekDates.forEach(date => {

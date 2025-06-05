@@ -27,9 +27,9 @@ MAIL_DIR = 'mail'
 PROJECT_DIR = 'project'
 OLD_DIR = 'old'
 DISPLAY_COLUMNS = [
-    'ステータス', '案件名', '要件引継', '設計開始',
+    'ステータス', '案件名', 'PH','要件引継', '設計開始',
     '設計完了', '設計書送付', '開発開始', '開発完了', 'テスト開始日', 'テスト完了日',
-    'FB完了予定日', 'SE納品', 'タスク', 'SE', 'SE(sub)', 'BSE', '案件番号', 'PJNo.', 'PH',
+    'FB完了予定日', 'SE納品', 'タスク', 'SE', 'SE(sub)', 'BSE', '案件番号', 'PJNo.', 
     '開発工数（h）', '設計工数（h）', 'ページ数', '注文設計', '注文テスト', '注文FB', '注文BrSE', '備考'
 ]
 DATE_COLUMNS_DB = [
@@ -147,6 +147,7 @@ def read_users():
     return users
 
 def project_exists(cursor, project):
+    return False
     """Check if a project already exists based on 案件名, PH, PJNo."""
     keys = ['案件名', 'PH', 'PJNo.']
     conditions = []
@@ -455,61 +456,73 @@ def import_excel_to_sqlite(file_path):
         for index, row in df.iterrows():
             project = row.to_dict()
             df.at[index, 'ステータス'] = calculate_status(project, current_date)
+            
 
         conn = sqlite3.connect(DB_FILE)
         cursor = conn.cursor()
 
+        duplicated_projects = []
         imported_count = 0
+        total_projects = len(df)
+        logging.debug(f"Total projects to import: {total_projects}")
+        
         for _, row in df.iterrows():
-            project = row.to_dict()
-            if not project_exists(cursor, project):
-                cursor.execute('''
-                            INSERT INTO projects (
-                                SE, "SE(sub)", 案件名, PH, "開発工数（h）", "設計工数（h）", 要件引継, 設計開始,
-                                設計完了, 設計書送付, 開発開始, 開発完了, SE納品, BSE, 案件番号, "PJNo.",
-                                備考, テスト開始日, テスト完了日, FB完了予定日, ページ数, タスク, ステータス,
-                                不要, 注文設計, 注文テスト, 注文FB, 注文BrSE, user_edited_status
-                            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                        ''', (
-                    project.get('SE', ''),
-                    project.get('SE(sub)', ''),
-                    project.get('案件名', ''),
-                    project.get('PH', ''),
-                    project.get('開発工数（h）', None),
-                    project.get('設計工数（h）', None),
-                    project.get('要件引継', ''),
-                    project.get('設計開始', ''),
-                    project.get('設計完了', ''),
-                    project.get('設計書送付', ''),
-                    project.get('開発開始', ''),
-                    project.get('開発完了', ''),
-                    project.get('SE納品', ''),
-                    project.get('BSE', ''),
-                    project.get('案件番号', ''),
-                    project.get('PJNo.', ''),
-                    project.get('備考', ''),
-                    project.get('テスト開始日', ''),
-                    project.get('テスト完了日', ''),
-                    project.get('FB完了予定日', ''),
-                    project.get('ページ数', None),
-                    project.get('タスク', ''),
-                    project.get('ステータス', '要件引継待ち'),
-                    project.get('不要', 0),
-                    project.get('注文設計', 0),
-                    project.get('注文テスト', 0),
-                    project.get('注文FB', 0),
-                    project.get('注文BrSE', 0),
-                    project.get('user_edited_status', 0)
-                ))
-                imported_count += 1
+            try:
+                project = row.to_dict()
+                if not project_exists(cursor, project):
+                    cursor.execute('''
+                                INSERT INTO projects (
+                                    SE, "SE(sub)", 案件名, PH, "開発工数（h）", "設計工数（h）", 要件引継, 設計開始,
+                                    設計完了, 設計書送付, 開発開始, 開発完了, SE納品, BSE, 案件番号, "PJNo.",
+                                    備考, テスト開始日, テスト完了日, FB完了予定日, ページ数, タスク, ステータス,
+                                    不要, 注文設計, 注文テスト, 注文FB, 注文BrSE, user_edited_status
+                                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                            ''', (
+                        project.get('SE', ''),
+                        project.get('SE(sub)', ''),
+                        project.get('案件名', ''),
+                        project.get('PH', ''),
+                        project.get('開発工数（h）', None),
+                        project.get('設計工数（h）', None),
+                        project.get('要件引継', ''),
+                        project.get('設計開始', ''),
+                        project.get('設計完了', ''),
+                        project.get('設計書送付', ''),
+                        project.get('開発開始', ''),
+                        project.get('開発完了', ''),
+                        project.get('SE納品', ''),
+                        project.get('BSE', ''),
+                        project.get('案件番号', ''),
+                        project.get('PJNo.', ''),
+                        project.get('備考', ''),
+                        project.get('テスト開始日', ''),
+                        project.get('テスト完了日', ''),
+                        project.get('FB完了予定日', ''),
+                        project.get('ページ数', None),
+                        project.get('タスク', ''),
+                        project.get('ステータス', '要件引継待ち'),
+                        project.get('不要', 0),
+                        project.get('注文設計', 0),
+                        project.get('注文テスト', 0),
+                        project.get('注文FB', 0),
+                        project.get('注文BrSE', 0),
+                        project.get('user_edited_status', 0)
+                    ))
+                    imported_count += 1
+                else:
+                    duplicated_projects.append(project.get('案件名', '') or f"PJNo:{project.get('PJNo.', '')}")
+            except Exception as e:
+                print("Lỗi ở dòng này:", e)
+                
 
+        logging.info(f'duplicated_projects: {duplicated_projects}')
         conn.commit()
         conn.close()
         logging.info(f"Imported {imported_count} new projects from {file_path}")
-        return True
+        return True, duplicated_projects, total_projects
     except Exception as e:
         #logging.error(f"Failed to import Excel file {file_path}: {e}")
-        return False
+        return False, [], 0
 
 def read_projects():
     """Read all projects from SQLite database with total hours worked."""
@@ -737,15 +750,15 @@ def dashboard():
             date_obj = parse_date_from_db(date_str_db)
             project[f'{col}_past'] = False
             if date_obj is not None:
-                diff = abs((current_date.date() - date_obj.date()).days)
-                if diff < min_diff:
+                diff = (date_obj.date() - current_date.date()).days
+                if diff >= 0 and diff < min_diff:
                     min_diff = diff
                     closest_date = col
                 if date_obj.date() < current_date.date():
                     project[f'{col}_past'] = True
             project[col] = format_date_jp(date_obj)
-
         project['highlight_column'] = closest_date if closest_date else None
+        
         fb_completion_date = parse_date_from_db(row['FB完了予定日'])
         project['fb_late'] = False
 
@@ -796,6 +809,11 @@ def dashboard():
                     updates[col] = ','.join(request.form.getlist(col))
                 else:
                     updates[col] = request.form[col]
+            # Đảm bảo các trường checkbox luôn có mặt trong updates
+        for field in ['不要', '注文設計', '注文テスト', '注文FB', '注文BrSE']:
+            if field not in updates:
+                updates[field] = 0
+            
         update_project(project_id, updates)
         flash('プロジェクトが正常に更新されました', 'success')
         return redirect(url_for('dashboard'))
@@ -804,7 +822,6 @@ def dashboard():
     ranges = read_pages_ranges()
     working_days = read_working_days()
 
-    print(filtered_projects)
     return render_template('dashboard.html',
                            projects=filtered_projects,
                            display_columns=DISPLAY_COLUMNS,
@@ -850,15 +867,17 @@ def upload():
                 if os.path.isfile(existing_file_path):
                     os.remove(existing_file_path)
 
-        if import_excel_to_sqlite(file_path):
-            os.remove(file_path)
-            flash('ファイルが正常にアップロードされました', 'success')
+        result, duplicated_projects, total_projects = import_excel_to_sqlite(file_path)
+        os.remove(file_path)
+        if result:
+            if duplicated_projects:
+                flash(f'アップロード成功: {total_projects - len(duplicated_projects)}件追加, {len(duplicated_projects)}件は重複: {", ".join(duplicated_projects)}', 'warning')
+            else:
+                flash('ファイルが正常にアップロードされました', 'success')
         else:
-            os.remove(file_path)
             flash('エラー: ファイルのインポートに失敗しました', 'danger')
 
     except Exception as e:
-        #logging.error(f"Error uploading file: {e}")
         if os.path.exists(file_path):
             os.remove(file_path)
         flash(f'エラー: ファイルのアップロードに失敗しました: {str(e)}', 'danger')
@@ -999,15 +1018,15 @@ def sort_projects():
                 date_obj = parse_date_from_db(date_str_db)
                 project[f'{col}_past'] = False
                 if date_obj is not None:
-                    diff = abs((current_date.date() - date_obj.date()).days)
-                    if diff < min_diff:
+                    diff = (date_obj.date() - current_date.date()).days
+                    if diff >= 0 and diff < min_diff:
                         min_diff = diff
                         closest_date = col
                     if date_obj.date() < current_date.date():
                         project[f'{col}_past'] = True
                 project[col] = format_date_jp(date_obj)
-
             project['highlight_column'] = closest_date if closest_date else None
+            
             fb_completion_date = parse_date_from_db(row['FB完了予定日'])
             project['fb_late'] = False
 
@@ -1113,32 +1132,28 @@ def save_daily_hours():
 
 @app.route('/delete_all_data', methods=['POST'])
 def delete_all_data():
-    """Delete all data from projects, copied_templates, and daily_hours tables."""
-    if 'username' not in session:
-        return jsonify({'error': 'Unauthorized'}), 401
-
     data = request.get_json()
-    password = data.get('password')
-    users = read_users()
-    username = session['username']
-
-    if users.get(username) != password:
-        return jsonify({'error': 'パスワードが正しくありません'}), 400
-
+    password = data.get('password', '')
+    if 'username' not in session:
+        return jsonify({'success': False, 'error': '未認証です'})
     try:
         conn = sqlite3.connect(DB_FILE)
         cursor = conn.cursor()
-        cursor.execute('DELETE FROM projects')
-        cursor.execute('DELETE FROM copied_templates')
-        cursor.execute('DELETE FROM daily_hours')
-        cursor.execute('DELETE FROM sqlite_sequence')  # Reset auto-increment
+        # Lấy danh sách project_id cần xóa
+        cursor.execute('SELECT id FROM projects WHERE 不要 = 1 OR 不要 = "1" OR 不要 = "true"')
+        project_ids = [row[0] for row in cursor.fetchall()]
+        # Xóa dữ liệu liên quan ở các bảng khác
+        for pid in project_ids:
+            cursor.execute('DELETE FROM daily_hours WHERE project_id = ?', (pid,))
+            cursor.execute('DELETE FROM schedule_done_status WHERE project_id = ?', (pid,))
+            cursor.execute('DELETE FROM copied_templates WHERE project_id = ?', (pid,))
+        # Xóa project
+        cursor.execute('DELETE FROM projects WHERE 不要 = 1 OR 不要 = "1" OR 不要 = "true"')
         conn.commit()
         conn.close()
-        #logging.info("All data deleted successfully")
         return jsonify({'success': True})
-    except sqlite3.Error as e:
-        #logging.error(f"Database error while deleting all data: {e}")
-        return jsonify({'error': 'Database error'}), 500
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/logout')
 def logout():
