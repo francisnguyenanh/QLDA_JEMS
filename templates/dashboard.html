@@ -744,6 +744,25 @@
             min-width: 2000px;
         }
 
+        #editModal .modal-dialog {
+            max-width: 1200px;
+            height: 95vh;
+            max-height: 95vh;
+            margin: 2vh auto;
+            display: flex;
+            flex-direction: column;
+        }
+        #editModal .modal-content {
+            height: 100%;
+            max-height: 95vh;
+            display: flex;
+            flex-direction: column;
+        }
+        #editModal .modal-body {
+            flex: 1 1 auto;
+            overflow-y: auto;
+            max-height: calc(95vh - 120px);
+        }
     </style>
 </head>
 <body>
@@ -2884,7 +2903,55 @@
             });
         });
 
+        document.querySelectorAll('#editModal input[type="date"]').forEach(input => {
+    // Xử lý khi paste
+    input.addEventListener('paste', function(e) {
+        e.preventDefault();
+        let paste = (e.clipboardData || window.clipboardData).getData('text');
+        paste = paste.trim();
+        if (!paste) return;
+        // Normalize các định dạng ngày tháng phổ biến
+        let normalized = paste
+            .replace(/[\/\.]/g, '-') // đổi / hoặc . thành -
+            .replace(/[年月日]/g, '-') // đổi ký tự Nhật thành -
+            .replace(/-+/g, '-'); // loại bỏ nhiều dấu -
+        // Nếu là dd-mm-yyyy thì chuyển sang yyyy-mm-dd
+        let m = normalized.match(/^(\d{1,2})-(\d{1,2})-(\d{4})$/);
+        if (m) {
+            normalized = `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`;
+        }
+        // Nếu là yyyy-mm-dd
+        m = normalized.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+        if (m) {
+            normalized = `${m[1]}-${m[2].padStart(2, '0')}-${m[3].padStart(2, '0')}`;
+        }
+        // Gán lại giá trị đã chuẩn hóa
+        this.value = normalized;
+        // Kích hoạt sự kiện input/change nếu cần
+        this.dispatchEvent(new Event('input', { bubbles: true }));
+        this.dispatchEvent(new Event('change', { bubbles: true }));
+    });
 
+    // Xử lý khi nhập tay (giữ nguyên như cũ)
+    input.addEventListener('input', function(e) {
+        let val = this.value.trim();
+        if (!val) return;
+        if (/^\d{4}-\d{2}-\d{2}$/.test(val)) return;
+        let normalized = val
+            .replace(/[\/\.]/g, '-')
+            .replace(/[年月日]/g, '-')
+            .replace(/-+/g, '-');
+        let m = normalized.match(/^(\d{1,2})-(\d{1,2})-(\d{4})$/);
+        if (m) {
+            normalized = `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`;
+        }
+        m = normalized.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+        if (m) {
+            normalized = `${m[1]}-${m[2].padStart(2, '0')}-${m[3].padStart(2, '0')}`;
+            this.value = normalized;
+        }
+    });
+});
     </script>
 </body>
 </html>
