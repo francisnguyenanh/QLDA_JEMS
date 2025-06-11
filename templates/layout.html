@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>{% block title %}プロジェクト管理{% endblock %}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
     <style>
@@ -104,41 +104,50 @@
         .navbar .nav-link.active, .navbar .nav-link:focus, .navbar .nav-link:hover {
             color: var(--primary-color) !important;
         }
-        .footer-days-alive {
-            position: fixed;
-            left: 0;
-            bottom: 0;
-            z-index: 1000;
-            background: var(--card-bg);
-            color: var(--primary-color);
-            padding: 0.5rem 1rem;
-            font-weight: bold;
-            border-top-right-radius: 10px;
-            box-shadow: 0 -2px 8px rgba(0,0,0,0.03);
-            font-size: 1rem;
+        .btn-group-responsive {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
         }
-        @media (max-width: 576px) {
-            .footer-days-alive {
-                font-size: 0.95rem;
-                padding: 0.4rem 0.7rem;
+        @media (max-width: 991px) {
+            .btn-group-responsive {
+                flex-direction: column;
+                width: 100%;
+            }
+            .btn-group-responsive .btn,
+            .btn-group-responsive .btn-group {
+                width: 100%;
+                margin-bottom: 0.25rem;
             }
         }
+        {% block extra_styles %}{% endblock %}
     </style>
 </head>
 <body>
     <nav class="navbar navbar-expand-lg" style="background-color: var(--card-bg);">
         <div class="container-fluid">
-            <div class="d-flex align-items-center w-100 justify-content-between">
-                <a class="navbar-brand mb-0" href="/dashboard">Document</a>
-                <span class="navbar-text slogan flex-grow-1 text-center mx-2">{{ slogan }}</span>
-                <button class="navbar-toggler ms-2" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                {% block navbar_content %}
+                <!-- Default navbar content -->
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/dashboard">Dashboard</a>
+                    </li>
+                </ul>
+                <div class="d-flex">
+                    <a href="{{ url_for('logout') }}" class="btn btn-danger">Logout</a>
+                </div>
+                {% endblock %}
             </div>
-
         </div>
     </nav>
-    <div class="container mt-4">
+
+    <div class="container-fluid mt-3">
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 {% for category, message in messages %}
@@ -158,12 +167,11 @@
         document.addEventListener('DOMContentLoaded', function() {
             setTimeout(function() {
                 document.querySelectorAll('.alert-dismissible').forEach(function(alert) {
-                    // Bootstrap 5: dùng .alert('close') nếu có jQuery, hoặc tự remove
                     alert.classList.remove('show');
                     alert.classList.add('fade');
                     setTimeout(function() {
                         alert.remove();
-                    }, 300); // chờ hiệu ứng fade
+                    }, 300);
                 });
             }, 3000);
         });
