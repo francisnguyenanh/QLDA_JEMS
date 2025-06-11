@@ -788,6 +788,16 @@
                 </div>
             </div>
             <div class="btn-group-responsive">
+                <!-- Dropdown menu mới cho Document -->
+                <div class="btn-group" role="group">
+                    <button class="btn btn-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        ドキュメント
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="/editor">設計書</a></li>
+                        <li><a class="dropdown-item" href="/editor_list">設計書一覧</a></li>
+                    </ul>
+                </div>
                 <button class="btn btn-info" data-bs-toggle="modal" data-bs-target="#scheduleModal" onclick="openScheduleModal()">予定</button>
                 <button class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#dailyReportModal" onclick="openDailyReportModal()">日報</button>
                 <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#uploadModal">Excel</button>

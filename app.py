@@ -128,6 +128,17 @@ def init_db():
                 FOREIGN KEY (project_id) REFERENCES projects(id)
             )
         ''')
+    
+    # Thêm bảng editor_document mới
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS editor_document (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT NOT NULL,
+            content TEXT NOT NULL,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
 
     conn.commit()
     conn.close()
@@ -1986,6 +1997,190 @@ def save_schedule_done():
         logging.error(f"Error saving schedule done status: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
+@app.route('/editor_list')
+def editor_list():
+    if 'username' not in session:
+        return redirect(url_for('login'))
+    return render_template('editor_list.html')
+
+@app.route('/editor')
+def editor():
+    if 'username' not in session:
+        return redirect(url_for('login'))
+    
+    document_id = request.args.get('id')
+    document = None
+    
+    if document_id:
+        try:
+            conn = sqlite3.connect(DB_FILE)
+            cursor = conn.cursor()
+            cursor.execute('''
+                SELECT id, title, content, created_at, updated_at 
+                FROM editor_document 
+                WHERE id = ?
+            ''', (document_id,))
+            row = cursor.fetchone()
+            conn.close()
+            
+            if row:
+                document = {
+                    'id': row[0],
+                    'title': row[1],
+                    'content': row[2],
+                    'created_at': row[3],
+                    'updated_at': row[4]
+                }
+        except Exception as e:
+            logging.error(f"Error loading document: {str(e)}")
+    
+    return render_template('editor.html', document=document)
+
+@app.route('/api/editor_documents', methods=['GET'])
+def get_editor_documents():
+    """Get all editor documents."""
+    if 'username' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    try:
+        conn = sqlite3.connect(DB_FILE)
+        cursor = conn.cursor()
+        cursor.execute('''
+            SELECT id, title, content, created_at, updated_at 
+            FROM editor_document 
+            ORDER BY updated_at DESC
+        ''')
+        documents = []
+        for row in cursor.fetchall():
+            documents.append({
+                'id': row[0],
+                'title': row[1],
+                'content': row[2],
+                'created_at': row[3],
+                'updated_at': row[4]
+            })
+        conn.close()
+        return jsonify({'documents': documents})
+    except Exception as e:
+        logging.error(f"Error fetching editor documents: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/editor_documents', methods=['POST'])
+def create_editor_document():
+    """Create a new editor document."""
+    if 'username' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    data = request.get_json()
+    title = data.get('title', '').strip()
+    content = data.get('content', '').strip()
+    
+    if not title:
+        return jsonify({'error': 'Title is required'}), 400
+    
+    try:
+        conn = sqlite3.connect(DB_FILE)
+        cursor = conn.cursor()
+        current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        cursor.execute('''
+            INSERT INTO editor_document (title, content, created_at, updated_at)
+            VALUES (?, ?, ?, ?)
+        ''', (title, content, current_time, current_time))
+        document_id = cursor.lastrowid
+        conn.commit()
+        conn.close()
+        return jsonify({'success': True, 'id': document_id})
+    except Exception as e:
+        logging.error(f"Error creating editor document: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/editor_documents/<int:document_id>', methods=['GET'])
+def get_editor_document(document_id):
+    """Get a specific editor document."""
+    if 'username' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    try:
+        conn = sqlite3.connect(DB_FILE)
+        cursor = conn.cursor()
+        cursor.execute('''
+            SELECT id, title, content, created_at, updated_at 
+            FROM editor_document 
+            WHERE id = ?
+        ''', (document_id,))
+        row = cursor.fetchone()
+        conn.close()
+        
+        if not row:
+            return jsonify({'error': 'Document not found'}), 404
+        
+        document = {
+            'id': row[0],
+            'title': row[1],
+            'content': row[2],
+            'created_at': row[3],
+            'updated_at': row[4]
+        }
+        return jsonify({'document': document})
+    except Exception as e:
+        logging.error(f"Error fetching editor document: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/editor_documents/<int:document_id>', methods=['PUT'])
+def update_editor_document(document_id):
+    """Update an existing editor document."""
+    if 'username' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    data = request.get_json()
+    title = data.get('title', '').strip()
+    content = data.get('content', '').strip()
+    
+    if not title:
+        return jsonify({'error': 'Title is required'}), 400
+    
+    try:
+        conn = sqlite3.connect(DB_FILE)
+        cursor = conn.cursor()
+        current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        cursor.execute('''
+            UPDATE editor_document 
+            SET title = ?, content = ?, updated_at = ?
+            WHERE id = ?
+        ''', (title, content, current_time, document_id))
+        
+        if cursor.rowcount == 0:
+            conn.close()
+            return jsonify({'error': 'Document not found'}), 404
+        
+        conn.commit()
+        conn.close()
+        return jsonify({'success': True})
+    except Exception as e:
+        logging.error(f"Error updating editor document: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/editor_documents/<int:document_id>', methods=['DELETE'])
+def delete_editor_document(document_id):
+    """Delete an editor document."""
+    if 'username' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    try:
+        conn = sqlite3.connect(DB_FILE)
+        cursor = conn.cursor()
+        cursor.execute('DELETE FROM editor_document WHERE id = ?', (document_id,))
+        
+        if cursor.rowcount == 0:
+            conn.close()
+            return jsonify({'error': 'Document not found'}), 404
+        
+        conn.commit()
+        conn.close()
+        return jsonify({'success': True})
+    except Exception as e:
+        logging.error(f"Error deleting editor document: {str(e)}")
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)
