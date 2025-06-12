@@ -113,8 +113,11 @@
 
         <div class="col-md-4">
             <div class="card">
-                <div class="card-header">
+                <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">ファイル</h5>
+                    <button class="btn btn-outline-primary btn-sm" onclick="downloadAllFiles()" id="downloadAllBtn" style="display: none;">
+                        <i class="bi bi-download"></i> 全てダウンロード
+                    </button>
                 </div>
                 <div class="card-body">
                     <!-- File Upload Area -->
@@ -201,7 +204,7 @@ function saveMemo() {
     const content = document.getElementById('memoContent').value;
     
     if (!title) {
-        alert('タイトルを入力してください');
+        showError('タイトルを入力してください');
         return;
     }
     
@@ -230,11 +233,11 @@ function saveMemo() {
             window.history.replaceState({}, '', `/memo?id=${data.id}`);
         }
         
-        alert('保存しました');
+        showSuccess('保存しました');
     })
     .catch(error => {
         console.error('Error saving memo:', error);
-        alert('保存に失敗しました');
+        showError('保存に失敗しました');
     });
 }
 
@@ -256,16 +259,22 @@ function loadFiles() {
 
 function displayFiles(files) {
     const container = document.getElementById('fileList');
+    const downloadAllBtn = document.getElementById('downloadAllBtn');
     
     if (files.length === 0) {
         container.innerHTML = '<p class="text-muted">ファイルがありません</p>';
+        downloadAllBtn.style.display = 'none';
         return;
     }
+    
+    // Show download all button
+    downloadAllBtn.style.display = 'block';
     
     let html = '';
     files.forEach(file => {
         const uploadDate = new Date(file.uploaded_at).toLocaleDateString('ja-JP');
         const fileSize = formatFileSize(file.file_size);
+        const imageUrl = `/memo_files/${file.filename}`;
         
         html += `
             <div class="file-item">
@@ -274,6 +283,7 @@ function displayFiles(files) {
                         <h6 class="mb-1">${escapeHtml(file.original_filename)}</h6>
                         <small class="text-muted">
                             ${fileSize} • ${uploadDate}
+                            ${file.file_type === 'image' ? ' • 画像' : ' • 圧縮済み'}
                         </small>
                     </div>
                     <button class="btn btn-sm btn-outline-danger" onclick="deleteFile(${file.id})">
@@ -285,16 +295,17 @@ function displayFiles(files) {
         if (file.file_type === 'image') {
             html += `
                 <div class="mt-2">
-                    <img src="/memo_files/${file.filename}" 
+                    <img src="${imageUrl}" 
                          class="image-thumbnail" 
                          alt="${escapeHtml(file.original_filename)}"
-                         onclick="previewImage('/memo_files/${file.filename}', '${escapeHtml(file.original_filename)}')">
+                         onclick="previewImage('${imageUrl}', '${escapeHtml(file.original_filename)}')"
+                         onerror="console.error('Image load error:', this.src)">
                 </div>
             `;
         } else {
             html += `
                 <div class="mt-2">
-                    <a href="/memo_files/${file.filename}" 
+                    <a href="${imageUrl}" 
                        class="btn btn-sm btn-outline-primary" 
                        download="${escapeHtml(file.original_filename)}">
                         <i class="bi bi-download"></i> ダウンロード
@@ -311,11 +322,23 @@ function displayFiles(files) {
 
 function uploadFiles(files) {
     if (!currentMemoId) {
-        alert('先にメモを保存してください');
+        showWarning('先にメモを保存してください');
         return;
     }
     
     if (files.length === 0) return;
+    
+    // Show upload progress
+    const fileListContainer = document.getElementById('fileList');
+    const progressHtml = `
+        <div id="uploadProgress" class="alert alert-info">
+            <div class="d-flex align-items-center">
+                <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+                <span>ファイルをアップロード中...</span>
+            </div>
+        </div>
+    `;
+    fileListContainer.insertAdjacentHTML('afterbegin', progressHtml);
     
     const formData = new FormData();
     formData.append('memo_id', currentMemoId);
@@ -330,20 +353,83 @@ function uploadFiles(files) {
     })
     .then(response => response.json())
     .then(data => {
+        // Remove progress indicator
+        const progressElement = document.getElementById('uploadProgress');
+        if (progressElement) {
+            progressElement.remove();
+        }
+        
         if (data.error) {
             throw new Error(data.error);
         }
+        
+        // Show compression results if any
+        const compressedFiles = data.files.filter(f => f.was_compressed);
+        if (compressedFiles.length > 0) {
+            const compressionInfo = compressedFiles.map(f => 
+                `${f.original_filename}: ${f.compression_ratio} 削減`
+            ).join('<br>');
+            showSuccess(`アップロード完了！${compressionInfo}`, 8000);
+        } else {
+            showSuccess('アップロード完了！');
+        }
+        
         loadFiles();
         document.getElementById('fileInput').value = '';
     })
     .catch(error => {
+        // Remove progress indicator
+        const progressElement = document.getElementById('uploadProgress');
+        if (progressElement) {
+            progressElement.remove();
+        }
+        
         console.error('Error uploading files:', error);
-        alert('ファイルのアップロードに失敗しました');
+        showError('ファイルのアップロードに失敗しました');
     });
 }
 
-function deleteFile(fileId) {
-    if (!confirm('このファイルを削除しますか？')) return;
+function downloadAllFiles() {
+    if (!currentMemoId) {
+        showWarning('メモが選択されていません');
+        return;
+    }
+    
+    // Show download progress
+    const downloadAllBtn = document.getElementById('downloadAllBtn');
+    const originalText = downloadAllBtn.innerHTML;
+    downloadAllBtn.innerHTML = '<div class="spinner-border spinner-border-sm me-1"></div>準備中...';
+    downloadAllBtn.disabled = true;
+    
+    // Create download link
+    const link = document.createElement('a');
+    link.href = `/api/memo_files/download_all/${currentMemoId}`;
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    showInfo('ダウンロードを開始しました');
+    
+    // Reset button after delay
+    setTimeout(() => {
+        downloadAllBtn.innerHTML = originalText;
+        downloadAllBtn.disabled = false;
+    }, 2000);
+}
+
+async function deleteFile(fileId) {
+    // Use native confirm as fallback if showConfirmation is not available
+    const confirmed = typeof showConfirmation === 'function' 
+        ? await showConfirmation(
+            'このファイルを削除しますか？',
+            '削除確認',
+            '削除',
+            'キャンセル'
+          )
+        : confirm('このファイルを削除しますか？');
+    
+    if (!confirmed) return;
     
     fetch(`/api/memo_files/${fileId}`, {
         method: 'DELETE'
@@ -353,12 +439,44 @@ function deleteFile(fileId) {
         if (data.error) {
             throw new Error(data.error);
         }
+        showSuccess('ファイルを削除しました');
         loadFiles();
     })
     .catch(error => {
         console.error('Error deleting file:', error);
-        alert('ファイルの削除に失敗しました');
+        showError('ファイルの削除に失敗しました');
     });
+}
+
+// Add fallback implementations for notification functions if they don't exist
+if (typeof showSuccess !== 'function') {
+    window.showSuccess = function(message, duration = 3000) {
+        alert('Success: ' + message);
+    };
+}
+
+if (typeof showError !== 'function') {
+    window.showError = function(message) {
+        alert('Error: ' + message);
+    };
+}
+
+if (typeof showWarning !== 'function') {
+    window.showWarning = function(message) {
+        alert('Warning: ' + message);
+    };
+}
+
+if (typeof showInfo !== 'function') {
+    window.showInfo = function(message) {
+        alert('Info: ' + message);
+    };
+}
+
+if (typeof showConfirmation !== 'function') {
+    window.showConfirmation = function(message, title = 'Confirm', confirmText = 'OK', cancelText = 'Cancel') {
+        return Promise.resolve(confirm(message));
+    };
 }
 
 function previewImage(src, title) {
@@ -379,7 +497,7 @@ function downloadCurrentImage() {
 
 async function pasteFromClipboard() {
     if (!currentMemoId) {
-        alert('先にメモを保存してください');
+        showWarning('先にメモを保存してください');
         return;
     }
     
@@ -401,10 +519,10 @@ async function pasteFromClipboard() {
             }
         }
         
-        alert('クリップボードに画像がありません');
+        showWarning('クリップボードに画像がありません');
     } catch (error) {
         console.error('Error accessing clipboard:', error);
-        alert('クリップボードへのアクセスに失敗しました');
+        showError('クリップボードへのアクセスに失敗しました');
     }
 }
 

@@ -15,6 +15,10 @@ import chardet
 import csv
 from dateutil.parser import parse
 from flask import Flask, jsonify, request, session, render_template, redirect, url_for, flash, send_file
+import zipfile
+import tempfile
+from PIL import Image
+import io
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -2211,6 +2215,57 @@ def delete_editor_document(document_id):
         logging.error(f"Error deleting editor document: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
+def compress_file(file_path, original_filename):
+    """Compress file based on its type."""
+    file_extension = os.path.splitext(original_filename)[1].lower()
+    
+    # Skip compression for image files
+    if file_extension in ['.png', '.jpg', '.jpeg', '.gif', '.bmp', '.webp']:
+        logging.info(f"Skipping compression for image file: {original_filename}")
+        return False
+    
+    # Skip compression for already compressed files
+    if file_extension in ['.zip', '.rar', '.7z', '.gz', '.tar', '.bz2']:
+        logging.info(f"Skipping compression for already compressed file: {original_filename}")
+        return False
+    
+    # For other files, use ZIP compression
+    try:
+        # Get original file size
+        original_size = os.path.getsize(file_path)
+        logging.info(f"Original file size for {original_filename}: {original_size} bytes")
+        
+        # Create compressed version
+        compressed_path = file_path + '_temp.zip'
+        with zipfile.ZipFile(compressed_path, 'w', zipfile.ZIP_DEFLATED, compresslevel=6) as zf:
+            zf.write(file_path, original_filename)
+        
+        # Check if compression actually reduced file size significantly (at least 10%)
+        compressed_size = os.path.getsize(compressed_path)
+        logging.info(f"Compressed file size for {original_filename}: {compressed_size} bytes")
+        
+        if compressed_size < original_size * 0.9:  # Only replace if at least 10% reduction
+            # Replace original with compressed
+            os.replace(compressed_path, file_path)
+            logging.info(f"Successfully compressed {original_filename}: {original_size} -> {compressed_size} bytes ({((original_size - compressed_size) / original_size * 100):.1f}% reduction)")
+            return True
+        else:
+            # Remove compressed file and keep original
+            os.remove(compressed_path)
+            logging.info(f"Compression not beneficial for {original_filename} ({((original_size - compressed_size) / original_size * 100):.1f}% reduction), keeping original")
+            return False
+            
+    except Exception as e:
+        logging.error(f"Error compressing file {original_filename}: {str(e)}")
+        # Clean up any temporary file
+        compressed_path = file_path + '_temp.zip'
+        if os.path.exists(compressed_path):
+            try:
+                os.remove(compressed_path)
+            except:
+                pass
+        return False
+    
 @app.route('/memo_list')
 def memo_list():
     if 'username' not in session:
@@ -2503,24 +2558,52 @@ def upload_memo_file():
             # Save file
             file_path = os.path.join(FILEUPLOAD_DIR, unique_filename)
             file.save(file_path)
+            logging.info(f"Saved file: {file_path}")
             
-            # Get file size
-            file_size = os.path.getsize(file_path)
+            # Get original file size
+            original_size = os.path.getsize(file_path)
             
-            # Save to database
+            # Compress file (only non-image files)
+            logging.info(f"Attempting to compress file: {original_filename}, type: {file_type}")
+            was_compressed = compress_file(file_path, original_filename)
+            logging.info(f"Compression result for {original_filename}: {was_compressed}")
+            
+            # Update filename if compressed
+            stored_filename = unique_filename
+            if was_compressed:
+                # File was compressed, so it's now a ZIP file
+                base_name = os.path.splitext(unique_filename)[0]
+                stored_filename = f"{base_name}.zip"
+                # Rename the file in filesystem to reflect the ZIP extension
+                new_file_path = os.path.join(FILEUPLOAD_DIR, stored_filename)
+                os.rename(file_path, new_file_path)
+                file_path = new_file_path
+                logging.info(f"Renamed compressed file to: {stored_filename}")
+            
+            # Get final file size
+            final_size = os.path.getsize(file_path)
+            
+            # Calculate compression ratio
+            compression_ratio = None
+            if was_compressed and original_size > 0:
+                compression_ratio = f"{((original_size - final_size) / original_size * 100):.1f}%"
+            
+            # Save to database with correct filename
             current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
             cursor.execute('''
                 INSERT INTO memo_files (memo_id, filename, original_filename, file_type, file_size, uploaded_at)
                 VALUES (?, ?, ?, ?, ?, ?)
-            ''', (memo_id, unique_filename, original_filename, file_type, file_size, current_time))
+            ''', (memo_id, stored_filename, original_filename, file_type, final_size, current_time))
             
             uploaded_files.append({
                 'id': cursor.lastrowid,
-                'filename': unique_filename,
+                'filename': stored_filename,
                 'original_filename': original_filename,
                 'file_type': file_type,
-                'file_size': file_size,
-                'uploaded_at': current_time
+                'file_size': final_size,
+                'uploaded_at': current_time,
+                'was_compressed': was_compressed,
+                'compression_ratio': compression_ratio
             })
         
         conn.commit()
@@ -2530,7 +2613,64 @@ def upload_memo_file():
     except Exception as e:
         logging.error(f"Error uploading memo files: {str(e)}")
         return jsonify({'error': str(e)}), 500
-
+@app.route('/api/memo_files/download_all/<int:memo_id>')
+def download_all_memo_files(memo_id):
+    """Download all files of a memo as a ZIP archive."""
+    if 'username' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    try:
+        conn = sqlite3.connect(DB_FILE)
+        cursor = conn.cursor()
+        
+        # Get memo info
+        cursor.execute('SELECT title FROM memo WHERE id = ?', (memo_id,))
+        memo_row = cursor.fetchone()
+        if not memo_row:
+            conn.close()
+            return jsonify({'error': 'Memo not found'}), 404
+        
+        memo_title = memo_row[0]
+        
+        # Get files
+        cursor.execute('''
+            SELECT filename, original_filename, file_type 
+            FROM memo_files 
+            WHERE memo_id = ?
+            ORDER BY uploaded_at ASC
+        ''', (memo_id,))
+        files = cursor.fetchall()
+        conn.close()
+        
+        if not files:
+            return jsonify({'error': 'No files found'}), 404
+        
+        # Create ZIP file in memory
+        memory_file = io.BytesIO()
+        
+        with zipfile.ZipFile(memory_file, 'w', zipfile.ZIP_DEFLATED, compresslevel=6) as zf:
+            for filename, original_filename, file_type in files:
+                file_path = os.path.join(FILEUPLOAD_DIR, filename)
+                if os.path.exists(file_path):
+                    # Use original filename in ZIP
+                    zf.write(file_path, original_filename)
+        
+        memory_file.seek(0)
+        
+        # Create safe filename for ZIP
+        safe_title = "".join(c for c in memo_title if c.isalnum() or c in (' ', '-', '_')).rstrip()
+        zip_filename = f"{safe_title}_files.zip" if safe_title else f"memo_{memo_id}_files.zip"
+        
+        return app.response_class(
+            memory_file.getvalue(),
+            mimetype='application/zip',
+            headers={'Content-Disposition': f'attachment; filename="{zip_filename}"'}
+        )
+        
+    except Exception as e:
+        logging.error(f"Error downloading memo files: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+    
 @app.route('/api/memo_files/<int:file_id>', methods=['DELETE'])
 def delete_memo_file(file_id):
     """Delete a memo file."""
@@ -2583,8 +2723,45 @@ def serve_memo_file(filename):
     if not os.path.exists(file_path):
         return jsonify({'error': 'File not found'}), 404
     
-    # Use send_file instead of send_static_file
-    return send_file(file_path)
+    try:
+        conn = sqlite3.connect(DB_FILE)
+        cursor = conn.cursor()
+        cursor.execute('SELECT original_filename, file_type FROM memo_files WHERE filename = ?', (filename,))
+        file_info = cursor.fetchone()
+        conn.close()
+        
+        if file_info:
+            original_filename, file_type = file_info
+            
+            # For image files, serve directly without download prompt
+            if file_type == 'image':
+                return send_file(file_path)
+            
+            # For non-image files, always serve as download with stored filename
+            # If file was compressed, it will be served as .zip
+            # If file was not compressed, it will be served with original extension
+            stored_ext = os.path.splitext(filename)[1].lower()
+            if stored_ext == '.zip':
+                # File was compressed, serve as ZIP
+                download_name = f"{os.path.splitext(original_filename)[0]}.zip"
+            else:
+                # File was not compressed, serve with original name
+                download_name = original_filename
+            
+            return send_file(
+                file_path, 
+                as_attachment=True, 
+                download_name=download_name,
+                mimetype='application/octet-stream'
+            )
+        
+        # Fallback - serve as is
+        return send_file(file_path, as_attachment=True)
+        
+    except Exception as e:
+        logging.error(f"Error serving file {filename}: {str(e)}")
+        return send_file(file_path, as_attachment=True)
+
 
 if __name__ == '__main__':
     app.run(debug=True)
