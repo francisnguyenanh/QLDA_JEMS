@@ -1290,7 +1290,425 @@ body {
         width: 120px;
     }
 }
+/* EDIT AND COPY MODAL SPECIFIC STYLES */
+/* Edit Modal styling */
+#editModal .modal-content,
+#copyModal .modal-content {
+    border: none;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+    border-radius: 8px;
+}
 
+#editModal .modal-header,
+#copyModal .modal-header {
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    border-bottom: 2px solid #e2e8f0;
+    border-radius: 8px 8px 0 0;
+    padding: 1rem 1.25rem;
+}
+
+#editModal .modal-title,
+#copyModal .modal-title {
+    color: #475569;
+    font-weight: 600;
+    font-size: 1.1rem;
+}
+
+#editModal .modal-body,
+#copyModal .modal-body {
+    padding: 1.5rem 1.25rem;
+    background: #ffffff;
+    max-height: 70vh;
+    overflow-y: auto;
+}
+
+/* Form styling for edit and copy modals */
+#editModal .form-label,
+#copyModal .form-label {
+    color: #374151;
+    font-weight: 500;
+    font-size: 0.9rem;
+    margin-bottom: 0.4rem;
+}
+
+#editModal .form-control,
+#copyModal .form-control,
+#editModal .form-select,
+#copyModal .form-select {
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+    background: #ffffff;
+}
+
+#editModal .form-control:focus,
+#copyModal .form-control:focus,
+#editModal .form-select:focus,
+#copyModal .form-select:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+    outline: none;
+}
+
+/* Column layout styling */
+#editModal .col-12.col-md-3,
+#copyModal .col-12.col-md-3 {
+    padding: 0 0.75rem;
+}
+
+/* Task checkboxes styling */
+#editModal .task-checkboxes,
+#copyModal .task-checkboxes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    padding: 0.5rem;
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+}
+
+#editModal .task-checkboxes .form-check,
+#copyModal .task-checkboxes .form-check {
+    margin-bottom: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+#editModal .task-checkboxes .form-check-input,
+#copyModal .task-checkboxes .form-check-input {
+    width: 18px;
+    height: 18px;
+    margin-top: 0;
+    accent-color: #3b82f6;
+    cursor: pointer;
+}
+
+#editModal .task-checkboxes .form-check-label,
+#copyModal .task-checkboxes .form-check-label {
+    font-size: 0.85rem;
+    color: #374151;
+    cursor: pointer;
+    margin-bottom: 0;
+}
+
+/* Order checkboxes styling */
+#editModal .order-checkboxes,
+#copyModal .order-checkboxes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    padding: 0.5rem;
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    border: 1px solid #f59e0b;
+    border-radius: 6px;
+}
+
+#editModal .order-checkboxes .form-check,
+#copyModal .order-checkboxes .form-check {
+    margin-bottom: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+#editModal .order-checkboxes .form-check-input,
+#copyModal .order-checkboxes .form-check-input {
+    width: 18px;
+    height: 18px;
+    margin-top: 0;
+    accent-color: #f59e0b;
+    cursor: pointer;
+}
+
+#editModal .order-checkboxes .form-check-label,
+#copyModal .order-checkboxes .form-check-label {
+    font-size: 0.85rem;
+    color: #92400e;
+    cursor: pointer;
+    margin-bottom: 0;
+    font-weight: 500;
+}
+
+/* Status select styling */
+#editModal #edit_ステータス,
+#copyModal #copy_ステータス {
+    background: linear-gradient(135deg, #e0f2fe 0%, #b3e5fc 100%);
+    border: 1px solid #0288d1;
+    color: #01579b;
+    font-weight: 500;
+}
+
+/* Date input styling */
+#editModal input[type="date"],
+#copyModal input[type="date"] {
+    background: linear-gradient(135deg, #f3e5f5 0%, #e1bee7 100%);
+    border: 1px solid #ba68c8;
+    color: #4a148c;
+}
+
+#editModal input[type="date"]:focus,
+#copyModal input[type="date"]:focus {
+    border-color: #9c27b0;
+    box-shadow: 0 0 0 2px rgba(156, 39, 176, 0.1);
+}
+
+/* Number input styling */
+#editModal input[type="number"],
+#copyModal input[type="number"] {
+    background: linear-gradient(135deg, #e8f5e8 0%, #c8e6c9 100%);
+    border: 1px solid #66bb6a;
+    color: #1b5e20;
+}
+
+#editModal input[type="number"]:focus,
+#copyModal input[type="number"]:focus {
+    border-color: #4caf50;
+    box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.1);
+}
+
+/* Textarea styling */
+#editModal textarea,
+#copyModal textarea {
+    background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
+    border: 1px solid #ffb74d;
+    color: #e65100;
+    resize: vertical;
+    min-height: 80px;
+}
+
+#editModal textarea:focus,
+#copyModal textarea:focus {
+    border-color: #ff9800;
+    box-shadow: 0 0 0 2px rgba(255, 152, 0, 0.1);
+}
+
+/* Modal header buttons styling */
+#editModal .modal-header .btn,
+#copyModal .modal-header .btn {
+    font-size: 0.9rem;
+    padding: 0.4rem 0.8rem;
+    border-radius: 5px;
+    transition: all 0.3s ease;
+}
+
+#editModal .modal-header .btn-primary,
+#copyModal .modal-header .btn-primary {
+    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+    border: none;
+    color: white;
+}
+
+#editModal .modal-header .btn-primary:hover,
+#copyModal .modal-header .btn-primary:hover {
+    background: linear-gradient(135deg, #1d4ed8 0%, #1e3a8a 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3);
+}
+
+#editModal .modal-header .btn-secondary,
+#copyModal .modal-header .btn-secondary {
+    background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+    border: none;
+    color: white;
+}
+
+#editModal .modal-header .btn-secondary:hover,
+#copyModal .modal-header .btn-secondary:hover {
+    background: linear-gradient(135deg, #4b5563 0%, #374151 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(107, 114, 128, 0.3);
+}
+
+/* Checkbox styling for 不要 */
+#editModal .form-check,
+#copyModal .form-check {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+#editModal .form-check-input,
+#copyModal .form-check-input {
+    width: 18px;
+    height: 18px;
+    margin-top: 0;
+    accent-color: #dc2626;
+    cursor: pointer;
+}
+
+#editModal .form-check-label,
+#copyModal .form-check-label {
+    color: #dc2626;
+    font-weight: 500;
+    cursor: pointer;
+    margin-bottom: 0;
+}
+
+/* Special styling for project name field in copy modal */
+#copyModal #copy_project_name {
+    background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+    border: 2px solid #3b82f6;
+    color: #1e40af;
+    font-weight: 600;
+}
+
+#copyModal #copy_project_name:focus {
+    border-color: #1d4ed8;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+/* Input validation styling */
+#editModal .form-control:invalid,
+#copyModal .form-control:invalid {
+    border-color: #dc2626;
+    box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.1);
+}
+
+#editModal .form-control:valid,
+#copyModal .form-control:valid {
+    border-color: #16a34a;
+}
+
+/* Responsive design for edit and copy modals */
+@media (max-width: 768px) {
+    #editModal .modal-body,
+    #copyModal .modal-body {
+        padding: 1rem;
+        max-height: 60vh;
+    }
+    
+    #editModal .col-12.col-md-3,
+    #copyModal .col-12.col-md-3 {
+        padding: 0 0.5rem;
+        margin-bottom: 1rem;
+    }
+    
+    #editModal .task-checkboxes,
+    #copyModal .task-checkboxes,
+    #editModal .order-checkboxes,
+    #copyModal .order-checkboxes {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    #editModal .modal-header,
+    #copyModal .modal-header {
+        padding: 0.75rem 1rem;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+    
+    #editModal .modal-header .d-flex,
+    #copyModal .modal-header .d-flex {
+        width: 100%;
+        justify-content: space-between;
+        margin-top: 0.5rem;
+    }
+}
+
+@media (max-width: 576px) {
+    #editModal .modal-dialog,
+    #copyModal .modal-dialog {
+        margin: 0.5rem;
+    }
+    
+    #editModal .form-label,
+    #copyModal .form-label {
+        font-size: 0.85rem;
+    }
+    
+    #editModal .form-control,
+    #copyModal .form-control,
+    #editModal .form-select,
+    #copyModal .form-select {
+        font-size: 0.85rem;
+        padding: 0.4rem 0.6rem;
+    }
+    
+    #editModal .task-checkboxes .form-check-label,
+    #copyModal .task-checkboxes .form-check-label,
+    #editModal .order-checkboxes .form-check-label,
+    #copyModal .order-checkboxes .form-check-label {
+        font-size: 0.8rem;
+    }
+}
+
+/* Scrollbar styling for modal body */
+#editModal .modal-body::-webkit-scrollbar,
+#copyModal .modal-body::-webkit-scrollbar {
+    width: 6px;
+}
+
+#editModal .modal-body::-webkit-scrollbar-track,
+#copyModal .modal-body::-webkit-scrollbar-track {
+    background: #f8fafc;
+    border-radius: 3px;
+}
+
+#editModal .modal-body::-webkit-scrollbar-thumb,
+#copyModal .modal-body::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, #cbd5e1 0%, #94a3b8 100%);
+    border-radius: 3px;
+}
+
+#editModal .modal-body::-webkit-scrollbar-thumb:hover,
+#copyModal .modal-body::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(135deg, #94a3b8 0%, #64748b 100%);
+}
+
+/* Animation for modal appearance */
+#editModal .modal-content,
+#copyModal .modal-content {
+    animation: modalFadeIn 0.3s ease-out;
+}
+
+@keyframes modalFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-20px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* Focus ring enhancement */
+#editModal .form-control:focus,
+#copyModal .form-control:focus,
+#editModal .form-select:focus,
+#copyModal .form-select:focus,
+#editModal .form-check-input:focus,
+#copyModal .form-check-input:focus {
+    outline: 2px solid transparent;
+    outline-offset: 2px;
+}
+
+/* Hover effects for interactive elements */
+#editModal .form-check:hover .form-check-label,
+#copyModal .form-check:hover .form-check-label {
+    color: #1f2937;
+}
+
+#editModal .task-checkboxes .form-check:hover,
+#copyModal .task-checkboxes .form-check:hover {
+    background: rgba(59, 130, 246, 0.05);
+    border-radius: 4px;
+    padding: 0.2rem 0.4rem;
+    margin: -0.2rem -0.4rem;
+}
+
+#editModal .order-checkboxes .form-check:hover,
+#copyModal .order-checkboxes .form-check:hover {
+    background: rgba(245, 158, 11, 0.1);
+    border-radius: 4px;
+    padding: 0.2rem 0.4rem;
+    margin: -0.2rem -0.4rem;
+}
 
 {% endblock %}
 
