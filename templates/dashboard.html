@@ -1171,6 +1171,501 @@ textarea[name="備考"] {
     }
 }
 
+/* REDESIGN TABLE STYLES - PROFESSIONAL DASHBOARD - SOFT COLORS */
+
+/* Container styling */
+.custom-table-container {
+    height: 80vh;
+    width: 95vw;
+    overflow-y: auto;
+    overflow-x: auto;
+    margin: 20px auto;
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06); /* Giảm shadow */
+    border: 1px solid #f0f0f0; /* Border nhẹ hơn */
+    position: relative;
+}
+
+/* Main table styling */
+.table.table-bordered {
+    font-size: 0.875rem;
+    width: 100%;
+    min-width: 2000px;
+    border-collapse: separate;
+    border-spacing: 0;
+    margin: 0;
+    background: #ffffff;
+}
+
+/* Header styling - SOFT GRADIENT */
+.table.table-bordered thead {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%); /* Gradient xám nhẹ */
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08); /* Shadow nhẹ hơn */
+}
+
+.table.table-bordered thead th {
+    background: transparent;
+    color: #475569; /* Màu chữ xám đậm nhẹ */
+    font-weight: 600;
+    font-size: 0.875rem;
+    text-align: center;
+    padding: 16px 12px;
+    border: 1px solid #e2e8f0; /* Border nhẹ hơn */
+    border-bottom: 2px solid #cbd5e1; /* Border bottom nhẹ hơn */
+    text-shadow: none; /* Bỏ text shadow */
+    letter-spacing: 0.3px; /* Giảm letter spacing */
+    white-space: nowrap;
+    position: relative;
+}
+
+/* Header hover effect - SOFTER */
+.table.table-bordered thead th:hover {
+    background: rgba(148, 163, 184, 0.1); /* Hover nhẹ hơn */
+    transition: background 0.3s ease;
+}
+
+/* Sortable header styling */
+.table.table-bordered thead th.sortable {
+    cursor: pointer;
+    user-select: none;
+    transition: all 0.3s ease;
+}
+
+.table.table-bordered thead th.sortable:hover {
+    background: rgba(148, 163, 184, 0.15); /* Hover nhẹ hơn */
+    transform: translateY(-1px);
+}
+
+/* Sort indicators */
+.sort-indicator::after {
+    content: '';
+    display: inline-block;
+    width: 0;
+    height: 0;
+    margin-left: 6px;
+    vertical-align: middle;
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    opacity: 0.5;
+}
+
+.sort-asc .sort-indicator::after {
+    border-bottom: 4px solid #64748b; /* Màu xám nhẹ */
+    opacity: 0.8;
+}
+
+.sort-desc .sort-indicator::after {
+    border-top: 4px solid #64748b; /* Màu xám nhẹ */
+    opacity: 0.8;
+}
+
+/* Body cells styling */
+.table.table-bordered tbody td {
+    padding: 12px;
+    border: 1px solid #f1f5f9; /* Border rất nhẹ */
+    background: #ffffff;
+    font-size: 0.875rem;
+    vertical-align: middle;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+}
+
+/* Row hover effects - SOFTER */
+.table.table-bordered tbody tr {
+    transition: all 0.2s ease;
+}
+
+.table.table-bordered tbody tr:hover {
+    background: linear-gradient(90deg, #f8fafc 0%, #f1f5f9 100%); /* Background nhẹ hơn */
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04); /* Shadow rất nhẹ */
+}
+
+.table.table-bordered tbody tr:hover td {
+    border-color: #e2e8f0; /* Border nhẹ hơn khi hover */
+}
+
+/* Alternating row colors - SOFTER */
+.table.table-bordered tbody tr:nth-child(even) {
+    background: linear-gradient(90deg, #fafbfc 0%, #f8fafc 100%); /* Background rất nhẹ */
+}
+
+.table.table-bordered tbody tr:nth-child(odd) {
+    background: #ffffff;
+}
+
+/* STICKY COLUMNS - SOFT PROFESSIONAL DESIGN */
+
+/* First column (No) - SOFT PURPLE */
+.table.table-bordered th:nth-child(1),
+.table.table-bordered td:nth-child(1) {
+    position: sticky;
+    left: 0;
+    background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%); /* Tím nhẹ */
+    color: #4338ca; /* Tím đậm nhẹ */
+    font-weight: 600;
+    text-align: center;
+    z-index: 5;
+    border-right: 2px solid rgba(99, 102, 241, 0.2); /* Border tím nhẹ */
+    width: 60px;
+    min-width: 60px;
+    max-width: 60px;
+}
+
+.table.table-bordered tbody td:nth-child(1) {
+    background: linear-gradient(135deg, #ddd6fe 0%, #c4b5fd 100%); /* Tím nhẹ hơn */
+    color: #5b21b6; /* Tím đậm nhẹ */
+    font-weight: 600;
+    text-shadow: none;
+}
+
+/* Second column (操作) - SOFT GREEN */
+.table.table-bordered th:nth-child(2),
+.table.table-bordered td:nth-child(2) {
+    position: sticky;
+    left: 60px;
+    background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%); /* Xanh lá nhẹ */
+    color: #166534; /* Xanh lá đậm nhẹ */
+    z-index: 5;
+    border-right: 2px solid rgba(34, 197, 94, 0.2); /* Border xanh nhẹ */
+    width: 120px;
+    min-width: 120px;
+    max-width: 120px;
+    text-align: center;
+}
+
+.table.table-bordered tbody td:nth-child(2) {
+    background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%); /* Xanh lá nhẹ hơn */
+    padding: 8px;
+}
+
+/* Third column - SOFT BLUE */
+.table.table-bordered th:nth-child(3),
+.table.table-bordered td:nth-child(3) {
+    position: sticky;
+    left: 180px;
+    background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%); /* Xanh dương nhẹ */
+    color: #1e40af; /* Xanh dương đậm nhẹ */
+    z-index: 5;
+    border-right: 2px solid rgba(59, 130, 246, 0.2); /* Border xanh nhẹ */
+    width: 150px;
+    min-width: 150px;
+    max-width: 150px;
+}
+
+.table.table-bordered tbody td:nth-child(3) {
+    background: linear-gradient(135deg, #bfdbfe 0%, #93c5fd 100%); /* Xanh dương nhẹ hơn */
+    color: #1e3a8a; /* Xanh dương đậm nhẹ */
+    font-weight: 500;
+}
+
+/* Fourth column - SOFT ORANGE */
+.table.table-bordered th:nth-child(4),
+.table.table-bordered td:nth-child(4) {
+    position: sticky;
+    left: 330px;
+    background: linear-gradient(135deg, #fed7aa 0%, #fdba74 100%); /* Cam nhẹ */
+    color: #c2410c; /* Cam đậm nhẹ */
+    z-index: 5;
+    border-right: 3px solid rgba(249, 115, 22, 0.2); /* Border cam nhẹ */
+    width: 200px;
+    min-width: 200px;
+    max-width: 200px;
+}
+
+.table.table-bordered tbody td:nth-child(4) {
+    background: linear-gradient(135deg, #fdba74 0%, #fb923c 100%); /* Cam nhẹ hơn */
+    color: #9a3412; /* Cam đậm nhẹ */
+    font-weight: 500;
+}
+
+/* Ensure sticky headers have higher z-index */
+.table.table-bordered thead th:nth-child(-n+4) {
+    z-index: 10;
+}
+
+/* ACTION BUTTONS SOFT PROFESSIONAL DESIGN */
+.action-buttons {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 0;
+}
+
+.action-buttons .btn {
+    padding: 6px 8px;
+    font-size: 14px;
+    border: none;
+    border-radius: 6px;
+    min-width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08); /* Shadow nhẹ hơn */
+    position: relative;
+    overflow: hidden;
+}
+
+.action-buttons .btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent); /* Hiệu ứng nhẹ hơn */
+    transition: left 0.5s;
+}
+
+.action-buttons .btn:hover::before {
+    left: 100%;
+}
+
+.action-buttons .btn:hover {
+    transform: translateY(-1px) scale(1.03); /* Scale nhẹ hơn */
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12); /* Shadow nhẹ hơn */
+}
+
+/* SOFT ACTION BUTTON COLORS */
+.btn-edit { 
+    background: linear-gradient(135deg, #bfdbfe 0%, #93c5fd 100%); /* Xanh dương nhẹ */
+    color: #1e40af;
+}
+
+.btn-mail { 
+    background: linear-gradient(135deg, #a5f3fc 0%, #67e8f9 100%); /* Xanh cyan nhẹ */
+    color: #0e7490;
+}
+
+.btn-copy { 
+    background: linear-gradient(135deg, #bbf7d0 0%, #86efac 100%); /* Xanh lá nhẹ */
+    color: #166534;
+}
+
+.btn-edit:hover { 
+    background: linear-gradient(135deg, #93c5fd 0%, #60a5fa 100%);
+    color: #1e3a8a;
+}
+
+.btn-mail:hover { 
+    background: linear-gradient(135deg, #67e8f9 0%, #22d3ee 100%);
+    color: #0c4a6e;
+}
+
+.btn-copy:hover { 
+    background: linear-gradient(135deg, #86efac 0%, #4ade80 100%);
+    color: #14532d;
+}
+
+/* HIGHLIGHTING EFFECTS - SOFT ENHANCED */
+.table.table-bordered .past-date { 
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%) !important; /* Vàng nhẹ */
+    color: #92400e !important;
+    font-weight: 500; /* Giảm font weight */
+    position: relative;
+}
+
+.table.table-bordered .past-date::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px; /* Giảm width */
+    background: linear-gradient(180deg, #f59e0b 0%, #d97706 100%);
+    opacity: 0.7; /* Thêm opacity */
+}
+
+.table.table-bordered .highlight-date { 
+    background: linear-gradient(135deg, #fef08a 0%, #facc15 100%) !important; /* Vàng đậm nhẹ */
+    color: #a16207 !important;
+    font-weight: 600; /* Giảm font weight */
+    position: relative;
+    animation: softPulse 3s infinite; /* Animation chậm hơn */
+}
+
+.table.table-bordered .highlight-date::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px; /* Giảm width */
+    background: linear-gradient(180deg, #eab308 0%, #ca8a04 100%);
+    opacity: 0.8; /* Thêm opacity */
+}
+
+.table.table-bordered .fb-late { 
+    background: linear-gradient(135deg, #fecaca 0%, #fca5a5 100%) !important; /* Đỏ nhẹ hơn */
+    color: #7f1d1d !important;
+    font-weight: 600; /* Giảm font weight */
+    position: relative;
+    animation: softPulse 3s infinite; /* Animation chậm hơn */
+}
+
+.table.table-bordered .fb-late::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px; /* Giảm width */
+    background: linear-gradient(180deg, #ef4444 0%, #dc2626 100%);
+    opacity: 0.7; /* Thêm opacity */
+}
+
+/* SOFT ANIMATIONS */
+@keyframes softPulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.85; } /* Opacity nhẹ hơn */
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(5px); } /* Giảm translateY */
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.table.table-bordered tbody tr {
+    animation: fadeIn 0.4s ease-out; /* Animation chậm hơn */
+}
+
+/* SOFT SCROLLBAR STYLING */
+.custom-table-container::-webkit-scrollbar {
+    width: 10px; /* Giảm width */
+    height: 10px; /* Giảm height */
+}
+
+.custom-table-container::-webkit-scrollbar-track {
+    background: #f8fafc; /* Background nhẹ hơn */
+    border-radius: 6px;
+}
+
+.custom-table-container::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, #cbd5e1 0%, #94a3b8 100%); /* Xám nhẹ */
+    border-radius: 6px;
+    border: 2px solid #f8fafc;
+}
+
+.custom-table-container::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(135deg, #94a3b8 0%, #64748b 100%); /* Xám đậm nhẹ */
+}
+
+.custom-table-container::-webkit-scrollbar-corner {
+    background: #f8fafc;
+}
+
+/* SOFT PROFESSIONAL SHADOWS AND DEPTH */
+.table.table-bordered thead {
+    box-shadow: 
+        0 1px 4px rgba(0, 0, 0, 0.06), /* Shadow nhẹ hơn */
+        0 2px 8px rgba(0, 0, 0, 0.03);
+}
+
+.table.table-bordered tbody tr:hover {
+    box-shadow: 
+        0 1px 4px rgba(0, 0, 0, 0.04), /* Shadow nhẹ hơn */
+        0 2px 8px rgba(0, 0, 0, 0.02);
+}
+
+/* SOFT STICKY COLUMN BORDERS */
+.table.table-bordered th:nth-child(1),
+.table.table-bordered td:nth-child(1) {
+    border-right: 2px solid rgba(99, 102, 241, 0.2); /* Border nhẹ hơn */
+    box-shadow: 1px 0 3px rgba(0, 0, 0, 0.05); /* Shadow nhẹ hơn */
+}
+
+.table.table-bordered th:nth-child(2),
+.table.table-bordered td:nth-child(2) {
+    border-right: 2px solid rgba(34, 197, 94, 0.2); /* Border nhẹ hơn */
+    box-shadow: 1px 0 3px rgba(0, 0, 0, 0.05); /* Shadow nhẹ hơn */
+}
+
+.table.table-bordered th:nth-child(3),
+.table.table-bordered td:nth-child(3) {
+    border-right: 2px solid rgba(59, 130, 246, 0.2); /* Border nhẹ hơn */
+    box-shadow: 1px 0 3px rgba(0, 0, 0, 0.05); /* Shadow nhẹ hơn */
+}
+
+.table.table-bordered th:nth-child(4),
+.table.table-bordered td:nth-child(4) {
+    border-right: 2px solid rgba(249, 115, 22, 0.2); /* Border nhẹ hơn */
+    box-shadow: 2px 0 4px rgba(0, 0, 0, 0.06); /* Shadow nhẹ hơn */
+}
+
+/* RESPONSIVE ENHANCEMENTS - MAINTAIN SOFT COLORS */
+@media (max-width: 1200px) {
+    .table.table-bordered {
+        font-size: 0.8rem;
+    }
+    
+    .table.table-bordered th,
+    .table.table-bordered td {
+        padding: 10px 8px;
+    }
+    
+    .action-buttons .btn {
+        min-width: 28px;
+        height: 28px;
+        font-size: 12px;
+    }
+}
+
+@media (max-width: 768px) {
+    .custom-table-container {
+        height: 70vh;
+        width: 98vw;
+        margin: 10px auto;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04); /* Shadow nhẹ hơn */
+    }
+    
+    .table.table-bordered {
+        font-size: 0.75rem;
+    }
+    
+    .table.table-bordered th,
+    .table.table-bordered td {
+        padding: 8px 6px;
+    }
+    
+    .table.table-bordered thead th {
+        padding: 12px 8px;
+        font-size: 0.8rem;
+    }
+}
+
+/* LOADING STATES - SOFT */
+.table-loading {
+    position: relative;
+    opacity: 0.7; /* Opacity nhẹ hơn */
+    pointer-events: none;
+}
+
+.table-loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 32px; /* Giảm size */
+    height: 32px; /* Giảm size */
+    margin: -16px 0 0 -16px;
+    border: 3px solid #f1f5f9; /* Border nhẹ hơn */
+    border-top: 3px solid #94a3b8; /* Color nhẹ hơn */
+    border-radius: 50%;
+    animation: softSpin 1.5s linear infinite; /* Animation chậm hơn */
+}
+
+@keyframes softSpin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
 {% endblock %}
 
 {% block navbar_content %}
