@@ -34,36 +34,34 @@
                    value="{{ document.title if document else '' }}" required>
         </div>
         
-        <div class="mb-3">
-            <label for="content" class="form-label">Content</label>
-            <textarea class="form-control" id="editorContent" name="content" 
-            rows="20" style="font-family: monospace; font-size: 14px;" required>{{ document.content if document else '' }}</textarea>
-            
-        </div>
-         <div class="tab-config-section" style="position: fixed; top: 60px; right: 20px; z-index: 1000; background: white; border: 1px solid #ccc; padding: 10px; border-radius: 5px;">
-                <label for="tabSkipCount" class="form-label" style="font-size: 12px;">Tab skip count:</label>
-                <select id="tabSkipCount" class="form-select form-select-sm" style="width: auto;">
-                    <option value="0">0 (immediate numbering)</option>
-                    <option value="1" selected>1 (skip first tab)</option>
-                    <option value="2">2 (skip first 2 tabs)</option>
-                    <option value="3">3 (skip first 3 tabs)</option>
-                </select>
+        <!-- Content A và Tab Configuration nằm ngang hàng -->
+        <div class="row mb-3">
+            <div class="col-md-8">
+                <label for="content" class="form-label">Content A</label>
+                
+                <!-- Checkbox và Select trên cùng 1 hàng -->
+                <div class="d-flex align-items-center gap-3 mb-2">
+                    <div class="form-check">
+                        <input type="checkbox" id="enableNumbering" class="form-check-input" checked>
+                        <label for="enableNumbering" class="form-check-label" style="font-size: 12px;">Enable auto numbering</label>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <label for="tabSkipCount" class="form-label mb-0" style="font-size: 12px; white-space: nowrap;">Tab skip count:</label>
+                        <select id="tabSkipCount" class="form-select form-select-sm" style="width: 200px;">
+                            <option value="0">0 (immediate numbering)</option>
+                            <option value="1" selected>1 (skip first tab)</option>
+                            <option value="2">2 (skip first 2 tabs)</option>
+                            <option value="3">3 (skip first 3 tabs)</option>
+                            <option value="3">4 (skip first 4 tabs)</option>
+                            <option value="3">5 (skip first 5 tabs)</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <textarea class="form-control" id="editorContent" name="content" 
+                rows="20" style="font-family: monospace; font-size: 14px;" required>{{ document.content if document else '' }}</textarea>
             </div>
-            <div class="tab-config-section" style="position: fixed; top: 60px; right: 20px; z-index: 1000; background: white; border: 1px solid #ccc; padding: 10px; border-radius: 5px;">
-    <div class="mb-2">
-        <input type="checkbox" id="enableNumbering" class="form-check-input" checked>
-        <label for="enableNumbering" class="form-check-label" style="font-size: 12px; margin-left: 5px;">Enable auto numbering</label>
-    </div>
-    <div>
-        <label for="tabSkipCount" class="form-label" style="font-size: 12px;">Tab skip count:</label>
-        <select id="tabSkipCount" class="form-select form-select-sm" style="width: auto;">
-            <option value="0">0 (immediate numbering)</option>
-            <option value="1" selected>1 (skip first tab)</option>
-            <option value="2">2 (skip first 2 tabs)</option>
-            <option value="3">3 (skip first 3 tabs)</option>
-        </select>
-    </div>
-</div>
+        </div>
     </form>
 </div>
 
@@ -75,7 +73,7 @@
 }
 
 /* Sticky header cho dễ truy cập */
-.container .d-flex:first-child {
+.container-fluid .d-flex:first-child {
     position: sticky;
     top: 0;
     background: white;
@@ -83,6 +81,24 @@
     padding: 10px 0;
     margin-bottom: 20px;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* Responsive cho mobile */
+@media (max-width: 768px) {
+    .row .col-md-2, .row .col-md-8 {
+        margin-bottom: 15px;
+    }
+    
+    /* Trên mobile, Title và Settings stack vertically, Content full width */
+    .col-md-2:first-child {
+        order: 1;
+    }
+    .col-md-8 {
+        order: 3;
+    }
+    .col-md-2:last-child {
+        order: 2;
+    }
 }
 </style>
 
