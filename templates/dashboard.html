@@ -820,6 +820,692 @@
 .form-check .form-check-input {
     margin-left: 0;
 }
+.action-toolbar {
+    background: linear-gradient(135deg, #e8ecf3 0%, #f5f7fa 100%);
+    padding: 8px 16px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    margin-bottom: 15px;
+    border: 1px solid #e9ecef;
+}
+
+.action-toolbar .btn-group-professional {
+    display: flex;
+    flex-wrap: nowrap; /* Không cho xuống hàng */
+    gap: 6px;
+    align-items: center;
+    justify-content: flex-start;
+    overflow-x: auto; /* Scroll ngang nếu cần */
+}
+
+.action-toolbar .btn-professional {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 10px;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+    min-width: 80px;
+    white-space: nowrap;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+    flex-shrink: 0; /* Không cho co lại */
+}
+
+.action-toolbar .btn-professional::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    transition: left 0.5s;
+}
+
+.action-toolbar .btn-professional:hover::before {
+    left: 100%;
+}
+
+.action-toolbar .btn-professional:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.action-toolbar .btn-professional i {
+    font-size: 0.9rem;
+}
+
+/* Specific Button Colors - LIGHTER VERSIONS */
+.btn-schedule {
+    background: linear-gradient(135deg, #e3f2fd 0%, #e1f5fe 100%);
+    color: #1976d2;
+    border: 1px solid #bbdefb;
+}
+
+.btn-schedule:hover {
+    background: linear-gradient(135deg, #d1e7dd 0%, #cff4fc 100%);
+    color: #0d47a1;
+}
+
+.btn-report {
+    background: linear-gradient(135deg, #fce4ec 0%, #fff3e0 100%);
+    color: #d32f2f;
+    border: 1px solid #f8bbd9;
+}
+
+.btn-report:hover {
+    background: linear-gradient(135deg, #f8d7da 0%, #ffeaa7 100%);
+    color: #c62828;
+}
+
+.btn-excel {
+    background: linear-gradient(135deg, #e8f5e8 0%, #f3e5f5 100%);
+    color: #388e3c;
+    border: 1px solid #c8e6c9;
+}
+
+.btn-excel:hover {
+    background: linear-gradient(135deg, #d4edda 0%, #e1bee7 100%);
+    color: #2e7d32;
+}
+
+.btn-mail-edit {
+    background: linear-gradient(135deg, #f3e5f5 0%, #fff8e1 100%);
+    color: #7b1fa2;
+    border: 1px solid #e1bee7;
+}
+
+.btn-mail-edit:hover {
+    background: linear-gradient(135deg, #e1bee7 0%, #ffecb3 100%);
+    color: #6a1b9a;
+}
+
+.btn-task-create {
+    background: linear-gradient(135deg, #e0f2f1 0%, #e3f2fd 100%);
+    color: #00796b;
+    border: 1px solid #b2dfdb;
+}
+
+.btn-task-create:hover {
+    background: linear-gradient(135deg, #b2dfdb 0%, #bbdefb 100%);
+    color: #00695c;
+}
+
+.btn-delete {
+    background: linear-gradient(135deg, #ffebee 0%, #fce4ec 100%);
+    color: #d32f2f;
+    border: 1px solid #ffcdd2;
+}
+
+.btn-delete:hover {
+    background: linear-gradient(135deg, #ffcdd2 0%, #f8bbd9 100%);
+    color: #c62828;
+}
+
+.btn-logout {
+    background: linear-gradient(135deg, #ede7f6 0%, #f3e5f5 100%);
+    color: #512da8;
+    border: 1px solid #d1c4e9;
+}
+
+.btn-logout:hover {
+    background: linear-gradient(135deg, #d1c4e9 0%, #e1bee7 100%);
+    color: #4527a0;
+}
+
+/* Dropdown styling */
+.action-toolbar .dropdown-menu {
+    font-size: 0.75rem;
+    border-radius: 6px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.action-toolbar .dropdown-item {
+    padding: 6px 12px;
+    color: #495057;
+}
+
+.action-toolbar .dropdown-item:hover {
+    background-color: #f8f9fa;
+    color: #212529;
+}
+
+/* Responsive Design - UPDATED */
+@media (min-width: 1200px) {
+    .action-toolbar .btn-professional {
+        min-width: 90px;
+        padding: 6px 12px;
+        font-size: 0.8rem;
+    }
+    
+    .action-toolbar .btn-professional i {
+        font-size: 1rem;
+    }
+}
+
+@media (max-width: 1199px) {
+    .action-toolbar .btn-group-professional {
+        flex-wrap: wrap;
+        gap: 4px;
+    }
+    
+    .action-toolbar .btn-professional {
+        min-width: 70px;
+        padding: 5px 8px;
+        font-size: 0.7rem;
+    }
+    
+    .action-toolbar .btn-professional i {
+        font-size: 0.8rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .action-toolbar {
+        padding: 6px 12px;
+    }
+    
+    .action-toolbar .btn-group-professional {
+        gap: 3px;
+    }
+    
+    .action-toolbar .btn-professional {
+        padding: 4px 6px;
+        font-size: 0.65rem;
+        min-width: 60px;
+    }
+    
+    .action-toolbar .btn-professional i {
+        font-size: 0.75rem;
+    }
+    
+    .action-toolbar .btn-professional span {
+        display: none; /* Ẩn text trên mobile, chỉ hiện icon */
+    }
+}
+
+@media (max-width: 576px) {
+    .action-toolbar .btn-group-professional {
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+    
+    .action-toolbar .btn-professional {
+        min-width: 45px;
+        padding: 4px;
+    }
+}
+
+/* Badge styling nếu cần */
+.btn-professional .badge {
+    position: absolute;
+    top: -3px;
+    right: -3px;
+    background: #dc3545;
+    color: white;
+    font-size: 0.6rem;
+    padding: 1px 4px;
+    border-radius: 8px;
+    min-width: 14px;
+    height: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+
+/* Dropdown styling - THÊM VÀO CSS */
+.action-toolbar .dropdown {
+    position: relative;
+}
+
+.action-toolbar .dropdown-menu {
+    font-size: 0.75rem;
+    border-radius: 6px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    min-width: 150px;
+    z-index: 1000;
+}
+
+.action-toolbar .dropdown-item {
+    padding: 6px 12px;
+    color: #495057;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.action-toolbar .dropdown-item:hover {
+    background-color: #f8f9fa;
+    color: #212529;
+}
+
+.action-toolbar .dropdown-item i {
+    width: 16px;
+    text-align: center;
+}
+
+/* Đảm bảo dropdown-toggle hoạt động */
+.action-toolbar .dropdown-toggle::after {
+    margin-left: 0.255em;
+    vertical-align: 0.255em;
+    border-top: 0.3em solid;
+    border-right: 0.3em solid transparent;
+    border-bottom: 0;
+    border-left: 0.3em solid transparent;
+}
+
+.action-toolbar .dropdown-toggle:empty::after {
+    margin-left: 0;
+}
+/* Professional Action Buttons Design - BỎ HOÀN TOÀN .action-toolbar */
+.btn-group-professional {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 8px;
+    align-items: center;
+    justify-content: flex-start;
+    /* BỎ HOÀN TOÀN overflow-x: auto; */
+    /* overflow-x: auto; */
+    /* overflow-y: visible; */
+    overflow: visible; /* CHỈ GIỮ VISIBLE */
+    margin-left: auto;
+    position: static; /* THÊM */
+}
+
+.btn-professional {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 8px 12px;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    min-width: 90px;
+    white-space: nowrap;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.btn-professional::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    transition: left 0.5s;
+}
+
+.btn-professional:hover::before {
+    left: 100%;
+}
+
+.btn-professional:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.btn-professional i {
+    font-size: 1rem;
+}
+
+/* Specific Button Colors - GIỮ NGUYÊN */
+.btn-schedule {
+    background: linear-gradient(135deg, #e3f2fd 0%, #e1f5fe 100%);
+    color: #1976d2;
+    border-color: #bbdefb;
+}
+
+.btn-schedule:hover {
+    background: linear-gradient(135deg, #d1e7dd 0%, #cff4fc 100%);
+    color: #0d47a1;
+}
+
+.btn-report {
+    background: linear-gradient(135deg, #fce4ec 0%, #fff3e0 100%);
+    color: #d32f2f;
+    border-color: #f8bbd9;
+}
+
+.btn-report:hover {
+    background: linear-gradient(135deg, #f8d7da 0%, #ffeaa7 100%);
+    color: #c62828;
+}
+
+.btn-excel {
+    background: linear-gradient(135deg, #e8f5e8 0%, #f3e5f5 100%);
+    color: #388e3c;
+    border-color: #c8e6c9;
+}
+
+.btn-excel:hover {
+    background: linear-gradient(135deg, #d4edda 0%, #e1bee7 100%);
+    color: #2e7d32;
+}
+
+.btn-mail-edit {
+    background: linear-gradient(135deg, #f3e5f5 0%, #fff8e1 100%);
+    color: #7b1fa2;
+    border-color: #e1bee7;
+}
+
+.btn-mail-edit:hover {
+    background: linear-gradient(135deg, #e1bee7 0%, #ffecb3 100%);
+    color: #6a1b9a;
+}
+
+.btn-task-create {
+    background: linear-gradient(135deg, #e0f2f1 0%, #e3f2fd 100%);
+    color: #00796b;
+    border-color: #b2dfdb;
+}
+
+.btn-task-create:hover {
+    background: linear-gradient(135deg, #b2dfdb 0%, #bbdefb 100%);
+    color: #00695c;
+}
+
+.btn-delete {
+    background: linear-gradient(135deg, #ffebee 0%, #fce4ec 100%);
+    color: #d32f2f;
+    border-color: #ffcdd2;
+}
+
+.btn-delete:hover {
+    background: linear-gradient(135deg, #ffcdd2 0%, #f8bbd9 100%);
+    color: #c62828;
+}
+
+.btn-logout {
+    background: linear-gradient(135deg, #ede7f6 0%, #f3e5f5 100%);
+    color: #512da8;
+    border-color: #d1c4e9;
+}
+
+.btn-logout:hover {
+    background: linear-gradient(135deg, #d1c4e9 0%, #e1bee7 100%);
+    color: #4527a0;
+}
+
+/* Dropdown styling */
+.dropdown {
+    position: relative; /* QUAN TRỌNG: Phải có relative */
+}
+
+.dropdown-menu {
+    font-size: 0.75rem;
+    border-radius: 6px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+    min-width: 150px;
+    z-index: 1050;
+    border: 1px solid #dee2e6;
+    background-color: white;
+    position: absolute !important; /* FORCE absolute */
+    top: 100% !important;
+    left: 0 !important;
+    margin-top: 2px;
+}
+
+.dropdown-item {
+    padding: 8px 12px;
+    color: #495057;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: background-color 0.2s;
+}
+
+.dropdown-item:hover {
+    background-color: #f8f9fa;
+    color: #212529;
+}
+
+.dropdown-item i {
+    width: 16px;
+    text-align: center;
+    font-size: 0.9rem;
+}
+
+/* Đảm bảo dropdown-toggle hoạt động */
+.dropdown-toggle::after {
+    margin-left: 0.255em;
+    vertical-align: 0.255em;
+    border-top: 0.3em solid;
+    border-right: 0.3em solid transparent;
+    border-bottom: 0;
+    border-left: 0.3em solid transparent;
+}
+
+.dropdown-toggle:empty::after {
+    margin-left: 0;
+}
+
+.dropdown-menu.show {
+    display: block;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    margin-top: 2px;
+}
+
+/* Scrollbar styling cho horizontal scroll */
+.btn-group-professional::-webkit-scrollbar {
+    height: 4px;
+}
+
+.btn-group-professional::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 2px;
+}
+
+.btn-group-professional::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 2px;
+}
+
+.btn-group-professional::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+/* Đảm bảo navbar có overflow visible */
+.navbar,
+.navbar .d-flex,
+.navbar .navbar-nav {
+    overflow: visible !important;
+}
+
+/* Responsive Design */
+@media (min-width: 1200px) {
+    .btn-professional {
+        min-width: 100px;
+        padding: 8px 14px;
+        font-size: 0.85rem;
+    }
+    
+    .btn-professional i {
+        font-size: 1.1rem;
+    }
+}
+
+@media (max-width: 1199px) {
+    .btn-group-professional {
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+    
+    .btn-professional {
+        min-width: 80px;
+        padding: 6px 10px;
+        font-size: 0.75rem;
+    }
+    
+    .btn-professional i {
+        font-size: 0.9rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .btn-group-professional {
+        gap: 4px;
+    }
+    
+    .btn-professional {
+        padding: 6px 8px;
+        font-size: 0.7rem;
+        min-width: 70px;
+    }
+    
+    .btn-professional i {
+        font-size: 0.85rem;
+    }
+    
+    .btn-professional span {
+        display: none; /* Ẩn text trên mobile, chỉ hiện icon */
+    }
+}
+
+@media (max-width: 576px) {
+    .btn-group-professional {
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+    
+    .btn-professional {
+        min-width: 50px;
+        padding: 6px;
+    }
+}
+
+.dropdown.show .dropdown-menu {
+    display: block !important;
+    position: absolute !important;
+    top: 100% !important;
+    left: 0 !important;
+    z-index: 1060 !important;
+}
+
+.dropdown-item {
+    padding: 8px 12px;
+    color: #495057;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: background-color 0.2s;
+}
+
+.dropdown-item:hover {
+    background-color: #f8f9fa;
+    color: #212529;
+}
+
+.dropdown-item i {
+    width: 16px;
+    text-align: center;
+    font-size: 0.9rem;
+}
+
+/* Đảm bảo dropdown-toggle hoạt động */
+.dropdown-toggle::after {
+    margin-left: 0.255em;
+    vertical-align: 0.255em;
+    border-top: 0.3em solid;
+    border-right: 0.3em solid transparent;
+    border-bottom: 0;
+    border-left: 0.3em solid transparent;
+}
+
+.dropdown-toggle:empty::after {
+    margin-left: 0;
+}
+.navbar,
+.navbar .d-flex,
+.navbar .navbar-nav {
+    overflow: visible !important;
+}
+
+/* Đảm bảo body và html không clip */
+body, html {
+    overflow-x: visible !important;
+}
+
+/* Responsive Design - CẬP NHẬT */
+@media (min-width: 1200px) {
+    .btn-professional {
+        min-width: 100px;
+        padding: 8px 14px;
+        font-size: 0.85rem;
+    }
+    
+    .btn-professional i {
+        font-size: 1.1rem;
+    }
+}
+
+@media (max-width: 1199px) {
+    .btn-group-professional {
+        flex-wrap: wrap; /* CHO PHÉP WRAP khi màn hình nhỏ */
+        gap: 6px;
+    }
+    
+    .btn-professional {
+        min-width: 80px;
+        padding: 6px 10px;
+        font-size: 0.75rem;
+    }
+    
+    .btn-professional i {
+        font-size: 0.9rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .btn-group-professional {
+        gap: 4px;
+        flex-wrap: wrap; /* CHO PHÉP WRAP */
+    }
+    
+    .btn-professional {
+        padding: 6px 8px;
+        font-size: 0.7rem;
+        min-width: 70px;
+    }
+    
+    .btn-professional i {
+        font-size: 0.85rem;
+    }
+    
+    .btn-professional span {
+        display: none; /* Ẩn text trên mobile, chỉ hiện icon */
+    }
+}
+
+@media (max-width: 576px) {
+    .btn-group-professional {
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+    
+    .btn-professional {
+        min-width: 50px;
+        padding: 6px;
+    }
+}
+
 {% endblock %}
 
 {% block navbar_content %}
@@ -829,48 +1515,100 @@
     </li>
 </ul>
 
-<div class="d-flex align-items-center">
-    <!-- Action buttons -->
-    <div class="btn-group-responsive">
-        <!-- Dropdown menu for Documents -->
-        <div class="btn-group" role="group">
-            <button class="btn btn-secondary dropdown-toggle btn-sm" 
-                    type="button" 
-                    id="documentsDropdown"
-                    data-bs-toggle="dropdown" 
-                    aria-expanded="false">
-                ドキュメント
-            </button>
-            <ul class="dropdown-menu" aria-labelledby="documentsDropdown">
-                <li><a class="dropdown-item" href="/editor_list">doc list</a></li>
-                <li><a class="dropdown-item" href="/editor">doc</a></li>
-            </ul>
-        </div>
-        
-        <!-- Memo dropdown -->
-        <div class="btn-group" role="group">
-            <button class="btn btn-secondary dropdown-toggle btn-sm" 
-                    type="button" 
-                    id="memoDropdown"
-                    data-bs-toggle="dropdown" 
-                    aria-expanded="false">
-                メモ
-            </button>
-            <ul class="dropdown-menu" aria-labelledby="memoDropdown">
-                <li><a class="dropdown-item" href="/memo_list">memo list</a></li>
-                <li><a class="dropdown-item" href="/memo">memo</a></li>
-            </ul>
-        </div>
-        
-        <button class="btn btn-info btn-sm" data-bs-toggle="modal" data-bs-target="#scheduleModal" onclick="openScheduleModal()">予定</button>
-        <button class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#dailyReportModal" onclick="openDailyReportModal()">日報</button>
-        <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#uploadModal">Excel</button>
-        <button class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#mailEditModal">メール編集</button>
-        <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#createTaskModal">タスク作成</button>
-        <button class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteAllModal">不要削除</button>
-        <a href="{{ url_for('logout') }}" class="btn btn-danger btn-sm">Logout</a>
+<!-- BỎ div class="action-toolbar" và để buttons trực tiếp -->
+<div class="btn-group-professional">
+    <!-- Dropdown menu for Documents -->
+    <div class="dropdown">
+        <button class="btn btn-professional btn-schedule dropdown-toggle" 
+                type="button" 
+                id="documentsDropdown"
+                data-bs-toggle="dropdown" 
+                aria-expanded="false">
+            <i class="fas fa-file-alt"></i>
+            <span>ドキュメント</span>
+        </button>
+        <ul class="dropdown-menu" aria-labelledby="documentsDropdown">
+            <li><a class="dropdown-item" href="/editor_list">
+                <i class="fas fa-list"></i> doc list
+            </a></li>
+            <li><a class="dropdown-item" href="/editor">
+                <i class="fas fa-edit"></i> doc
+            </a></li>
+        </ul>
     </div>
+    
+    <!-- Memo dropdown -->
+    <div class="dropdown">
+        <button class="btn btn-professional btn-report dropdown-toggle" 
+                type="button" 
+                id="memoDropdown"
+                data-bs-toggle="dropdown" 
+                aria-expanded="false">
+            <i class="fas fa-sticky-note"></i>
+            <span>メモ</span>
+        </button>
+        <ul class="dropdown-menu" aria-labelledby="memoDropdown">
+            <li><a class="dropdown-item" href="/memo_list">
+                <i class="fas fa-list"></i> memo list
+            </a></li>
+            <li><a class="dropdown-item" href="/memo">
+                <i class="fas fa-pencil-alt"></i> memo
+            </a></li>
+        </ul>
+    </div>
+    
+    <!-- Main Action Buttons -->
+    <button class="btn btn-professional btn-schedule" 
+            data-bs-toggle="modal" 
+            data-bs-target="#scheduleModal" 
+            onclick="openScheduleModal()">
+        <i class="fas fa-calendar-alt"></i>
+        <span>予定</span>
+    </button>
+    
+    <button class="btn btn-professional btn-report" 
+            data-bs-toggle="modal" 
+            data-bs-target="#dailyReportModal" 
+            onclick="openDailyReportModal()">
+        <i class="fas fa-chart-bar"></i>
+        <span>日報</span>
+    </button>
+    
+    <button class="btn btn-professional btn-excel" 
+            data-bs-toggle="modal" 
+            data-bs-target="#uploadModal">
+        <i class="fas fa-file-excel"></i>
+        <span>Excel</span>
+    </button>
+    
+    <button class="btn btn-professional btn-mail-edit" 
+            data-bs-toggle="modal" 
+            data-bs-target="#mailEditModal">
+        <i class="fas fa-envelope-open-text"></i>
+        <span>メール編集</span>
+    </button>
+    
+    <button class="btn btn-professional btn-task-create" 
+            data-bs-toggle="modal" 
+            data-bs-target="#createTaskModal">
+        <i class="fas fa-tasks"></i>
+        <span>タスク作成</span>
+    </button>
+    
+    <button class="btn btn-professional btn-delete" 
+            data-bs-toggle="modal" 
+            data-bs-target="#deleteAllModal">
+        <i class="fas fa-trash-alt"></i>
+        <span>不要削除</span>
+    </button>
+    
+    <a href="{{ url_for('logout') }}" 
+       class="btn btn-professional btn-logout">
+        <i class="fas fa-sign-out-alt"></i>
+        <span>Logout</span>
+    </a>
 </div>
+
 {% endblock %}
 {% block content %}
 <div class="container-fluid mb-3">
