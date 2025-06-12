@@ -1710,6 +1710,315 @@ body {
     margin: -0.2rem -0.4rem;
 }
 
+#editModal .order-checkboxes .form-check:hover,
+#copyModal .order-checkboxes .form-check:hover {
+    background: rgba(245, 158, 11, 0.1);
+    border-radius: 4px;
+    padding: 0.2rem 0.4rem;
+    margin: -0.2rem -0.4rem;
+}
+
+/* MAIL TEMPLATE MODAL SPECIFIC STYLES */
+/* Mail Modal styling */
+.mail-modal .modal-dialog {
+    max-width: 1200px;
+    width: 95vw;
+}
+
+.mail-modal .modal-content {
+    border: none;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+    border-radius: 8px;
+    height: 80vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.mail-modal .modal-header {
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    border-bottom: 2px solid #e2e8f0;
+    border-radius: 8px 8px 0 0;
+    padding: 1rem 1.5rem;
+    flex-shrink: 0;
+}
+
+.mail-modal .modal-title {
+    color: #475569;
+    font-weight: 600;
+    font-size: 1.2rem;
+}
+
+.mail-modal .modal-body {
+    flex: 1;
+    padding: 0;
+    display: flex;
+    min-height: 0;
+    background: #ffffff;
+}
+
+/* Mail buttons container - left side */
+.mail-buttons-container {
+    width: 300px;
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    border-right: 2px solid #e2e8f0;
+    padding: 1.5rem 1rem;
+    overflow-y: auto;
+    flex-shrink: 0;
+}
+
+.mail-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.mail-buttons .btn {
+    padding: 0.75rem 1rem;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    text-align: left;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: all 0.3s ease;
+    border: 1px solid #cbd5e1;
+    background: #ffffff;
+    color: #475569;
+    position: relative;
+}
+
+.mail-buttons .btn:hover {
+    background: linear-gradient(135deg, #e0f2fe 0%, #b3e5fc 100%);
+    border-color: #0288d1;
+    color: #01579b;
+    transform: translateX(3px);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.mail-buttons .btn.active {
+    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+    border-color: #1d4ed8;
+    color: white;
+    font-weight: 600;
+    transform: translateX(3px);
+    box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3);
+}
+
+.mail-buttons .btn.copied {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    border-color: #059669;
+    color: white;
+}
+
+.mail-buttons .btn.copied::after {
+    content: '✓';
+    position: absolute;
+    right: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    font-weight: bold;
+    font-size: 1rem;
+}
+
+.mail-buttons .btn.copied:hover {
+    background: linear-gradient(135deg, #059669 0%, #047857 100%);
+}
+
+/* Mail content container - right side */
+.mail-content-container {
+    flex: 1;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.mail-content-container textarea {
+    flex: 1;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    padding: 1rem;
+    font-size: 0.9rem;
+    line-height: 1.6;
+    font-family: 'Consolas', 'Monaco', monospace;
+    background: #ffffff;
+    resize: none;
+    min-height: 400px;
+}
+
+.mail-content-container textarea:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+    outline: none;
+}
+
+.mail-content-container textarea::placeholder {
+    color: #9ca3af;
+    font-style: italic;
+}
+
+/* Copy checkbox styling */
+.mail-modal .form-check {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.mail-modal .form-check-input {
+    width: 18px;
+    height: 18px;
+    margin-top: 0;
+    accent-color: #10b981;
+    cursor: pointer;
+}
+
+.mail-modal .form-check-label {
+    color: #374151;
+    font-weight: 500;
+    cursor: pointer;
+    margin-bottom: 0;
+    font-size: 0.9rem;
+}
+
+.mail-modal .form-check-input:checked + .form-check-label {
+    color: #10b981;
+    font-weight: 600;
+}
+
+/* Scrollbar styling for mail buttons */
+.mail-buttons-container::-webkit-scrollbar {
+    width: 6px;
+}
+
+.mail-buttons-container::-webkit-scrollbar-track {
+    background: #f8fafc;
+    border-radius: 3px;
+}
+
+.mail-buttons-container::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, #cbd5e1 0%, #94a3b8 100%);
+    border-radius: 3px;
+}
+
+.mail-buttons-container::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(135deg, #94a3b8 0%, #64748b 100%);
+}
+
+/* Responsive design for mail modal */
+@media (max-width: 768px) {
+    .mail-modal .modal-dialog {
+        width: 98vw;
+        margin: 1vh auto;
+    }
+    
+    .mail-modal .modal-content {
+        height: 95vh;
+    }
+    
+    .mail-modal .modal-body {
+        flex-direction: column;
+    }
+    
+    .mail-buttons-container {
+        width: 100%;
+        max-height: 200px;
+        border-right: none;
+        border-bottom: 2px solid #e2e8f0;
+    }
+    
+    .mail-buttons {
+        flex-direction: row;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+    
+    .mail-buttons .btn {
+        flex: 0 0 auto;
+        min-width: 120px;
+        padding: 0.5rem 0.75rem;
+        font-size: 0.8rem;
+    }
+    
+    .mail-content-container {
+        padding: 1rem;
+    }
+    
+    .mail-content-container textarea {
+        min-height: 300px;
+    }
+}
+
+@media (max-width: 576px) {
+    .mail-modal .modal-header {
+        padding: 0.75rem 1rem;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+    
+    .mail-modal .modal-title {
+        font-size: 1.1rem;
+    }
+    
+    .mail-buttons .btn {
+        min-width: 100px;
+        font-size: 0.75rem;
+        padding: 0.4rem 0.6rem;
+    }
+    
+    .mail-content-container {
+        padding: 0.75rem;
+    }
+    
+    .mail-content-container textarea {
+        font-size: 0.85rem;
+        padding: 0.75rem;
+        min-height: 250px;
+    }
+}
+
+/* Animation for mail modal */
+.mail-modal .modal-content {
+    animation: mailModalFadeIn 0.3s ease-out;
+}
+
+@keyframes mailModalFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-20px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* Hover effects for interactive elements */
+.mail-buttons .btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s;
+}
+
+.mail-buttons .btn:hover::before {
+    left: 100%;
+}
+
+/* Focus ring enhancement */
+.mail-buttons .btn:focus {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+}
+
+.mail-content-container textarea:focus {
+    outline: none;
+}
+
 {% endblock %}
 
 {% block navbar_content %}
@@ -2337,22 +2646,23 @@ body {
 
     <!-- Mail Modal -->
     <div class="modal fade mail-modal" id="mailModal" tabindex="-1">
-        <div class="modal-dialog modal-dialog-scrollable mail-modal-custom">
+        <div class="modal-dialog modal-dialog-scrollable">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">メールテンプレート</h5>
-                    <div class="d-flex gap-2">
-                        <label class="form-check-label" title="このテンプレートをプロジェクトにマークします">
-                            <input class="form-check-input" type="checkbox" id="copyMailCheckbox" onchange="handleCopyMailChange(this)">　コピー済み
-                        </label>
+                    <div class="d-flex gap-2 align-items-center">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="copyMailCheckbox" onchange="handleCopyMailChange(this)">
+                            <label class="form-check-label" for="copyMailCheckbox" title="このテンプレートをプロジェクトにマークします">コピー済み</label>
+                        </div>
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">閉じる</button>
                     </div>
                 </div>
                 <div class="modal-body">
                     <div class="mail-buttons-container">
-                        <div class="mail-buttons d-flex flex-column">
+                        <div class="mail-buttons">
                             {% for full_name, display_name in mail_templates %}
-                                <button class="btn btn-outline-primary mb-2"
+                                <button class="btn"
                                         onclick="loadMailContent(currentProjectId, '{{ full_name }}', this)"
                                         data-filename="{{ full_name }}">
                                     {{ display_name }}
