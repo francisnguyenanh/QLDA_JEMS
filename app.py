@@ -14,6 +14,7 @@ import shutil
 import chardet
 import csv
 from dateutil.parser import parse
+from flask import Flask, jsonify, request, session, render_template, redirect, url_for, flash, send_file
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -26,6 +27,8 @@ DB_FILE = 'projects.db'
 MAIL_DIR = 'mail'
 PROJECT_DIR = 'project'
 OLD_DIR = 'old'
+FILEUPLOAD_DIR = 'fileupload'
+
 DISPLAY_COLUMNS = [
     'ステータス', '案件名', 'PH','要件引継', '設計開始',
     '設計完了', '設計書送付', '開発開始', '開発完了', 'テスト開始日', 'テスト完了日',
@@ -139,6 +142,32 @@ def init_db():
             updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
         )
     ''')
+    
+     # Add memo table
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS memo (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT NOT NULL,
+            content TEXT NOT NULL,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+    
+     # Add memo_files table
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS memo_files (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            memo_id INTEGER,
+            filename TEXT NOT NULL,
+            original_filename TEXT NOT NULL,
+            file_type TEXT NOT NULL,
+            file_size INTEGER,
+            uploaded_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (memo_id) REFERENCES memo(id)
+        )
+    ''')
+
 
     conn.commit()
     conn.close()
@@ -2181,6 +2210,381 @@ def delete_editor_document(document_id):
     except Exception as e:
         logging.error(f"Error deleting editor document: {str(e)}")
         return jsonify({'error': str(e)}), 500
+
+@app.route('/memo_list')
+def memo_list():
+    if 'username' not in session:
+        return redirect(url_for('login'))
+    return render_template('memo_list.html')
+
+@app.route('/memo')
+def memo():
+    if 'username' not in session:
+        return redirect(url_for('login'))
+    
+    memo_id = request.args.get('id')
+    memo_data = None
+    memo_files = []
+    
+    if memo_id:
+        try:
+            conn = sqlite3.connect(DB_FILE)
+            cursor = conn.cursor()
+            cursor.execute('''
+                SELECT id, title, content, created_at, updated_at 
+                FROM memo 
+                WHERE id = ?
+            ''', (memo_id,))
+            row = cursor.fetchone()
+            
+            if row:
+                memo_data = {
+                    'id': row[0],
+                    'title': row[1],
+                    'content': row[2],
+                    'created_at': row[3],
+                    'updated_at': row[4]
+                }
+                
+                # Get memo files
+                cursor.execute('''
+                    SELECT id, filename, original_filename, file_type, file_size, uploaded_at
+                    FROM memo_files 
+                    WHERE memo_id = ?
+                    ORDER BY uploaded_at DESC
+                ''', (memo_id,))
+                memo_files = [
+                    {
+                        'id': file_row[0],
+                        'filename': file_row[1],
+                        'original_filename': file_row[2],
+                        'file_type': file_row[3],
+                        'file_size': file_row[4],
+                        'uploaded_at': file_row[5]
+                    }
+                    for file_row in cursor.fetchall()
+                ]
+            
+            conn.close()
+        except Exception as e:
+            logging.error(f"Error loading memo: {str(e)}")
+    
+    return render_template('memo.html', memo=memo_data, memo_files=memo_files)
+
+@app.route('/api/memos', methods=['GET'])
+def get_memos():
+    """Get all memos."""
+    if 'username' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    try:
+        conn = sqlite3.connect(DB_FILE)
+        cursor = conn.cursor()
+        cursor.execute('''
+            SELECT m.id, m.title, m.content, m.created_at, m.updated_at,
+                   COUNT(mf.id) as file_count
+            FROM memo m
+            LEFT JOIN memo_files mf ON m.id = mf.memo_id
+            GROUP BY m.id
+            ORDER BY m.updated_at DESC
+        ''')
+        memos = []
+        for row in cursor.fetchall():
+            memos.append({
+                'id': row[0],
+                'title': row[1],
+                'content': row[2],
+                'created_at': row[3],
+                'updated_at': row[4],
+                'file_count': row[5]
+            })
+        conn.close()
+        return jsonify({'memos': memos})
+    except Exception as e:
+        logging.error(f"Error fetching memos: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/memos', methods=['POST'])
+def create_memo():
+    """Create a new memo."""
+    if 'username' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    data = request.get_json()
+    title = data.get('title', '').strip()
+    content = data.get('content', '').strip()
+    
+    if not title:
+        return jsonify({'error': 'Title is required'}), 400
+    
+    try:
+        conn = sqlite3.connect(DB_FILE)
+        cursor = conn.cursor()
+        current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        cursor.execute('''
+            INSERT INTO memo (title, content, created_at, updated_at)
+            VALUES (?, ?, ?, ?)
+        ''', (title, content, current_time, current_time))
+        memo_id = cursor.lastrowid
+        conn.commit()
+        conn.close()
+        return jsonify({'success': True, 'id': memo_id})
+    except Exception as e:
+        logging.error(f"Error creating memo: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/memos/<int:memo_id>', methods=['GET'])
+def get_memo(memo_id):
+    """Get a specific memo."""
+    if 'username' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    try:
+        conn = sqlite3.connect(DB_FILE)
+        cursor = conn.cursor()
+        cursor.execute('''
+            SELECT id, title, content, created_at, updated_at 
+            FROM memo 
+            WHERE id = ?
+        ''', (memo_id,))
+        row = cursor.fetchone()
+        
+        if not row:
+            conn.close()
+            return jsonify({'error': 'Memo not found'}), 404
+        
+        memo = {
+            'id': row[0],
+            'title': row[1],
+            'content': row[2],
+            'created_at': row[3],
+            'updated_at': row[4]
+        }
+        
+        # Get memo files
+        cursor.execute('''
+            SELECT id, filename, original_filename, file_type, file_size, uploaded_at
+            FROM memo_files 
+            WHERE memo_id = ?
+            ORDER BY uploaded_at DESC
+        ''', (memo_id,))
+        files = [
+            {
+                'id': file_row[0],
+                'filename': file_row[1],
+                'original_filename': file_row[2],
+                'file_type': file_row[3],
+                'file_size': file_row[4],
+                'uploaded_at': file_row[5]
+            }
+            for file_row in cursor.fetchall()
+        ]
+        
+        conn.close()
+        return jsonify({'memo': memo, 'files': files})
+    except Exception as e:
+        logging.error(f"Error fetching memo: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/memos/<int:memo_id>', methods=['PUT'])
+def update_memo(memo_id):
+    """Update an existing memo."""
+    if 'username' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    data = request.get_json()
+    title = data.get('title', '').strip()
+    content = data.get('content', '').strip()
+    
+    if not title:
+        return jsonify({'error': 'Title is required'}), 400
+    
+    try:
+        conn = sqlite3.connect(DB_FILE)
+        cursor = conn.cursor()
+        current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        cursor.execute('''
+            UPDATE memo 
+            SET title = ?, content = ?, updated_at = ?
+            WHERE id = ?
+        ''', (title, content, current_time, memo_id))
+        
+        if cursor.rowcount == 0:
+            conn.close()
+            return jsonify({'error': 'Memo not found'}), 404
+        
+        conn.commit()
+        conn.close()
+        return jsonify({'success': True})
+    except Exception as e:
+        logging.error(f"Error updating memo: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/memos/<int:memo_id>', methods=['DELETE'])
+def delete_memo(memo_id):
+    """Delete a memo and its associated files."""
+    if 'username' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    try:
+        conn = sqlite3.connect(DB_FILE)
+        cursor = conn.cursor()
+        
+        # Get files associated with this memo
+        cursor.execute('SELECT filename FROM memo_files WHERE memo_id = ?', (memo_id,))
+        files = cursor.fetchall()
+        
+        # Delete files from filesystem
+        for file_row in files:
+            file_path = os.path.join(FILEUPLOAD_DIR, file_row[0])
+            if os.path.exists(file_path):
+                try:
+                    os.remove(file_path)
+                except Exception as e:
+                    logging.error(f"Error deleting file {file_path}: {str(e)}")
+        
+        # Delete from database
+        cursor.execute('DELETE FROM memo_files WHERE memo_id = ?', (memo_id,))
+        cursor.execute('DELETE FROM memo WHERE id = ?', (memo_id,))
+        
+        if cursor.rowcount == 0:
+            conn.close()
+            return jsonify({'error': 'Memo not found'}), 404
+        
+        conn.commit()
+        conn.close()
+        return jsonify({'success': True})
+    except Exception as e:
+        logging.error(f"Error deleting memo: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/memo_files/upload', methods=['POST'])
+def upload_memo_file():
+    """Upload files for a memo."""
+    if 'username' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    memo_id = request.form.get('memo_id')
+    if not memo_id:
+        return jsonify({'error': 'Memo ID is required'}), 400
+    
+    if 'files' not in request.files:
+        return jsonify({'error': 'No files provided'}), 400
+    
+    files = request.files.getlist('files')
+    if not files or all(file.filename == '' for file in files):
+        return jsonify({'error': 'No files selected'}), 400
+    
+    # Create upload directory if it doesn't exist
+    if not os.path.exists(FILEUPLOAD_DIR):
+        os.makedirs(FILEUPLOAD_DIR)
+    
+    uploaded_files = []
+    
+    try:
+        conn = sqlite3.connect(DB_FILE)
+        cursor = conn.cursor()
+        
+        for file in files:
+            if file.filename == '':
+                continue
+            
+            # Generate unique filename
+            original_filename = file.filename
+            file_extension = os.path.splitext(original_filename)[1].lower()
+            unique_filename = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{memo_id}_{len(uploaded_files)}{file_extension}"
+            
+            # Determine file type
+            if file_extension in ['.png', '.jpg', '.jpeg', '.gif', '.bmp', '.webp']:
+                file_type = 'image'
+            else:
+                file_type = 'file'
+            
+            # Save file
+            file_path = os.path.join(FILEUPLOAD_DIR, unique_filename)
+            file.save(file_path)
+            
+            # Get file size
+            file_size = os.path.getsize(file_path)
+            
+            # Save to database
+            current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            cursor.execute('''
+                INSERT INTO memo_files (memo_id, filename, original_filename, file_type, file_size, uploaded_at)
+                VALUES (?, ?, ?, ?, ?, ?)
+            ''', (memo_id, unique_filename, original_filename, file_type, file_size, current_time))
+            
+            uploaded_files.append({
+                'id': cursor.lastrowid,
+                'filename': unique_filename,
+                'original_filename': original_filename,
+                'file_type': file_type,
+                'file_size': file_size,
+                'uploaded_at': current_time
+            })
+        
+        conn.commit()
+        conn.close()
+        
+        return jsonify({'success': True, 'files': uploaded_files})
+    except Exception as e:
+        logging.error(f"Error uploading memo files: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/memo_files/<int:file_id>', methods=['DELETE'])
+def delete_memo_file(file_id):
+    """Delete a memo file."""
+    if 'username' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    try:
+        conn = sqlite3.connect(DB_FILE)
+        cursor = conn.cursor()
+        
+        # Get file info
+        cursor.execute('SELECT filename FROM memo_files WHERE id = ?', (file_id,))
+        file_row = cursor.fetchone()
+        
+        if not file_row:
+            conn.close()
+            return jsonify({'error': 'File not found'}), 404
+        
+        filename = file_row[0]
+        
+        # Delete from filesystem
+        file_path = os.path.join(FILEUPLOAD_DIR, filename)
+        if os.path.exists(file_path):
+            try:
+                os.remove(file_path)
+            except Exception as e:
+                logging.error(f"Error deleting file {file_path}: {str(e)}")
+        
+        # Delete from database
+        cursor.execute('DELETE FROM memo_files WHERE id = ?', (file_id,))
+        conn.commit()
+        conn.close()
+        
+        return jsonify({'success': True})
+    except Exception as e:
+        logging.error(f"Error deleting memo file: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/memo_files/<filename>')
+def serve_memo_file(filename):
+    """Serve memo files."""
+    if 'username' not in session:
+        return redirect(url_for('login'))
+    
+    # Security check - prevent path traversal
+    if '..' in filename or filename.startswith('/') or filename.startswith('\\'):
+        return jsonify({'error': 'Invalid filename'}), 400
+    
+    file_path = os.path.join(FILEUPLOAD_DIR, filename)
+    if not os.path.exists(file_path):
+        return jsonify({'error': 'File not found'}), 404
+    
+    # Use send_file instead of send_static_file
+    return send_file(file_path)
 
 if __name__ == '__main__':
     app.run(debug=True)

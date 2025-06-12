@@ -10,11 +10,18 @@
     <li class="nav-item">
         <a class="nav-link" href="/editor">Editor</a>
     </li>
+    <li class="nav-item">
+        <a class="nav-link" href="/memo_list">Memo list</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" href="/memo">Memo</a>
+    </li>
 </ul>
 <div class="d-flex">
     <a href="{{ url_for('logout') }}" class="btn btn-danger btn-sm">Logout</a>
 </div>
 {% endblock %}
+
 {% block content %}
 <div class="container mt-4">
     <div class="d-flex justify-content-between align-items-center mb-4">

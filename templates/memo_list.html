@@ -1,0 +1,247 @@
+{% extends "layout.html" %}
+
+{% block navbar_content %}
+<ul class="navbar-nav me-auto">
+    <li class="nav-item">
+        <a class="nav-link" href="/dashboard">Dashboard</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" href="/editor_list">Documents list</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" href="/editor">Editor</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link active" href="/memo_list">Memo list</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" href="/memo">Memo</a>
+    </li>
+</ul>
+<div class="d-flex">
+    <a href="{{ url_for('logout') }}" class="btn btn-danger btn-sm">Logout</a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h2 class="text-primary mb-0">メモ一覧</h2>
+                    <button class="btn btn-primary" onclick="createNewMemo()">
+                        <i class="bi bi-plus-circle"></i> 新規メモ
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div id="memoList">
+                        <div class="d-flex justify-content-center">
+                            <div class="spinner-border" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Create Memo Modal -->
+<div class="modal fade" id="createMemoModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">新規メモ作成</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="createMemoForm">
+                    <div class="mb-3">
+                        <label for="memoTitle" class="form-label">タイトル</label>
+                        <input type="text" class="form-control" id="memoTitle" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="memoContent" class="form-label">内容</label>
+                        <textarea class="form-control" id="memoContent" rows="3"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+                <button type="button" class="btn btn-primary" onclick="saveMemo()">作成</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">削除確認</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>このメモを削除してもよろしいですか？</p>
+                <p class="text-danger">関連するファイルも同時に削除されます。</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+                <button type="button" class="btn btn-danger" onclick="confirmDelete()">削除</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let currentDeleteId = null;
+
+document.addEventListener('DOMContentLoaded', function() {
+    loadMemos();
+});
+
+function loadMemos() {
+    fetch('/api/memos')
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                throw new Error(data.error);
+            }
+            displayMemos(data.memos);
+        })
+        .catch(error => {
+            console.error('Error loading memos:', error);
+            document.getElementById('memoList').innerHTML = 
+                '<div class="alert alert-danger">メモの読み込みに失敗しました</div>';
+        });
+}
+
+function displayMemos(memos) {
+    const container = document.getElementById('memoList');
+    
+    if (memos.length === 0) {
+        container.innerHTML = '<div class="text-center text-muted">メモがありません</div>';
+        return;
+    }
+    
+    let html = '<div class="row">';
+    
+    memos.forEach(memo => {
+        const createdDate = new Date(memo.created_at).toLocaleDateString('ja-JP');
+        const updatedDate = new Date(memo.updated_at).toLocaleDateString('ja-JP');
+        const contentPreview = memo.content.length > 100 ? 
+            memo.content.substring(0, 100) + '...' : memo.content;
+        
+        html += `
+            <div class="col-md-6 col-lg-4 mb-3">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h5 class="card-title">${escapeHtml(memo.title)}</h5>
+                        <p class="card-text text-muted small">${escapeHtml(contentPreview)}</p>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <small class="text-muted">
+                                作成: ${createdDate}<br>
+                                更新: ${updatedDate}<br>
+                                ファイル: ${memo.file_count}個
+                            </small>
+                        </div>
+                    </div>
+                    <div class="card-footer">
+                        <div class="btn-group w-100" role="group">
+                            <button class="btn btn-primary btn-sm" onclick="openMemo(${memo.id})">
+                                <i class="bi bi-eye"></i> 開く
+                            </button>
+                            <button class="btn btn-danger btn-sm" onclick="deleteMemo(${memo.id})">
+                                <i class="bi bi-trash"></i> 削除
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    
+    html += '</div>';
+    container.innerHTML = html;
+}
+
+function createNewMemo() {
+    document.getElementById('memoTitle').value = '';
+    document.getElementById('memoContent').value = '';
+    new bootstrap.Modal(document.getElementById('createMemoModal')).show();
+}
+
+function saveMemo() {
+    const title = document.getElementById('memoTitle').value.trim();
+    const content = document.getElementById('memoContent').value.trim();
+    
+    if (!title) {
+        alert('タイトルを入力してください');
+        return;
+    }
+    
+    fetch('/api/memos', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            title: title,
+            content: content
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            throw new Error(data.error);
+        }
+        bootstrap.Modal.getInstance(document.getElementById('createMemoModal')).hide();
+        window.location.href = `/memo?id=${data.id}`;
+    })
+    .catch(error => {
+        console.error('Error creating memo:', error);
+        alert('メモの作成に失敗しました');
+    });
+}
+
+function openMemo(id) {
+    window.location.href = `/memo?id=${id}`;
+}
+
+function deleteMemo(id) {
+    currentDeleteId = id;
+    new bootstrap.Modal(document.getElementById('deleteModal')).show();
+}
+
+function confirmDelete() {
+    if (!currentDeleteId) return;
+    
+    fetch(`/api/memos/${currentDeleteId}`, {
+        method: 'DELETE'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            throw new Error(data.error);
+        }
+        bootstrap.Modal.getInstance(document.getElementById('deleteModal')).hide();
+        loadMemos();
+    })
+    .catch(error => {
+        console.error('Error deleting memo:', error);
+        alert('メモの削除に失敗しました');
+    });
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+</script>
+{% endblock %}

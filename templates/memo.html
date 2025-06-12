@@ -1,0 +1,425 @@
+{% extends "layout.html" %}
+
+{% block navbar_content %}
+<ul class="navbar-nav me-auto">
+    <li class="nav-item">
+        <a class="nav-link" href="/dashboard">Dashboard</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" href="/editor_list">Documents list</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" href="/editor">Editor</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" href="/memo_list">Memo list</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link active" href="/memo">Memo</a>
+    </li>
+</ul>
+<div class="d-flex">
+    <a href="{{ url_for('logout') }}" class="btn btn-danger btn-sm">Logout</a>
+</div>
+{% endblock %}
+
+{% block extra_styles %}
+.file-item {
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+    padding: 1rem;
+    margin-bottom: 0.5rem;
+    background-color: #f8f9fa;
+}
+
+.image-thumbnail {
+    max-width: 150px;
+    max-height: 150px;
+    cursor: pointer;
+    border-radius: 0.375rem;
+}
+
+.image-preview-modal .modal-dialog {
+    max-width: 90%;
+}
+
+.image-preview-modal img {
+    max-width: 100%;
+    max-height: 80vh;
+}
+
+.drop-zone {
+    border: 2px dashed #007bff;
+    border-radius: 0.375rem;
+    padding: 2rem;
+    text-align: center;
+    background-color: #f8f9fa;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.drop-zone:hover, .drop-zone.dragover {
+    background-color: #e3f2fd;
+    border-color: #0056b3;
+}
+
+.toolbar {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background-color: white;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #dee2e6;
+}
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="toolbar">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <a href="/memo_list" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> 戻る
+                </a>
+            </div>
+            <div>
+                <button class="btn btn-primary" onclick="saveMemo()">
+                    <i class="bi bi-save"></i> 保存
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-3">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">メモ編集</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="memoTitle" class="form-label">タイトル</label>
+                        <input type="text" class="form-control" id="memoTitle" 
+                               value="{% if memo %}{{ memo.title }}{% endif %}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="memoContent" class="form-label">内容</label>
+                        <textarea class="form-control" id="memoContent" rows="20" 
+                                  style="font-family: monospace;">{% if memo %}{{ memo.content }}{% endif %}</textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">ファイル</h5>
+                </div>
+                <div class="card-body">
+                    <!-- File Upload Area -->
+                    <div class="drop-zone mb-3" onclick="document.getElementById('fileInput').click()">
+                        <i class="bi bi-cloud-upload fs-1 text-primary"></i>
+                        <p class="mb-0">ファイルをドラッグ&ドロップ<br>またはクリックして選択</p>
+                        <input type="file" id="fileInput" multiple accept="*/*" style="display: none;">
+                    </div>
+
+                    <!-- Clipboard Paste Button -->
+                    <button class="btn btn-outline-primary w-100 mb-3" onclick="pasteFromClipboard()">
+                        <i class="bi bi-clipboard"></i> クリップボードから貼り付け
+                    </button>
+
+                    <!-- File List -->
+                    <div id="fileList">
+                        <!-- Files will be loaded here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Image Preview Modal -->
+<div class="modal fade image-preview-modal" id="imageModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="imageModalTitle">画像プレビュー</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center">
+                <img id="modalImage" src="" alt="Preview">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" onclick="downloadCurrentImage()">
+                    <i class="bi bi-download"></i> ダウンロード
+                </button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">閉じる</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let currentMemoId = {% if memo %}{{ memo.id }}{% else %}null{% endif %};
+let currentImageUrl = '';
+
+document.addEventListener('DOMContentLoaded', function() {
+    if (currentMemoId) {
+        loadFiles();
+    }
+    
+    // File input change event
+    document.getElementById('fileInput').addEventListener('change', function(e) {
+        uploadFiles(e.target.files);
+    });
+    
+    // Drag and drop events
+    const dropZone = document.querySelector('.drop-zone');
+    
+    dropZone.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        this.classList.add('dragover');
+    });
+    
+    dropZone.addEventListener('dragleave', function(e) {
+        e.preventDefault();
+        this.classList.remove('dragover');
+    });
+    
+    dropZone.addEventListener('drop', function(e) {
+        e.preventDefault();
+        this.classList.remove('dragover');
+        uploadFiles(e.dataTransfer.files);
+    });
+});
+
+function saveMemo() {
+    const title = document.getElementById('memoTitle').value.trim();
+    const content = document.getElementById('memoContent').value;
+    
+    if (!title) {
+        alert('タイトルを入力してください');
+        return;
+    }
+    
+    const url = currentMemoId ? `/api/memos/${currentMemoId}` : '/api/memos';
+    const method = currentMemoId ? 'PUT' : 'POST';
+    
+    fetch(url, {
+        method: method,
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            title: title,
+            content: content
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            throw new Error(data.error);
+        }
+        
+        if (!currentMemoId) {
+            currentMemoId = data.id;
+            // Update URL without reload
+            window.history.replaceState({}, '', `/memo?id=${data.id}`);
+        }
+        
+        alert('保存しました');
+    })
+    .catch(error => {
+        console.error('Error saving memo:', error);
+        alert('保存に失敗しました');
+    });
+}
+
+function loadFiles() {
+    if (!currentMemoId) return;
+    
+    fetch(`/api/memos/${currentMemoId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                throw new Error(data.error);
+            }
+            displayFiles(data.files);
+        })
+        .catch(error => {
+            console.error('Error loading files:', error);
+        });
+}
+
+function displayFiles(files) {
+    const container = document.getElementById('fileList');
+    
+    if (files.length === 0) {
+        container.innerHTML = '<p class="text-muted">ファイルがありません</p>';
+        return;
+    }
+    
+    let html = '';
+    files.forEach(file => {
+        const uploadDate = new Date(file.uploaded_at).toLocaleDateString('ja-JP');
+        const fileSize = formatFileSize(file.file_size);
+        
+        html += `
+            <div class="file-item">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div class="flex-grow-1">
+                        <h6 class="mb-1">${escapeHtml(file.original_filename)}</h6>
+                        <small class="text-muted">
+                            ${fileSize} • ${uploadDate}
+                        </small>
+                    </div>
+                    <button class="btn btn-sm btn-outline-danger" onclick="deleteFile(${file.id})">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
+        `;
+        
+        if (file.file_type === 'image') {
+            html += `
+                <div class="mt-2">
+                    <img src="/memo_files/${file.filename}" 
+                         class="image-thumbnail" 
+                         alt="${escapeHtml(file.original_filename)}"
+                         onclick="previewImage('/memo_files/${file.filename}', '${escapeHtml(file.original_filename)}')">
+                </div>
+            `;
+        } else {
+            html += `
+                <div class="mt-2">
+                    <a href="/memo_files/${file.filename}" 
+                       class="btn btn-sm btn-outline-primary" 
+                       download="${escapeHtml(file.original_filename)}">
+                        <i class="bi bi-download"></i> ダウンロード
+                    </a>
+                </div>
+            `;
+        }
+        
+        html += '</div>';
+    });
+    
+    container.innerHTML = html;
+}
+
+function uploadFiles(files) {
+    if (!currentMemoId) {
+        alert('先にメモを保存してください');
+        return;
+    }
+    
+    if (files.length === 0) return;
+    
+    const formData = new FormData();
+    formData.append('memo_id', currentMemoId);
+    
+    for (let file of files) {
+        formData.append('files', file);
+    }
+    
+    fetch('/api/memo_files/upload', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            throw new Error(data.error);
+        }
+        loadFiles();
+        document.getElementById('fileInput').value = '';
+    })
+    .catch(error => {
+        console.error('Error uploading files:', error);
+        alert('ファイルのアップロードに失敗しました');
+    });
+}
+
+function deleteFile(fileId) {
+    if (!confirm('このファイルを削除しますか？')) return;
+    
+    fetch(`/api/memo_files/${fileId}`, {
+        method: 'DELETE'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            throw new Error(data.error);
+        }
+        loadFiles();
+    })
+    .catch(error => {
+        console.error('Error deleting file:', error);
+        alert('ファイルの削除に失敗しました');
+    });
+}
+
+function previewImage(src, title) {
+    currentImageUrl = src;
+    document.getElementById('modalImage').src = src;
+    document.getElementById('imageModalTitle').textContent = title;
+    new bootstrap.Modal(document.getElementById('imageModal')).show();
+}
+
+function downloadCurrentImage() {
+    if (currentImageUrl) {
+        const link = document.createElement('a');
+        link.href = currentImageUrl;
+        link.download = '';
+        link.click();
+    }
+}
+
+async function pasteFromClipboard() {
+    if (!currentMemoId) {
+        alert('先にメモを保存してください');
+        return;
+    }
+    
+    try {
+        const clipboardItems = await navigator.clipboard.read();
+        
+        for (const clipboardItem of clipboardItems) {
+            for (const type of clipboardItem.types) {
+                if (type.startsWith('image/')) {
+                    const blob = await clipboardItem.getType(type);
+                    
+                    // Create file from blob
+                    const filename = `clipboard_${Date.now()}.png`;
+                    const file = new File([blob], filename, { type: type });
+                    
+                    uploadFiles([file]);
+                    return;
+                }
+            }
+        }
+        
+        alert('クリップボードに画像がありません');
+    } catch (error) {
+        console.error('Error accessing clipboard:', error);
+        alert('クリップボードへのアクセスに失敗しました');
+    }
+}
+
+function formatFileSize(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+</script>
+{% endblock %}

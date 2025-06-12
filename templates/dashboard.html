@@ -807,6 +807,21 @@
             </ul>
         </div>
         
+        <!-- Memo dropdown -->
+        <div class="btn-group" role="group">
+            <button class="btn btn-secondary dropdown-toggle btn-sm" 
+                    type="button" 
+                    id="memoDropdown"
+                    data-bs-toggle="dropdown" 
+                    aria-expanded="false">
+                メモ
+            </button>
+            <ul class="dropdown-menu" aria-labelledby="memoDropdown">
+                <li><a class="dropdown-item" href="/memo_list">memo list</a></li>
+                <li><a class="dropdown-item" href="/memo">memo</a></li>
+            </ul>
+        </div>
+        
         <button class="btn btn-info btn-sm" data-bs-toggle="modal" data-bs-target="#scheduleModal" onclick="openScheduleModal()">予定</button>
         <button class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#dailyReportModal" onclick="openDailyReportModal()">日報</button>
         <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#uploadModal">Excel</button>
