@@ -17,7 +17,7 @@
 {% endblock %}
 
 {% block content %}
-<div class="container mt-4">
+<div class="container-fluid mt-4">
     <!-- Header với buttons -->
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2 id="pageTitle">{{ 'Edit Document' if document else 'New Document' }}</h2>
@@ -36,9 +36,7 @@
         
         <!-- Content A và Tab Configuration nằm ngang hàng -->
         <div class="row mb-3">
-            <div class="col-md-8">
-                <label for="content" class="form-label">Content A</label>
-                
+            <div class="col-12"> <!-- Changed from col-md-8 -->               
                 <!-- Checkbox và Select trên cùng 1 hàng -->
                 <div class="d-flex align-items-center gap-3 mb-2">
                     <div class="form-check">
@@ -98,6 +96,12 @@
     }
     .col-md-2:last-child {
         order: 2;
+    }
+}
+@media (max-width: 768px) {
+    /* Remove the old col-md-2, col-md-8 rules and replace with: */
+    .col-12 {
+        margin-bottom: 15px;
     }
 }
 </style>
