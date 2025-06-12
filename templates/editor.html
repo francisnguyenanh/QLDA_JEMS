@@ -110,6 +110,71 @@ document.addEventListener('DOMContentLoaded', function() {
     let lastLineIndex = -1;
     let currentTabCount = 0; // Track current tab count for the line
 
+    // Undo/Redo functionality
+    let undoStack = [];
+    let redoStack = [];
+    const maxUndoSteps = 50; // Giới hạn số bước undo để tránh tốn bộ nhớ
+
+    // Save state for undo
+    function saveState() {
+        const state = {
+            content: textarea.value,
+            selectionStart: textarea.selectionStart,
+            selectionEnd: textarea.selectionEnd
+        };
+        
+        // Kiểm tra xem state mới có khác state cuối cùng không
+        if (undoStack.length === 0 || undoStack[undoStack.length - 1].content !== state.content) {
+            undoStack.push(state);
+            // Giới hạn số lượng undo steps
+            if (undoStack.length > maxUndoSteps) {
+                undoStack.shift();
+            }
+            // Clear redo stack khi có action mới
+            redoStack = [];
+        }
+    }
+
+    // Undo function
+    function undo() {
+        if (undoStack.length > 1) { // Cần ít nhất 2 states để undo
+            // Di chuyển state hiện tại sang redo stack
+            const currentState = undoStack.pop();
+            redoStack.push(currentState);
+            
+            // Lấy state trước đó
+            const previousState = undoStack[undoStack.length - 1];
+            textarea.value = previousState.content;
+            textarea.selectionStart = previousState.selectionStart;
+            textarea.selectionEnd = previousState.selectionEnd;
+            
+            // Reset editor state
+            currentLineIndent = 0;
+            lastLineIndex = -1;
+            currentTabCount = 0;
+        }
+    }
+
+    // Redo function
+    function redo() {
+        if (redoStack.length > 0) {
+            const nextState = redoStack.pop();
+            undoStack.push(nextState);
+            
+            textarea.value = nextState.content;
+            textarea.selectionStart = nextState.selectionStart;
+            textarea.selectionEnd = nextState.selectionEnd;
+            
+            // Reset editor state
+            currentLineIndent = 0;
+            lastLineIndex = -1;
+            currentTabCount = 0;
+        }
+    }
+
+    // Save initial state
+    saveState();
+
     // Get tab skip count from layout setting
     function getTabSkipCount() {
         const tabSkipSelect = document.getElementById('tabSkipCount');
@@ -212,8 +277,24 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     textarea.addEventListener('keydown', function(e) {
+        // Handle Ctrl+Z (Undo) and Ctrl+Y (Redo)
+        if (e.ctrlKey && e.key === 'z') {
+            e.preventDefault();
+            undo();
+            return;
+        }
+        
+        if (e.ctrlKey && e.key === 'y') {
+            e.preventDefault();
+            redo();
+            return;
+        }
+
         if (e.key === 'Tab') {
             e.preventDefault();
+            
+            // Save state before making changes
+            saveState();
 
             const start = textarea.selectionStart;
             const value = textarea.value;
@@ -450,6 +531,11 @@ document.addEventListener('DOMContentLoaded', function() {
             lastLineIndex = currentLineIndex;
 
         } else {
+            // Save state for other significant changes
+            if (e.key === 'Enter' || e.key === 'Backspace' || e.key === 'Delete') {
+                saveState();
+            }
+            
             // Reset indent and tab count on Enter
             if (e.key === 'Enter') {
                 currentLineIndent = 0;
@@ -457,7 +543,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 currentTabCount = 0;
             }
 
-            // Auto line break at 70 bytes
+            // Auto line break at 140 bytes
             if (e.key !== 'Enter' && e.key !== 'Backspace' && e.key !== 'Delete') {
                 setTimeout(() => {
                     const start = textarea.selectionStart;
@@ -465,10 +551,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     const currentLineStart = value.lastIndexOf('\n', start - 1) + 1;
                     const currentLine = value.substring(currentLineStart, start);
 
-                    if (getByteLength(currentLine) > 70) {
+                    if (getByteLength(currentLine) > 140) {
+                        saveState(); // Save state before auto line break
+                        
                         let breakPoint = currentLine.length;
                         for (let i = currentLine.length - 1; i >= 0; i--) {
-                            if (getByteLength(currentLine.substring(0, i)) <= 70) {
+                            if (getByteLength(currentLine.substring(0, i)) <= 140) {
                                 if (currentLine[i] === ' ') {
                                     breakPoint = i;
                                     break;
@@ -486,6 +574,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 }, 10);
             }
         }
+    });
+
+    // Save state on input (for typing)
+    let inputTimer;
+    textarea.addEventListener('input', function() {
+        clearTimeout(inputTimer);
+        inputTimer = setTimeout(() => {
+            saveState();
+        }, 500); // Save state 500ms after user stops typing
     });
 
     // Add event listener for numbering checkbox change
