@@ -49,6 +49,21 @@
                     <option value="3">3 (skip first 3 tabs)</option>
                 </select>
             </div>
+            <div class="tab-config-section" style="position: fixed; top: 60px; right: 20px; z-index: 1000; background: white; border: 1px solid #ccc; padding: 10px; border-radius: 5px;">
+    <div class="mb-2">
+        <input type="checkbox" id="enableNumbering" class="form-check-input" checked>
+        <label for="enableNumbering" class="form-check-label" style="font-size: 12px; margin-left: 5px;">Enable auto numbering</label>
+    </div>
+    <div>
+        <label for="tabSkipCount" class="form-label" style="font-size: 12px;">Tab skip count:</label>
+        <select id="tabSkipCount" class="form-select form-select-sm" style="width: auto;">
+            <option value="0">0 (immediate numbering)</option>
+            <option value="1" selected>1 (skip first tab)</option>
+            <option value="2">2 (skip first 2 tabs)</option>
+            <option value="3">3 (skip first 3 tabs)</option>
+        </select>
+    </div>
+</div>
     </form>
 </div>
 
@@ -83,6 +98,12 @@ document.addEventListener('DOMContentLoaded', function() {
     function getTabSkipCount() {
         const tabSkipSelect = document.getElementById('tabSkipCount');
         return tabSkipSelect ? parseInt(tabSkipSelect.value) : 1; // Default to 1 if not found
+    }
+
+    // Check if numbering is enabled
+    function isNumberingEnabled() {
+        const numberingCheckbox = document.getElementById('enableNumbering');
+        return numberingCheckbox ? numberingCheckbox.checked : true; // Default to true if not found
     }
 
     // Calculate byte length for 2-byte characters
@@ -190,33 +211,39 @@ document.addEventListener('DOMContentLoaded', function() {
             // Reset tab count if on a new line
             if (currentLineIndex !== lastLineIndex) {
                 currentTabCount = 0;
-                // Calculate current indent level from existing prefix
-                const currentLineContent = value.substring(currentLineStart, value.indexOf('\n', currentLineStart) >= 0 ? value.indexOf('\n', currentLineStart) : value.length);
-                
-                // Determine current level based on prefix
-                if (currentLineContent.match(/^\s*$/)) {
-                    currentLineIndent = 0; // Empty line
-                } else if (currentLineContent.match(/^[^(]*$/)) {
-                    currentLineIndent = 0; // No parentheses
-                } else if (currentLineContent.match(/^\((\d+)\)/)) {
-                    currentLineIndent = 1; // Format (n)
-                } else if (currentLineContent.match(/^　*\([a-z]\)(?!\-)/)) {
-                    currentLineIndent = 2; // Format (a) without dash
-                } else if (currentLineContent.match(/^　*\([a-z](-\d+)+\)/)) {
-                    const matches = currentLineContent.match(/^　*\([a-z]((-\d+)*)\)/);
-                    if (matches && matches[1]) {
-                        const dashCount = (matches[1].match(/-/g) || []).length;
-                        currentLineIndent = 2 + dashCount;
+                // Only calculate indent level if numbering is enabled
+                if (isNumberingEnabled()) {
+                    // Calculate current indent level from existing prefix
+                    const currentLineContent = value.substring(currentLineStart, value.indexOf('\n', currentLineStart) >= 0 ? value.indexOf('\n', currentLineStart) : value.length);
+                    
+                    // Determine current level based on prefix
+                    if (currentLineContent.match(/^\s*$/)) {
+                        currentLineIndent = 0; // Empty line
+                    } else if (currentLineContent.match(/^[^(]*$/)) {
+                        currentLineIndent = 0; // No parentheses
+                    } else if (currentLineContent.match(/^\((\d+)\)/)) {
+                        currentLineIndent = 1; // Format (n)
+                    } else if (currentLineContent.match(/^　*\([a-z]\)(?!\-)/)) {
+                        currentLineIndent = 2; // Format (a) without dash
+                    } else if (currentLineContent.match(/^　*\([a-z](-\d+)+\)/)) {
+                        const matches = currentLineContent.match(/^　*\([a-z]((-\d+)*)\)/);
+                        if (matches && matches[1]) {
+                            const dashCount = (matches[1].match(/-/g) || []).length;
+                            currentLineIndent = 2 + dashCount;
+                        } else {
+                            currentLineIndent = 2;
+                        }
                     } else {
-                        currentLineIndent = 2;
+                        // Fallback: count full-width spaces to determine current level
+                        let indentCount = 0;
+                        for (let i = 0; i < currentLineContent.length && currentLineContent[i] === '　'; i++) {
+                            indentCount++;
+                        }
+                        currentLineIndent = indentCount; // Just count the spaces, don't add 1
                     }
                 } else {
-                    // Fallback: count full-width spaces to determine current level
-                    let indentCount = 0;
-                    for (let i = 0; i < currentLineContent.length && currentLineContent[i] === '　'; i++) {
-                        indentCount++;
-                    }
-                    currentLineIndent = indentCount; // Just count the spaces, don't add 1
+                    // If numbering is disabled, reset indent to 0
+                    currentLineIndent = 0;
                 }
             }
 
@@ -224,30 +251,37 @@ document.addEventListener('DOMContentLoaded', function() {
             currentTabCount++;
             
             const tabSkipCount = getTabSkipCount();
-            
+            const numberingEnabled = isNumberingEnabled();
+
             // Handle Shift+Tab (decrease indent)
             if (e.shiftKey) {
                 // Decrease tab count first
                 currentTabCount = Math.max(0, currentTabCount - 1);
                 
-                // If we're within skip range, just remove one full-width space
-                if (currentTabCount < tabSkipCount) {
-                    // Remove one full-width space if it exists
-                    if (currentLine.startsWith('　')) {
-                        const newValue = value.substring(0, currentLineStart) + currentLine.substring(1) + value.substring(currentLineStart + currentLine.length);
-                        textarea.value = newValue;
-                        textarea.selectionStart = textarea.selectionEnd = start - 1;
-                    }
-                } else {
-                    // Decrease indent level for numbering
+                // Always just remove one full-width space for Shift+Tab
+                if (currentLine.startsWith('　')) {
+                    const newValue = value.substring(0, currentLineStart) + currentLine.substring(1) + value.substring(currentLineStart + currentLine.length);
+                    textarea.value = newValue;
+                    textarea.selectionStart = textarea.selectionEnd = start - 1;
+                }
+                
+                // If numbering is enabled and we're past skip count, update indent level
+                if (numberingEnabled && currentTabCount >= tabSkipCount) {
                     currentLineIndent = Math.max(0, currentLineIndent - 1);
-                    // Apply numbering logic with decreased level
-                    applyNumberingLogic();
                 }
             } else {
                 // Handle regular Tab (increase indent)
                 
-                // Check if we should just add spacing without numbering
+                // If numbering is disabled, always just add full-width space
+                if (!numberingEnabled) {
+                    const newValue = value.substring(0, start) + '　' + value.substring(start);
+                    textarea.value = newValue;
+                    textarea.selectionStart = textarea.selectionEnd = start + 1;
+                    lastLineIndex = currentLineIndex;
+                    return;
+                }
+                
+                // Numbering is enabled - check if we should just add spacing without numbering
                 if (currentTabCount <= tabSkipCount) {
                     // Just add full-width space (2-byte character)
                     const newValue = value.substring(0, start) + '　' + value.substring(start);
@@ -257,12 +291,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     return;
                 }
                 
-                // We're past the skip count, so increase indent level and apply numbering
+                // We're past the skip count and numbering is enabled, so increase indent level and apply numbering
                 currentLineIndent++;
                 applyNumberingLogic();
             }
 
-            // Function to apply numbering logic
+            // Function to apply numbering logic (only called when numbering is enabled)
             function applyNumberingLogic() {
                 let number = '';
                 if (currentLineIndent > 0) {
@@ -437,6 +471,17 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
     });
+
+    // Add event listener for numbering checkbox change
+    const numberingCheckbox = document.getElementById('enableNumbering');
+    if (numberingCheckbox) {
+        numberingCheckbox.addEventListener('change', function() {
+            // Reset state when toggling numbering
+            currentLineIndent = 0;
+            lastLineIndex = -1;
+            currentTabCount = 0;
+        });
+    }
     // Thay thế form submit handler
     form.addEventListener('submit', function(e) {
         e.preventDefault();
