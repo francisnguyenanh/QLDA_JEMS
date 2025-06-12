@@ -1238,39 +1238,31 @@
 
     <!-- Create Task Modal -->
     <div class="modal fade" id="createTaskModal" tabindex="-1" aria-labelledby="createTaskModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-scrollable modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="createTaskModalLabel">タスク作成</h5>
-                    <div class="d-flex gap-2">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">閉じる</button>
-                        <button type="button" class="btn btn-primary" onclick="generateTickets()">チケット発生</button>
+    <div class="modal-dialog modal-dialog-scrollable modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="createTaskModalLabel">タスク作成</h5>
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">閉じる</button>
+                    <button type="button" class="btn btn-primary" onclick="generateTickets()">チケット発生</button>
+                </div>
+            </div>
+            <div class="modal-body">
+                <form id="createTaskForm">
+                    <div class="mb-3">
+                        <label for="taskExcelFile" class="form-label">設計書 (Excelファイルを選択)</label>
+                        <input type="file" class="form-control" id="taskExcelFile" accept=".xlsx,.xls" required>
                     </div>
-                </div>
-                <div class="modal-body">
-                    <form id="createTaskForm">
-                        <div class="mb-3">
-                            <label for="taskExcelFile" class="form-label">設計書 (Excelファイルを選択)</label>
-                            <input type="file" class="form-control" id="taskExcelFile" accept=".xlsx,.xls" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="version" class="form-label">対象バージョン</label>
-                            <input type="text" class="form-control" id="version" placeholder="対象バージョンを入力" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="user" class="form-label">更新者</label>
-                            <input type="text" class="form-control" id="user" placeholder="更新者を入力">
-                        </div>
-                        <div class="mb-3">
-                            <label for="pj" class="form-label">PJ</label>
-                            <input type="text" class="form-control" id="pj" placeholder="PJを入力">
-                        </div>
-                    </form>
-                    <div id="ticketResult" class="mt-3"></div>
-                </div>
+                    <div class="mb-3">
+                        <label for="version" class="form-label">対象バージョン</label>
+                        <input type="text" class="form-control" id="version" placeholder="対象バージョンを入力" required>
+                    </div>
+                </form>
+                <div id="ticketResult" class="mt-3"></div>
             </div>
         </div>
     </div>
+</div>
 
     <!-- Delete All Data Modal -->
     <div class="modal fade" id="deleteAllModal" tabindex="-1">
@@ -1406,6 +1398,7 @@
     </div>
  {% endblock %}
 {% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/encoding-japanese@2.0.0/encoding.min.js"></script>
     <script>
         console.log('JavaScript loaded');
 
