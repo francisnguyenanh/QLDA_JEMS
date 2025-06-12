@@ -125,8 +125,9 @@ body {
     overflow: hidden; /* Prevent overflow */
 }
 
+/* DASHBOARD TABLE SPECIFIC STYLES */
 /* Table container - FIXED HEIGHT CALCULATION */
-.custom-table-container {
+.dashboard-table-container {
     flex: 1 1 auto;
     width: 100%;
     height: calc(100vh - 140px); /* Tính toán chính xác: 100vh trừ navbar + header */
@@ -140,9 +141,9 @@ body {
     position: relative;
 }
 
-/* Table styling - very compact */
-.table.table-bordered {
-    font-size: 0.75rem; /* Giảm font size mạnh */
+/* Dashboard Table styling - very compact */
+#dashboardTable.table-dashboard {
+    font-size: 0.9rem; /* Tăng từ 0.75rem lên 0.9rem (+20%) */
     width: 100%;
     min-width: 2000px;
     border-collapse: separate;
@@ -151,8 +152,8 @@ body {
     background: #ffffff;
 }
 
-/* Header styling - very compact */
-.table.table-bordered thead {
+/* Dashboard Table Header styling - very compact */
+#dashboardTable.table-dashboard thead {
     position: sticky;
     top: 0;
     z-index: 10;
@@ -160,36 +161,36 @@ body {
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
 }
 
-.table.table-bordered thead th {
+#dashboardTable.table-dashboard thead th {
     background: transparent;
     color: #475569;
     font-weight: 600;
-    font-size: 0.75rem; /* Giảm font size */
+    font-size: 0.9rem; /* Tăng từ 0.75rem lên 0.9rem (+20%) */
     text-align: center;
-    padding: 8px 6px; /* Giảm padding mạnh */
+    padding: 10px 8px; /* Tăng padding một chút để cân bằng */
     border: 1px solid #e2e8f0;
     border-bottom: 2px solid #cbd5e1;
     text-shadow: none;
     letter-spacing: 0.2px;
     white-space: nowrap;
     position: relative;
-    height: 45px; /* Set fixed height */
+    height: 50px; /* Tăng height để chứa font lớn hơn */
 }
 
-/* Body cells - very compact */
-.table.table-bordered tbody td {
-    padding: 6px 4px; /* Giảm padding mạnh */
+/* Dashboard Table Body cells - very compact */
+#dashboardTable.table-dashboard tbody td {
+    padding: 8px 6px; /* Tăng padding một chút */
     border: 1px solid #f1f5f9;
     background: #ffffff;
-    font-size: 0.75rem; /* Giảm font size */
+    font-size: 0.9rem; /* Tăng từ 0.75rem lên 0.9rem (+20%) */
     vertical-align: middle;
     white-space: nowrap;
     transition: all 0.2s ease;
-    height: 40px; /* Set fixed height */
+    height: 45px; /* Tăng height để chứa font lớn hơn */
 }
 
-/* Action buttons - very compact */
-.action-buttons {
+/* Dashboard Action buttons - very compact */
+#dashboardTable .action-buttons {
     display: flex;
     justify-content: center;
     align-items: center;
@@ -197,13 +198,13 @@ body {
     padding: 1px 0; /* Giảm padding */
 }
 
-.action-buttons .btn {
-    padding: 3px 5px; /* Giảm padding mạnh */
-    font-size: 11px; /* Giảm font size */
+#dashboardTable .action-buttons .btn {
+    padding: 4px 6px; /* Tăng padding một chút */
+    font-size: 13px; /* Tăng từ 11px lên 13px (+18%) */
     border: none;
     border-radius: 4px;
-    min-width: 24px; /* Giảm width */
-    height: 24px; /* Giảm height */
+    min-width: 28px; /* Tăng width */
+    height: 28px; /* Tăng height */
     display: flex;
     align-items: center;
     justify-content: center;
@@ -213,11 +214,11 @@ body {
     overflow: hidden;
 }
 
-/* STICKY COLUMNS - VERY COMPACT */
+/* DASHBOARD STICKY COLUMNS - VERY COMPACT */
 
 /* First column (No) - SOFT PURPLE */
-.table.table-bordered th:nth-child(1),
-.table.table-bordered td:nth-child(1) {
+#dashboardTable.table-dashboard th:nth-child(1),
+#dashboardTable.table-dashboard td:nth-child(1) {
     position: sticky;
     left: 0;
     background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
@@ -229,9 +230,10 @@ body {
     width: 40px; /* Giảm width mạnh */
     min-width: 40px;
     max-width: 40px;
+    box-shadow: 1px 0 2px rgba(0, 0, 0, 0.05);
 }
 
-.table.table-bordered tbody td:nth-child(1) {
+#dashboardTable.table-dashboard tbody td:nth-child(1) {
     background: linear-gradient(135deg, #ddd6fe 0%, #c4b5fd 100%);
     color: #5b21b6;
     font-weight: 600;
@@ -239,8 +241,8 @@ body {
 }
 
 /* Second column (操作) - SOFT GREEN */
-.table.table-bordered th:nth-child(2),
-.table.table-bordered td:nth-child(2) {
+#dashboardTable.table-dashboard th:nth-child(2),
+#dashboardTable.table-dashboard td:nth-child(2) {
     position: sticky;
     left: 40px; /* Điều chỉnh left */
     background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
@@ -251,16 +253,17 @@ body {
     min-width: 85px;
     max-width: 85px;
     text-align: center;
+    box-shadow: 1px 0 2px rgba(0, 0, 0, 0.05);
 }
 
-.table.table-bordered tbody td:nth-child(2) {
+#dashboardTable.table-dashboard tbody td:nth-child(2) {
     background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
     padding: 4px; /* Giảm padding */
 }
 
 /* Third column - SOFT BLUE */
-.table.table-bordered th:nth-child(3),
-.table.table-bordered td:nth-child(3) {
+#dashboardTable.table-dashboard th:nth-child(3),
+#dashboardTable.table-dashboard td:nth-child(3) {
     position: sticky;
     left: 125px; /* Điều chỉnh left */
     background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
@@ -270,17 +273,18 @@ body {
     width: 110px; /* Giảm width */
     min-width: 110px;
     max-width: 110px;
+    box-shadow: 1px 0 2px rgba(0, 0, 0, 0.05);
 }
 
-.table.table-bordered tbody td:nth-child(3) {
+#dashboardTable.table-dashboard tbody td:nth-child(3) {
     background: linear-gradient(135deg, #bfdbfe 0%, #93c5fd 100%);
     color: #1e3a8a;
     font-weight: 500;
 }
 
 /* Fourth column - SOFT ORANGE */
-.table.table-bordered th:nth-child(4),
-.table.table-bordered td:nth-child(4) {
+#dashboardTable.table-dashboard th:nth-child(4),
+#dashboardTable.table-dashboard td:nth-child(4) {
     position: sticky;
     left: 235px; /* Điều chỉnh left */
     background: linear-gradient(135deg, #fed7aa 0%, #fdba74 100%);
@@ -290,83 +294,84 @@ body {
     width: 150px; /* Giảm width */
     min-width: 150px;
     max-width: 150px;
+    box-shadow: 1px 0 3px rgba(0, 0, 0, 0.06);
 }
 
-.table.table-bordered tbody td:nth-child(4) {
+#dashboardTable.table-dashboard tbody td:nth-child(4) {
     background: linear-gradient(135deg, #fdba74 0%, #fb923c 100%);
     color: #9a3412;
     font-weight: 500;
 }
 
-/* Ensure sticky headers have higher z-index */
-.table.table-bordered thead th:nth-child(-n+4) {
+/* Ensure dashboard sticky headers have higher z-index */
+#dashboardTable.table-dashboard thead th:nth-child(-n+4) {
     z-index: 10;
 }
 
-/* Column widths - very compact */
-.table.table-bordered th:nth-child(5),
-.table.table-bordered td:nth-child(5) { width: 100px; min-width: 100px; }
+/* Dashboard Column widths - very compact */
+#dashboardTable.table-dashboard th:nth-child(5),
+#dashboardTable.table-dashboard td:nth-child(5) { width: 100px; min-width: 100px; }
 
-.table.table-bordered th:nth-child(6),
-.table.table-bordered td:nth-child(6) { width: 120px; min-width: 120px; }
+#dashboardTable.table-dashboard th:nth-child(6),
+#dashboardTable.table-dashboard td:nth-child(6) { width: 120px; min-width: 120px; }
 
-.table.table-bordered th:nth-child(7),
-.table.table-bordered td:nth-child(7) { width: 120px; min-width: 120px; }
+#dashboardTable.table-dashboard th:nth-child(7),
+#dashboardTable.table-dashboard td:nth-child(7) { width: 120px; min-width: 120px; }
 
-.table.table-bordered th:nth-child(8),
-.table.table-bordered td:nth-child(8) { width: 80px; min-width: 80px; }
+#dashboardTable.table-dashboard th:nth-child(8),
+#dashboardTable.table-dashboard td:nth-child(8) { width: 80px; min-width: 80px; }
 
-.table.table-bordered th:nth-child(9),
-.table.table-bordered td:nth-child(9) { width: 80px; min-width: 80px; }
+#dashboardTable.table-dashboard th:nth-child(9),
+#dashboardTable.table-dashboard td:nth-child(9) { width: 80px; min-width: 80px; }
 
-.table.table-bordered th:nth-child(10),
-.table.table-bordered td:nth-child(10) { width: 100px; min-width: 100px; }
+#dashboardTable.table-dashboard th:nth-child(10),
+#dashboardTable.table-dashboard td:nth-child(10) { width: 100px; min-width: 100px; }
 
-.table.table-bordered th:nth-child(18),
-.table.table-bordered td:nth-child(18) { width: 110px; min-width: 110px; }
+#dashboardTable.table-dashboard th:nth-child(18),
+#dashboardTable.table-dashboard td:nth-child(18) { width: 110px; min-width: 110px; }
 
-.table.table-bordered th:nth-child(20),
-.table.table-bordered td:nth-child(20) { width: 140px; min-width: 140px; }
+#dashboardTable.table-dashboard th:nth-child(20),
+#dashboardTable.table-dashboard td:nth-child(20) { width: 140px; min-width: 140px; }
 
-.table.table-bordered th:nth-child(22),
-.table.table-bordered td:nth-child(22) { width: 110px; min-width: 110px; }
+#dashboardTable.table-dashboard th:nth-child(22),
+#dashboardTable.table-dashboard td:nth-child(22) { width: 110px; min-width: 110px; }
 
-.table.table-bordered th:nth-child(23),
-.table.table-bordered td:nth-child(23) { width: 75px; min-width: 75px; }
+#dashboardTable.table-dashboard th:nth-child(23),
+#dashboardTable.table-dashboard td:nth-child(23) { width: 75px; min-width: 75px; }
 
-.table.table-bordered th:nth-child(24),
-.table.table-bordered td:nth-child(24) { width: 75px; min-width: 75px; }
+#dashboardTable.table-dashboard th:nth-child(24),
+#dashboardTable.table-dashboard td:nth-child(24) { width: 75px; min-width: 75px; }
 
-.table.table-bordered th:nth-child(25),
-.table.table-bordered td:nth-child(25) { width: 75px; min-width: 75px; }
+#dashboardTable.table-dashboard th:nth-child(25),
+#dashboardTable.table-dashboard td:nth-child(25) { width: 75px; min-width: 75px; }
 
-.table.table-bordered th:nth-child(26),
-.table.table-bordered td:nth-child(26) { width: 75px; min-width: 75px; }
+#dashboardTable.table-dashboard th:nth-child(26),
+#dashboardTable.table-dashboard td:nth-child(26) { width: 75px; min-width: 75px; }
 
-.table.table-bordered th:nth-child(27),
-.table.table-bordered td:nth-child(27) { width: 200px; min-width: 200px; }
+#dashboardTable.table-dashboard th:nth-child(27),
+#dashboardTable.table-dashboard td:nth-child(27) { width: 200px; min-width: 200px; }
 
-.table.table-bordered th:nth-child(28),
-.table.table-bordered td:nth-child(28) { width: 75px; min-width: 75px; }
+#dashboardTable.table-dashboard th:nth-child(28),
+#dashboardTable.table-dashboard td:nth-child(28) { width: 75px; min-width: 75px; }
 
-.table.table-bordered th:nth-child(29),
-.table.table-bordered td:nth-child(29) { width: 75px; min-width: 75px; }
+#dashboardTable.table-dashboard th:nth-child(29),
+#dashboardTable.table-dashboard td:nth-child(29) { width: 75px; min-width: 75px; }
 
-.table.table-bordered th:nth-child(30),
-.table.table-bordered td:nth-child(30) { width: 75px; min-width: 75px; }
+#dashboardTable.table-dashboard th:nth-child(30),
+#dashboardTable.table-dashboard td:nth-child(30) { width: 75px; min-width: 75px; }
 
-.table.table-bordered th:nth-child(31),
-.table.table-bordered td:nth-child(31) { width: 75px; min-width: 75px; }
+#dashboardTable.table-dashboard th:nth-child(31),
+#dashboardTable.table-dashboard td:nth-child(31) { width: 75px; min-width: 75px; }
 
-/* Soft highlighting - giữ nguyên nhưng compact */
-.table.table-bordered .past-date { 
+/* Dashboard Soft highlighting - giữ nguyên nhưng compact */
+#dashboardTable.table-dashboard .past-date { 
     background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%) !important;
     color: #92400e !important;
     font-weight: 500;
     position: relative;
 }
 
-.table.table-bordered .past-date::before {
+#dashboardTable.table-dashboard .past-date::before {
     content: '';
     position: absolute;
     left: 0;
@@ -377,7 +382,7 @@ body {
     opacity: 0.7;
 }
 
-.table.table-bordered .highlight-date { 
+#dashboardTable.table-dashboard .highlight-date { 
     background: linear-gradient(135deg, #fef08a 0%, #facc15 100%) !important;
     color: #a16207 !important;
     font-weight: 600;
@@ -385,7 +390,7 @@ body {
     animation: softPulse 3s infinite;
 }
 
-.table.table-bordered .highlight-date::before {
+#dashboardTable.table-dashboard .highlight-date::before {
     content: '';
     position: absolute;
     left: 0;
@@ -396,7 +401,7 @@ body {
     opacity: 0.8;
 }
 
-.table.table-bordered .fb-late { 
+#dashboardTable.table-dashboard .fb-late { 
     background: linear-gradient(135deg, #fecaca 0%, #fca5a5 100%) !important;
     color: #7f1d1d !important;
     font-weight: 600;
@@ -404,7 +409,7 @@ body {
     animation: softPulse 3s infinite;
 }
 
-.table.table-bordered .fb-late::before {
+#dashboardTable.table-dashboard .fb-late::before {
     content: '';
     position: absolute;
     left: 0;
@@ -426,92 +431,182 @@ body {
     to { opacity: 1; transform: translateY(0); }
 }
 
-.table.table-bordered tbody tr {
+#dashboardTable.table-dashboard tbody tr {
     animation: fadeIn 0.3s ease-out;
 }
 
-/* Row hover effects - softer và compact */
-.table.table-bordered tbody tr {
+/* Dashboard Row hover effects - softer và compact */
+#dashboardTable.table-dashboard tbody tr {
     transition: all 0.2s ease;
 }
 
-.table.table-bordered tbody tr:hover {
+#dashboardTable.table-dashboard tbody tr:hover {
     background: linear-gradient(90deg, #f8fafc 0%, #f1f5f9 100%);
     transform: translateY(-1px);
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
 }
 
-.table.table-bordered tbody tr:hover td {
+#dashboardTable.table-dashboard tbody tr:hover td {
     border-color: #e2e8f0;
 }
 
-/* Alternating row colors - softer */
-.table.table-bordered tbody tr:nth-child(even) {
+/* Dashboard Alternating row colors - softer */
+#dashboardTable.table-dashboard tbody tr:nth-child(even) {
     background: linear-gradient(90deg, #fafbfc 0%, #f8fafc 100%);
 }
 
-.table.table-bordered tbody tr:nth-child(odd) {
+#dashboardTable.table-dashboard tbody tr:nth-child(odd) {
     background: #ffffff;
 }
 
-/* Sort indicators - compact */
-.sort-indicator::after {
+/* Dashboard Sort indicators - compact */
+#dashboardTable .sort-indicator::after {
     content: '';
     display: inline-block;
     width: 0;
     height: 0;
-    margin-left: 4px; /* Giảm margin */
+    margin-left: 5px; /* Tăng margin */
     vertical-align: middle;
-    border-left: 3px solid transparent; /* Giảm size */
-    border-right: 3px solid transparent;
+    border-left: 4px solid transparent; /* Tăng size */
+    border-right: 4px solid transparent;
     opacity: 0.5;
 }
 
-.sort-asc .sort-indicator::after {
-    border-bottom: 3px solid #64748b;
+#dashboardTable .sort-asc .sort-indicator::after {
+    border-bottom: 4px solid #64748b; /* Tăng size */
     opacity: 0.8;
 }
 
-.sort-desc .sort-indicator::after {
-    border-top: 3px solid #64748b;
+#dashboardTable .sort-desc .sort-indicator::after {
+    border-top: 4px solid #64748b; /* Tăng size */
     opacity: 0.8;
 }
 
-/* Sortable styling */
-.sortable {
+/* Dashboard Sortable styling */
+#dashboardTable .sortable {
     cursor: pointer;
     position: relative;
     user-select: none;
 }
 
-.sortable:hover {
+#dashboardTable .sortable:hover {
     background: rgba(148, 163, 184, 0.1);
     transition: background 0.3s ease;
 }
 
-/* VERY COMPACT SCROLLBAR STYLING */
-.custom-table-container::-webkit-scrollbar {
+/* VERY COMPACT SCROLLBAR STYLING - Dashboard specific */
+.dashboard-table-container::-webkit-scrollbar {
     width: 6px; /* Giảm width */
     height: 6px; /* Giảm height */
 }
 
-.custom-table-container::-webkit-scrollbar-track {
+.dashboard-table-container::-webkit-scrollbar-track {
     background: #f8fafc;
     border-radius: 3px;
 }
 
-.custom-table-container::-webkit-scrollbar-thumb {
+.dashboard-table-container::-webkit-scrollbar-thumb {
     background: linear-gradient(135deg, #cbd5e1 0%, #94a3b8 100%);
     border-radius: 3px;
     border: 1px solid #f8fafc;
 }
 
-.custom-table-container::-webkit-scrollbar-thumb:hover {
+.dashboard-table-container::-webkit-scrollbar-thumb:hover {
     background: linear-gradient(135deg, #94a3b8 0%, #64748b 100%);
 }
 
-.custom-table-container::-webkit-scrollbar-corner {
+.dashboard-table-container::-webkit-scrollbar-corner {
     background: #f8fafc;
+}
+
+/* Dashboard Action button colors - very compact */
+#dashboardTable .btn-edit { 
+    background: linear-gradient(135deg, #bfdbfe 0%, #93c5fd 100%);
+    color: #1e40af;
+}
+
+#dashboardTable .btn-mail { 
+    background: linear-gradient(135deg, #a5f3fc 0%, #67e8f9 100%);
+    color: #0e7490;
+}
+
+#dashboardTable .btn-copy { 
+    background: linear-gradient(135deg, #bbf7d0 0%, #86efac 100%);
+    color: #166534;
+}
+
+#dashboardTable .btn-edit:hover { 
+    background: linear-gradient(135deg, #93c5fd 0%, #60a5fa 100%);
+    color: #1e3a8a;
+}
+
+#dashboardTable .btn-mail:hover { 
+    background: linear-gradient(135deg, #67e8f9 0%, #22d3ee 100%);
+    color: #0c4a6e;
+}
+
+#dashboardTable .btn-copy:hover { 
+    background: linear-gradient(135deg, #86efac 0%, #4ade80 100%);
+    color: #14532d;
+}
+
+#dashboardTable .action-buttons .btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s;
+}
+
+#dashboardTable .action-buttons .btn:hover::before {
+    left: 100%;
+}
+
+#dashboardTable .action-buttons .btn:hover {
+    transform: translateY(-1px) scale(1.02);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.12);
+}
+
+/* DASHBOARD LOADING STATES - SOFT */
+#dashboardTable.table-loading {
+    position: relative;
+    opacity: 0.7;
+    pointer-events: none;
+}
+
+#dashboardTable.table-loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 32px; /* Tăng size */
+    height: 32px;
+    margin: -16px 0 0 -16px;
+    border: 3px solid #f1f5f9;
+    border-top: 3px solid #94a3b8;
+    border-radius: 50%;
+    animation: softSpin 1.5s linear infinite;
+}
+
+@keyframes softSpin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* SOFT PROFESSIONAL SHADOWS AND DEPTH - Dashboard specific */
+#dashboardTable.table-dashboard thead {
+    box-shadow: 
+        0 1px 3px rgba(0, 0, 0, 0.06),
+        0 1px 6px rgba(0, 0, 0, 0.03);
+}
+
+#dashboardTable.table-dashboard tbody tr:hover {
+    box-shadow: 
+        0 1px 3px rgba(0, 0, 0, 0.04),
+        0 1px 6px rgba(0, 0, 0, 0.02);
 }
 
 /* Button styling - very compact */
@@ -592,37 +687,6 @@ body {
     color: #4527a0;
 }
 
-/* Action button colors - very compact */
-.btn-edit { 
-    background: linear-gradient(135deg, #bfdbfe 0%, #93c5fd 100%);
-    color: #1e40af;
-}
-
-.btn-mail { 
-    background: linear-gradient(135deg, #a5f3fc 0%, #67e8f9 100%);
-    color: #0e7490;
-}
-
-.btn-copy { 
-    background: linear-gradient(135deg, #bbf7d0 0%, #86efac 100%);
-    color: #166534;
-}
-
-.btn-edit:hover { 
-    background: linear-gradient(135deg, #93c5fd 0%, #60a5fa 100%);
-    color: #1e3a8a;
-}
-
-.btn-mail:hover { 
-    background: linear-gradient(135deg, #67e8f9 0%, #22d3ee 100%);
-    color: #0c4a6e;
-}
-
-.btn-copy:hover { 
-    background: linear-gradient(135deg, #86efac 0%, #4ade80 100%);
-    color: #14532d;
-}
-
 .btn-professional::before {
     content: '';
     position: absolute;
@@ -643,36 +707,16 @@ body {
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
 }
 
-.action-buttons .btn::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-    transition: left 0.5s;
-}
-
-.action-buttons .btn:hover::before {
-    left: 100%;
-}
-
-.action-buttons .btn:hover {
-    transform: translateY(-1px) scale(1.02);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.12);
-}
-
 /* Dropdown Styles - compact */
 .dropdown {
     position: relative;
 }
 
 .dropdown-menu {
-    font-size: 0.7rem; /* Giảm font size */
+    font-size: 0.84rem; /* Tăng từ 0.7rem lên 0.84rem (+20%) */
     border-radius: 4px;
     box-shadow: 0 3px 12px rgba(0, 0, 0, 0.15);
-    min-width: 130px; /* Giảm width */
+    min-width: 150px; /* Tăng width */
     z-index: 1050;
     border: 1px solid #dee2e6;
     background-color: white;
@@ -691,13 +735,13 @@ body {
 }
 
 .dropdown-item {
-    padding: 6px 10px; /* Giảm padding */
+    padding: 8px 12px; /* Tăng padding */
     color: #495057;
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 8px; /* Tăng gap */
     transition: background-color 0.2s;
-    font-size: 0.7rem;
+    font-size: 0.84rem; /* Tăng từ 0.7rem lên 0.84rem (+20%) */
 }
 
 .dropdown-item:hover {
@@ -706,9 +750,9 @@ body {
 }
 
 .dropdown-item i {
-    width: 14px; /* Giảm size */
+    width: 16px; /* Tăng size */
     text-align: center;
-    font-size: 0.8rem;
+    font-size: 0.96rem; /* Tăng từ 0.8rem lên 0.96rem (+20%) */
 }
 
 .dropdown-toggle::after {
@@ -734,460 +778,6 @@ body {
 /* Responsive Design - VERY COMPACT */
 @media (min-width: 1200px) {
     .btn-professional {
-        min-width: 75px;
-        padding: 4px 10px;
-        font-size: 0.75rem;
-    }
-    
-    .btn-professional i {
-        font-size: 0.85rem;
-    }
-    
-    .table.table-bordered {
-        font-size: 0.8rem;
-    }
-    
-    .table.table-bordered th,
-    .table.table-bordered td {
-        padding: 8px 6px;
-    }
-    
-    .custom-table-container {
-        height: calc(100vh - 130px); /* Điều chỉnh cho desktop */
-    }
-}
-
-@media (max-width: 1199px) {
-    .btn-group-professional {
-        flex-wrap: wrap;
-        gap: 3px;
-    }
-    
-    .btn-professional {
-        min-width: 60px;
-        padding: 3px 6px;
-        font-size: 0.65rem;
-    }
-    
-    .btn-professional i {
-        font-size: 0.75rem;
-    }
-    
-    .custom-table-container {
-        height: calc(100vh - 135px); /* Điều chỉnh cho tablet */
-    }
-}
-
-@media (max-width: 768px) {
-    .container-fluid.mb-3 {
-        padding: 3px 8px;
-    }
-    
-    .header-controls {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 5px;
-        margin-bottom: 3px;
-    }
-    
-    .search-project-name {
-        width: 100%;
-        max-width: none;
-    }
-    
-    .btn-group-professional {
-        gap: 2px;
-        flex-wrap: wrap;
-    }
-    
-    .btn-professional {
-        padding: 3px 5px;
-        font-size: 0.6rem;
-        min-width: 50px;
-        height: 28px;
-    }
-    
-    .btn-professional i {
-        font-size: 0.7rem;
-    }
-    
-    .btn-professional span {
-        display: none;
-    }
-    
-    .table.table-bordered {
-        font-size: 0.65rem;
-    }
-    
-    .table.table-bordered th,
-    .table.table-bordered td {
-        padding: 4px 3px;
-        height: 35px;
-    }
-    
-    .table.table-bordered thead th {
-        padding: 6px 4px;
-        font-size: 0.7rem;
-        height: 40px;
-    }
-    
-    .action-buttons .btn {
-        min-width: 20px;
-        height: 20px;
-        font-size: 10px;
-    }
-    
-    .custom-table-container {
-        height: calc(100vh - 150px); /* Điều chỉnh cho mobile */
-        border-radius: 6px;
-    }
-}
-
-@media (max-width: 576px) {
-    .btn-group-professional {
-        justify-content: center;
-        flex-wrap: wrap;
-    }
-    
-    .btn-professional {
-        min-width: 40px;
-        padding: 3px;
-        height: 26px;
-    }
-    
-    .custom-table-container {
-        height: calc(100vh - 160px); /* Điều chỉnh cho mobile nhỏ */
-    }
-}
-
-/* Modal Styles - compact */
-.modal-body {
-    max-height: 65vh;
-    overflow-y: auto;
-}
-
-.modal-header {
-    padding: 0.6rem 0.8rem;
-}
-
-.modal-footer {
-    padding: 0.4rem 0.8rem;
-}
-
-/* Form styles - very compact */
-.form-label {
-    font-size: 0.75rem;
-    margin-bottom: 0.2rem;
-}
-
-.form-control, 
-.form-check-input, 
-.form-select {
-    font-size: 0.75rem;
-    padding: 0.25rem 0.4rem;
-}
-
-/* Badge and enhancements */
-.btn-professional .badge {
-    position: absolute;
-    top: -2px;
-    right: -2px;
-    background: #dc3545;
-    color: white;
-    font-size: 0.55rem;
-    padding: 1px 3px;
-    border-radius: 6px;
-    min-width: 12px;
-    height: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-/* Copy Mail Checkbox */
-#copyMailCheckbox:checked + .form-check-label {
-    color: #28a745;
-}
-
-/* SOFT PROFESSIONAL SHADOWS AND DEPTH */
-.table.table-bordered thead {
-    box-shadow: 
-        0 1px 3px rgba(0, 0, 0, 0.06),
-        0 1px 6px rgba(0, 0, 0, 0.03);
-}
-
-.table.table-bordered tbody tr:hover {
-    box-shadow: 
-        0 1px 3px rgba(0, 0, 0, 0.04),
-        0 1px 6px rgba(0, 0, 0, 0.02);
-}
-
-/* SOFT STICKY COLUMN BORDERS */
-.table.table-bordered th:nth-child(1),
-.table.table-bordered td:nth-child(1) {
-    border-right: 2px solid rgba(99, 102, 241, 0.2);
-    box-shadow: 1px 0 2px rgba(0, 0, 0, 0.05);
-}
-
-.table.table-bordered th:nth-child(2),
-.table.table-bordered td:nth-child(2) {
-    border-right: 2px solid rgba(34, 197, 94, 0.2);
-    box-shadow: 1px 0 2px rgba(0, 0, 0, 0.05);
-}
-
-.table.table-bordered th:nth-child(3),
-.table.table-bordered td:nth-child(3) {
-    border-right: 2px solid rgba(59, 130, 246, 0.2);
-    box-shadow: 1px 0 2px rgba(0, 0, 0, 0.05);
-}
-
-.table.table-bordered th:nth-child(4),
-.table.table-bordered td:nth-child(4) {
-    border-right: 2px solid rgba(249, 115, 22, 0.2);
-    box-shadow: 1px 0 3px rgba(0, 0, 0, 0.06);
-}
-
-/* LOADING STATES - SOFT */
-.table-loading {
-    position: relative;
-    opacity: 0.7;
-    pointer-events: none;
-}
-
-.table-loading::after {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 28px; /* Giảm size */
-    height: 28px;
-    margin: -14px 0 0 -14px;
-    border: 2px solid #f1f5f9;
-    border-top: 2px solid #94a3b8;
-    border-radius: 50%;
-    animation: softSpin 1.5s linear infinite;
-}
-
-@keyframes softSpin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
-/* Table styling - increased font size by 20% */
-.table.table-bordered {
-    font-size: 0.9rem; /* Tăng từ 0.75rem lên 0.9rem (+20%) */
-    width: 100%;
-    min-width: 2000px;
-    border-collapse: separate;
-    border-spacing: 0;
-    margin: 0;
-    background: #ffffff;
-}
-
-/* Header styling - increased font size */
-.table.table-bordered thead th {
-    background: transparent;
-    color: #475569;
-    font-weight: 600;
-    font-size: 0.9rem; /* Tăng từ 0.75rem lên 0.9rem (+20%) */
-    text-align: center;
-    padding: 10px 8px; /* Tăng padding một chút để cân bằng */
-    border: 1px solid #e2e8f0;
-    border-bottom: 2px solid #cbd5e1;
-    text-shadow: none;
-    letter-spacing: 0.2px;
-    white-space: nowrap;
-    position: relative;
-    height: 50px; /* Tăng height để chứa font lớn hơn */
-}
-
-/* Body cells - increased font size */
-.table.table-bordered tbody td {
-    padding: 8px 6px; /* Tăng padding một chút */
-    border: 1px solid #f1f5f9;
-    background: #ffffff;
-    font-size: 0.9rem; /* Tăng từ 0.75rem lên 0.9rem (+20%) */
-    vertical-align: middle;
-    white-space: nowrap;
-    transition: all 0.2s ease;
-    height: 45px; /* Tăng height để chứa font lớn hơn */
-}
-
-/* Action buttons - increased font size */
-.action-buttons .btn {
-    padding: 4px 6px; /* Tăng padding một chút */
-    font-size: 13px; /* Tăng từ 11px lên 13px (+18%) */
-    border: none;
-    border-radius: 4px;
-    min-width: 28px; /* Tăng width */
-    height: 28px; /* Tăng height */
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.3s ease;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
-    position: relative;
-    overflow: hidden;
-}
-
-/* Navbar buttons - increased font size */
-.btn-professional {
-    display: flex;
-    align-items: center;
-    gap: 3px;
-    padding: 5px 10px; /* Tăng padding */
-    border: 1px solid #dee2e6;
-    border-radius: 4px;
-    font-size: 0.84rem; /* Tăng từ 0.7rem lên 0.84rem (+20%) */
-    font-weight: 500;
-    text-decoration: none;
-    transition: all 0.3s ease;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    min-width: 80px; /* Tăng min-width */
-    white-space: nowrap;
-    justify-content: center;
-    position: relative;
-    overflow: hidden;
-    flex-shrink: 0;
-    height: 36px; /* Tăng height */
-}
-
-.btn-professional i {
-    font-size: 0.96rem; /* Tăng từ 0.8rem lên 0.96rem (+20%) */
-}
-
-/* Search controls - increased font size */
-.input-group {
-    font-size: 0.96rem; /* Tăng từ 0.8rem lên 0.96rem (+20%) */
-    height: 40px; /* Tăng height */
-}
-
-.input-group-text {
-    padding: 0.3rem 0.6rem; /* Tăng padding */
-    font-size: 0.96rem; /* Tăng từ 0.8rem lên 0.96rem (+20%) */
-}
-
-.form-control {
-    padding: 0.3rem 0.6rem; /* Tăng padding */
-    font-size: 0.96rem; /* Tăng từ 0.8rem lên 0.96rem (+20%) */
-    height: 40px; /* Tăng height */
-}
-
-.form-check-label {
-    font-size: 0.96rem; /* Tăng từ 0.8rem lên 0.96rem (+20%) */
-}
-
-/* Header controls - adjust height */
-.container-fluid.mb-3 {
-    background-color: #f8f9fa;
-    padding: 8px 12px; /* Tăng padding */
-    border-bottom: 1px solid #dee2e6;
-    flex: 0 0 auto;
-    margin-bottom: 0 !important;
-    min-height: 60px; /* Tăng height để chứa các element lớn hơn */
-}
-
-/* Table container - adjust calculated height */
-.custom-table-container {
-    flex: 1 1 auto;
-    width: 100%;
-    height: calc(100vh - 150px); /* Điều chỉnh để bù cho height tăng */
-    max-height: calc(100vh - 150px);
-    overflow-y: auto;
-    overflow-x: auto;
-    background: #ffffff;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-    border: 1px solid #f0f0f0;
-    position: relative;
-}
-
-/* Sort indicators - scale with font size */
-.sort-indicator::after {
-    content: '';
-    display: inline-block;
-    width: 0;
-    height: 0;
-    margin-left: 5px; /* Tăng margin */
-    vertical-align: middle;
-    border-left: 4px solid transparent; /* Tăng size */
-    border-right: 4px solid transparent;
-    opacity: 0.5;
-}
-
-.sort-asc .sort-indicator::after {
-    border-bottom: 4px solid #64748b; /* Tăng size */
-    opacity: 0.8;
-}
-
-.sort-desc .sort-indicator::after {
-    border-top: 4px solid #64748b; /* Tăng size */
-    opacity: 0.8;
-}
-
-/* Modal form elements - increased font size */
-.form-label {
-    font-size: 0.9rem; /* Tăng từ 0.75rem lên 0.9rem (+20%) */
-    margin-bottom: 0.3rem;
-}
-
-.modal .form-control, 
-.modal .form-check-input, 
-.modal .form-select {
-    font-size: 0.9rem; /* Tăng từ 0.75rem lên 0.9rem (+20%) */
-    padding: 0.35rem 0.5rem; /* Tăng padding */
-}
-
-/* Dropdown menu - increased font size */
-.dropdown-menu {
-    font-size: 0.84rem; /* Tăng từ 0.7rem lên 0.84rem (+20%) */
-    border-radius: 4px;
-    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.15);
-    min-width: 150px; /* Tăng width */
-    z-index: 1050;
-    border: 1px solid #dee2e6;
-    background-color: white;
-    position: absolute !important;
-    top: 100% !important;
-    left: 0 !important;
-    margin-top: 1px;
-}
-
-.dropdown-item {
-    padding: 8px 12px; /* Tăng padding */
-    color: #495057;
-    display: flex;
-    align-items: center;
-    gap: 8px; /* Tăng gap */
-    transition: background-color 0.2s;
-    font-size: 0.84rem; /* Tăng từ 0.7rem lên 0.84rem (+20%) */
-}
-
-.dropdown-item i {
-    width: 16px; /* Tăng size */
-    text-align: center;
-    font-size: 0.96rem; /* Tăng từ 0.8rem lên 0.96rem (+20%) */
-}
-
-/* Badge - increased font size */
-.btn-professional .badge {
-    position: absolute;
-    top: -2px;
-    right: -2px;
-    background: #dc3545;
-    color: white;
-    font-size: 0.66rem; /* Tăng từ 0.55rem lên 0.66rem (+20%) */
-    padding: 2px 4px; /* Tăng padding */
-    border-radius: 6px;
-    min-width: 14px; /* Tăng width */
-    height: 14px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-/* Responsive Design - UPDATE WITH INCREASED FONT SIZES */
-@media (min-width: 1200px) {
-    .btn-professional {
         min-width: 90px; /* Tăng width */
         padding: 5px 12px;
         font-size: 0.9rem; /* Tăng từ 0.75rem lên 0.9rem (+20%) */
@@ -1197,16 +787,16 @@ body {
         font-size: 1.02rem; /* Tăng từ 0.85rem lên 1.02rem (+20%) */
     }
     
-    .table.table-bordered {
+    #dashboardTable.table-dashboard {
         font-size: 1.02rem; /* Tăng từ 0.85rem lên 1.02rem (+20%) */
     }
     
-    .table.table-bordered th,
-    .table.table-bordered td {
+    #dashboardTable.table-dashboard th,
+    #dashboardTable.table-dashboard td {
         padding: 12px 8px; /* Tăng padding */
     }
     
-    .custom-table-container {
+    .dashboard-table-container {
         height: calc(100vh - 140px); /* Điều chỉnh cho desktop */
     }
 }
@@ -1227,7 +817,7 @@ body {
         font-size: 0.9rem; /* Tăng từ 0.75rem lên 0.9rem (+20%) */
     }
     
-    .custom-table-container {
+    .dashboard-table-container {
         height: calc(100vh - 145px); /* Điều chỉnh cho tablet */
     }
 }
@@ -1269,29 +859,29 @@ body {
         display: none;
     }
     
-    .table.table-bordered {
+    #dashboardTable.table-dashboard {
         font-size: 0.78rem; /* Tăng từ 0.65rem lên 0.78rem (+20%) */
     }
     
-    .table.table-bordered th,
-    .table.table-bordered td {
+    #dashboardTable.table-dashboard th,
+    #dashboardTable.table-dashboard td {
         padding: 6px 4px; /* Tăng padding */
         height: 40px; /* Tăng height */
     }
     
-    .table.table-bordered thead th {
+    #dashboardTable.table-dashboard thead th {
         padding: 8px 6px; /* Tăng padding */
         font-size: 0.84rem; /* Tăng từ 0.7rem lên 0.84rem (+20%) */
         height: 45px; /* Tăng height */
     }
     
-    .action-buttons .btn {
+    #dashboardTable .action-buttons .btn {
         min-width: 24px; /* Tăng width */
         height: 24px;
         font-size: 12px; /* Tăng từ 10px lên 12px (+20%) */
     }
     
-    .custom-table-container {
+    .dashboard-table-container {
         height: calc(100vh - 160px); /* Điều chỉnh cho mobile */
         border-radius: 6px;
     }
@@ -1309,12 +899,17 @@ body {
         height: 30px; /* Tăng height */
     }
     
-    .custom-table-container {
+    .dashboard-table-container {
         height: calc(100vh - 170px); /* Điều chỉnh cho mobile nhỏ */
     }
 }
 
-/* Modal header/footer - increased font size */
+/* Modal Styles - compact */
+.modal-body {
+    max-height: 65vh;
+    overflow-y: auto;
+}
+
 .modal-header {
     padding: 0.8rem 1rem; /* Tăng padding */
 }
@@ -1333,20 +928,369 @@ body {
     padding: 0.5rem 1rem; /* Tăng padding */
 }
 
-/* Loading spinner - scale với font size */
-.table-loading::after {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 32px; /* Tăng size */
-    height: 32px;
-    margin: -16px 0 0 -16px;
-    border: 3px solid #f1f5f9;
-    border-top: 3px solid #94a3b8;
-    border-radius: 50%;
-    animation: softSpin 1.5s linear infinite;
+/* Form styles - very compact */
+.form-label {
+    font-size: 0.9rem; /* Tăng từ 0.75rem lên 0.9rem (+20%) */
+    margin-bottom: 0.3rem;
 }
+
+.modal .form-control, 
+.modal .form-check-input, 
+.modal .form-select {
+    font-size: 0.9rem; /* Tăng từ 0.75rem lên 0.9rem (+20%) */
+    padding: 0.35rem 0.5rem; /* Tăng padding */
+}
+
+/* Badge and enhancements */
+.btn-professional .badge {
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    background: #dc3545;
+    color: white;
+    font-size: 0.66rem; /* Tăng từ 0.55rem lên 0.66rem (+20%) */
+    padding: 2px 4px; /* Tăng padding */
+    border-radius: 6px;
+    min-width: 14px; /* Tăng width */
+    height: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Copy Mail Checkbox */
+#copyMailCheckbox:checked + .form-check-label {
+    color: #28a745;
+}
+
+/* SCHEDULE MODAL SPECIFIC STYLES */
+/* Schedule table container */
+.schedule-table-container {
+    width: 100%;
+    max-height: 60vh;
+    overflow-y: auto;
+    overflow-x: auto;
+    background: #ffffff;
+    border-radius: 6px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+    border: 1px solid #f0f0f0;
+    position: relative;
+}
+
+/* Schedule Table styling */
+.schedule-table {
+    font-size: 0.9rem;
+    width: 100%;
+    min-width: 800px;
+    border-collapse: separate;
+    border-spacing: 0;
+    margin: 0;
+    background: #ffffff;
+}
+
+/* Schedule Table Header styling */
+.schedule-table thead {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.schedule-table thead th {
+    background: transparent;
+    color: #475569;
+    font-weight: 600;
+    font-size: 0.9rem;
+    text-align: center;
+    padding: 12px 10px;
+    border: 1px solid #e2e8f0;
+    border-bottom: 2px solid #cbd5e1;
+    text-shadow: none;
+    letter-spacing: 0.2px;
+    white-space: nowrap;
+    position: relative;
+    height: 50px;
+}
+
+/* Schedule Table Body cells */
+.schedule-table tbody td {
+    padding: 10px 8px;
+    border: 1px solid #f1f5f9;
+    background: #ffffff;
+    font-size: 0.9rem;
+    vertical-align: middle;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+    height: 45px;
+}
+
+/* Schedule First column (完了済) - SOFT PURPLE */
+.schedule-table th:nth-child(1),
+.schedule-table td:nth-child(1) {
+    position: sticky;
+    left: 0;
+    background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
+    color: #4338ca;
+    font-weight: 600;
+    text-align: center;
+    z-index: 5;
+    border-right: 2px solid rgba(99, 102, 241, 0.2);
+    width: 80px;
+    min-width: 80px;
+    max-width: 80px;
+    box-shadow: 1px 0 2px rgba(0, 0, 0, 0.05);
+}
+
+.schedule-table tbody td:nth-child(1) {
+    background: linear-gradient(135deg, #ddd6fe 0%, #c4b5fd 100%);
+    color: #5b21b6;
+    font-weight: 600;
+}
+
+/* Schedule Second column (日付) - SOFT GREEN */
+.schedule-table th:nth-child(2),
+.schedule-table td:nth-child(2) {
+    position: sticky;
+    left: 80px;
+    background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+    color: #166534;
+    z-index: 5;
+    border-right: 2px solid rgba(34, 197, 94, 0.2);
+    width: 140px;
+    min-width: 140px;
+    max-width: 140px;
+    text-align: center;
+    box-shadow: 1px 0 2px rgba(0, 0, 0, 0.05);
+}
+
+.schedule-table tbody td:nth-child(2) {
+    background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+    color: #14532d;
+    font-weight: 500;
+}
+
+/* Schedule Third column (タスク) - SOFT BLUE */
+.schedule-table th:nth-child(3),
+.schedule-table td:nth-child(3) {
+    position: sticky;
+    left: 220px;
+    background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+    color: #1e40af;
+    z-index: 5;
+    border-right: 2px solid rgba(59, 130, 246, 0.2);
+    width: 100px;
+    min-width: 100px;
+    max-width: 100px;
+    box-shadow: 1px 0 2px rgba(0, 0, 0, 0.05);
+}
+
+.schedule-table tbody td:nth-child(3) {
+    background: linear-gradient(135deg, #bfdbfe 0%, #93c5fd 100%);
+    color: #1e3a8a;
+    font-weight: 500;
+}
+
+/* Schedule Column widths for remaining columns */
+.schedule-table th:nth-child(4),
+.schedule-table td:nth-child(4) { width: 200px; min-width: 200px; } /* 案件名 */
+
+.schedule-table th:nth-child(5),
+.schedule-table td:nth-child(5) { width: 100px; min-width: 100px; } /* SE */
+
+.schedule-table th:nth-child(6),
+.schedule-table td:nth-child(6) { width: 80px; min-width: 80px; } /* PH */
+
+.schedule-table th:nth-child(7),
+.schedule-table td:nth-child(7) { width: 120px; min-width: 120px; } /* 開発工数（h） */
+
+/* Ensure schedule sticky headers have higher z-index */
+.schedule-table thead th:nth-child(-n+3) {
+    z-index: 10;
+}
+
+/* Schedule Row hover effects */
+.schedule-table tbody tr {
+    transition: all 0.2s ease;
+    animation: fadeIn 0.3s ease-out;
+}
+
+.schedule-table tbody tr:hover {
+    background: linear-gradient(90deg, #f8fafc 0%, #f1f5f9 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+}
+
+.schedule-table tbody tr:hover td {
+    border-color: #e2e8f0;
+}
+
+/* Schedule Alternating row colors */
+.schedule-table tbody tr:nth-child(even) {
+    background: linear-gradient(90deg, #fafbfc 0%, #f8fafc 100%);
+}
+
+.schedule-table tbody tr:nth-child(odd) {
+    background: #ffffff;
+}
+
+/* Schedule Checkbox styling */
+.schedule-table input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: #4338ca;
+    cursor: pointer;
+    transform: scale(1.1);
+}
+
+.schedule-table input[type="checkbox"]:checked {
+    background: linear-gradient(135deg, #4338ca 0%, #5b21b6 100%);
+}
+
+/* Schedule Week navigation buttons */
+.week-nav-buttons {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-bottom: 15px;
+}
+
+.week-nav-buttons .btn {
+    font-size: 0.9rem;
+    padding: 8px 16px;
+    border-radius: 6px;
+    transition: all 0.3s ease;
+}
+
+.week-nav-buttons .btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Week date range display */
+.week-date-range {
+    text-align: center;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #475569;
+    margin-bottom: 20px;
+    padding: 8px 16px;
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    border-radius: 6px;
+    border: 1px solid #e2e8f0;
+}
+
+/* Schedule Modal scrollbar styling */
+.schedule-table-container::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+.schedule-table-container::-webkit-scrollbar-track {
+    background: #f8fafc;
+    border-radius: 3px;
+}
+
+.schedule-table-container::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, #cbd5e1 0%, #94a3b8 100%);
+    border-radius: 3px;
+    border: 1px solid #f8fafc;
+}
+
+.schedule-table-container::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(135deg, #94a3b8 0%, #64748b 100%);
+}
+
+.schedule-table-container::-webkit-scrollbar-corner {
+    background: #f8fafc;
+}
+
+/* Schedule Modal header styling */
+#scheduleModal .modal-header {
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    border-bottom: 2px solid #e2e8f0;
+}
+
+#scheduleModal .modal-title {
+    color: #475569;
+    font-weight: 600;
+}
+
+/* Schedule Modal responsive design */
+@media (max-width: 768px) {
+    .schedule-table {
+        font-size: 0.8rem;
+        min-width: 600px;
+    }
+    
+    .schedule-table thead th {
+        padding: 8px 6px;
+        font-size: 0.8rem;
+        height: 40px;
+    }
+    
+    .schedule-table tbody td {
+        padding: 6px 4px;
+        height: 35px;
+    }
+    
+    .schedule-table-container {
+        max-height: 50vh;
+    }
+    
+    .week-nav-buttons .btn {
+        font-size: 0.8rem;
+        padding: 6px 12px;
+    }
+    
+    .week-date-range {
+        font-size: 0.9rem;
+    }
+    
+    /* Adjust sticky column widths for mobile */
+    .schedule-table th:nth-child(1),
+    .schedule-table td:nth-child(1) {
+        width: 60px;
+        min-width: 60px;
+        max-width: 60px;
+    }
+    
+    .schedule-table th:nth-child(2),
+    .schedule-table td:nth-child(2) {
+        left: 60px;
+        width: 120px;
+        min-width: 120px;
+        max-width: 120px;
+    }
+    
+    .schedule-table th:nth-child(3),
+    .schedule-table td:nth-child(3) {
+        left: 180px;
+        width: 80px;
+        min-width: 80px;
+        max-width: 80px;
+    }
+}
+
+@media (max-width: 576px) {
+    .schedule-table {
+        font-size: 0.75rem;
+    }
+    
+    .schedule-table-container {
+        max-height: 45vh;
+    }
+    
+    .week-nav-buttons {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .week-nav-buttons .btn {
+        width: 120px;
+    }
+}
+
 
 {% endblock %}
 
@@ -1474,8 +1418,8 @@ body {
         </div>
     </div>
 </div>
-        <div class="custom-table-container">
-            <table class="table table-bordered">
+        <div class="dashboard-table-container">
+            <table id="dashboardTable" class="table table-bordered table-dashboard">
                 <thead>
                     <tr>
                         <th>No</th>
@@ -1567,13 +1511,13 @@ body {
                         <table class="table table-bordered schedule-table">
                             <thead>
                                 <tr>
-                                    <th style="width: 50px;">完了済</th>
-                                    <th style="width: 150px;">日付</th>
-                                    <th style="width: 150px;">タスク</th>
-                                    <th style="width: 300px;">案件名</th>
-                                    <th style="width: 100px;">SE</th>
-                                    <th style="width: 100px;">PH</th>
-                                    <th style="width: 100px;">開発工数（h）</th>
+                                    <th>完了済</th>
+                                    <th>日付</th>
+                                    <th>タスク</th>
+                                    <th>案件名</th>
+                                    <th>SE</th>
+                                    <th>PH</th>
+                                    <th>開発工数（h）</th>
                                 </tr>
                             </thead>
                             <tbody id="scheduleTableBody"></tbody>
