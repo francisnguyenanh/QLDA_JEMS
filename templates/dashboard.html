@@ -251,7 +251,6 @@ body {
     border-right: 2px solid rgba(34, 197, 94, 0.2);
     width: 85px; /* Giảm width */
     min-width: 85px;
-    max-width: 85px;
     text-align: center;
     box-shadow: 1px 0 2px rgba(0, 0, 0, 0.05);
 }
@@ -291,14 +290,13 @@ body {
     color: #c2410c;
     z-index: 5;
     border-right: 3px solid rgba(249, 115, 22, 0.2);
-    width: 150px; /* Giảm width */
-    min-width: 150px;
-    max-width: 150px;
+    width: 250px; /* Giảm width */
+    min-width: 250px;
+    max-width: 250px;
     box-shadow: 1px 0 3px rgba(0, 0, 0, 0.06);
 }
 
 #dashboardTable.table-dashboard tbody td:nth-child(4) {
-    background: linear-gradient(135deg, #fdba74 0%, #fb923c 100%);
     color: #9a3412;
     font-weight: 500;
 }
@@ -1811,16 +1809,6 @@ body {
     color: white;
 }
 
-.mail-buttons .btn.copied::after {
-    content: '✓';
-    position: absolute;
-    right: 0.75rem;
-    top: 50%;
-    transform: translateY(-50%);
-    font-weight: bold;
-    font-size: 1rem;
-}
-
 .mail-buttons .btn.copied:hover {
     background: linear-gradient(135deg, #059669 0%, #047857 100%);
 }
@@ -2019,14 +2007,236 @@ body {
     outline: none;
 }
 
+/* Header controls - very compact */
+.container-fluid.mb-3 {
+    background-color: #f8f9fa;
+    padding: 5px 10px; /* Giảm padding mạnh */
+    border-bottom: 1px solid #dee2e6;
+    flex: 0 0 auto;
+    margin-bottom: 0 !important;
+    min-height: 50px; /* Set minimum height */
+}
+
+/* Header controls styling */
+.header-controls {
+    display: flex;
+    align-items: center;
+    gap: 15px; /* Giảm gap */
+    flex-wrap: nowrap;
+    margin-bottom: 5px; /* Giảm margin */
+}
+
+/* D-flex utilities styling */
+.d-flex {
+    display: flex !important;
+}
+
+.align-items-center {
+    align-items: center !important;
+}
+
+.gap-3 {
+    gap: 1rem !important;
+}
+
+.justify-content-between {
+    justify-content: space-between !important;
+}
+
+.flex-wrap {
+    flex-wrap: wrap !important;
+}
+
+/* Show unnecessary form styling */
+#showUnnecessaryForm {
+    margin: 0;
+    padding: 0;
+}
+
+#showUnnecessaryForm .form-check {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0;
+    padding: 0.5rem 0.75rem;
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    transition: all 0.3s ease;
+}
+
+#showUnnecessaryForm .form-check:hover {
+    background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+    border-color: #cbd5e1;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+#showUnnecessaryForm .form-check-label {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: #475569;
+    cursor: pointer;
+    margin-bottom: 0;
+    user-select: none;
+}
+
+#showUnnecessaryForm .form-check-input {
+    width: 18px;
+    height: 18px;
+    margin-top: 0;
+    accent-color: #dc2626;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+#showUnnecessaryForm .form-check-input:checked {
+    background-color: #dc2626;
+    border-color: #dc2626;
+}
+
+#showUnnecessaryForm .form-check-input:focus {
+    box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.15);
+    outline: none;
+}
+
+/* Search project name styling */
+.search-project-name {
+    max-width: 220px; /* Giảm width */
+    min-width: 160px;
+    flex: 0 0 auto;
+}
+
+.search-project-name .input-group {
+    border-radius: 6px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
+}
+
+.search-project-name .input-group:hover {
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.search-project-name .input-group:focus-within {
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+}
+
+.search-project-name .input-group-text {
+    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+    color: white;
+    border: none;
+    font-weight: 500;
+    font-size: 0.9rem;
+    padding: 0.5rem 0.75rem;
+}
+
+.search-project-name .form-control {
+    border: none;
+    font-size: 0.9rem;
+    padding: 0.5rem 0.75rem;
+    background: #ffffff;
+}
+
+.search-project-name .form-control:focus {
+    box-shadow: none;
+    outline: none;
+    background: #f8fafc;
+}
+
+.search-project-name .form-control::placeholder {
+    color: #9ca3af;
+    font-style: italic;
+}
+
+/* Container header section styling */
+.container-fluid.mb-3 .d-flex.justify-content-between {
+    min-height: 40px;
+    align-items: center;
+}
+
+.container-fluid.mb-3 .d-flex.align-items-center.gap-3 {
+    flex-wrap: nowrap;
+    min-width: 0; /* Allow shrinking */
+}
+
+/* Enhanced responsive behavior */
+@media (max-width: 768px) {
+    .container-fluid.mb-3 {
+        padding: 6px 10px; /* Tăng padding */
+    }
+    
+    .container-fluid.mb-3 .d-flex.justify-content-between {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.75rem;
+    }
+    
+    .container-fluid.mb-3 .d-flex.align-items-center.gap-3 {
+        width: 100%;
+        flex-wrap: wrap;
+        gap: 0.75rem !important;
+    }
+    
+    .search-project-name {
+        width: 100%;
+        max-width: none;
+        min-width: 0;
+    }
+    
+    .search-project-name .input-group {
+        width: 100%;
+    }
+    
+    #showUnnecessaryForm .form-check {
+        padding: 0.4rem 0.6rem;
+        font-size: 0.85rem;
+    }
+    
+    #showUnnecessaryForm .form-check-label {
+        font-size: 0.85rem;
+    }
+    
+    #showUnnecessaryForm .form-check-input {
+        width: 16px;
+        height: 16px;
+    }
+}
+
+@media (max-width: 576px) {
+    .container-fluid.mb-3 .d-flex.align-items-center.gap-3 {
+        gap: 0.5rem !important;
+    }
+    
+    .search-project-name .input-group-text {
+        font-size: 0.8rem;
+        padding: 0.4rem 0.6rem;
+    }
+    
+    .search-project-name .form-control {
+        font-size: 0.8rem;
+        padding: 0.4rem 0.6rem;
+    }
+    
+    #showUnnecessaryForm .form-check {
+        padding: 0.3rem 0.5rem;
+    }
+    
+    #showUnnecessaryForm .form-check-label {
+        font-size: 0.8rem;
+    }
+    
+    #showUnnecessaryForm .form-check-input {
+        width: 14px;
+        height: 14px;
+    }
+}
+.form-check .form-check-input{
+    margin-left: 0.5rem;
+}
 {% endblock %}
 
 {% block navbar_content %}
-<ul class="navbar-nav me-auto">
-    <li class="nav-item">
-        <a class="nav-link active" href="/dashboard">Dashboard</a>
-    </li>
-</ul>
 
 <!-- BỎ div class="action-toolbar" và để buttons trực tiếp -->
 <div class="btn-group-professional">

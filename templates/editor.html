@@ -1,48 +1,549 @@
 {% extends "layout.html" %}
+
+{% block extra_styles %}
+/* EDITOR PAGE SPECIFIC STYLES */
+
+/* === PAGE LAYOUT OPTIMIZATION === */
+html, body {
+    height: 100vh;
+    overflow-x: hidden;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-size: 16px;
+    display: flex;
+    flex-direction: column;
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* === CONTAINER LAYOUT === */
+.container-fluid {
+    max-width: 100%;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    animation: fadeInUp 0.5s ease-out;
+}
+
+/* === TOOLBAR STYLING (Header with Buttons) === */
+.d-flex.justify-content-between.align-items-center.mb-4 {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    backdrop-filter: blur(10px);
+}
+
+/* === BUTTON GROUP STYLING === */
+.btn-group {
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.btn-group .btn {
+    font-weight: 500;
+    padding: 0.6rem 1.2rem;
+    font-size: 0.9rem;
+    border: none;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-group .btn-outline-secondary {
+    border: 1px solid #6b7280;
+    color: #6b7280;
+    background: #ffffff;
+}
+
+.btn-group .btn-outline-secondary:hover {
+    background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+    border-color: #4b5563;
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(107, 114, 128, 0.3);
+}
+
+.btn-group .btn-primary {
+    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+    color: white;
+}
+
+.btn-group .btn-primary:hover {
+    background: linear-gradient(135deg, #1d4ed8 0%, #1e3a8a 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+/* === FORM CONTAINER STYLING === */
+#editorForm {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+/* === TITLE INPUT STYLING === */
+.mb-3:first-of-type {
+    margin-bottom: 1.5rem !important;
+}
+
+.mb-3:first-of-type .form-label {
+    color: #374151;
+    font-weight: 600;
+    font-size: 1rem;
+    margin-bottom: 0.5rem;
+}
+
+.mb-3:first-of-type .form-control {
+    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    font-size: 1rem;
+    font-weight: 500;
+    color: #1e293b;
+    transition: all 0.3s ease;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.mb-3:first-of-type .form-control:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    outline: none;
+    background: #ffffff;
+}
+
+/* === MAIN CONTENT ROW === */
+.row.mb-3 {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    margin: 0;
+}
+
+.row.mb-3 .col-12 {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    padding: 0;
+}
+
+/* === SETTINGS CONTROLS STYLING === */
+.d-flex.align-items-center.gap-3.mb-2 {
+    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 1rem 1.5rem;
+    margin-bottom: 1rem !important;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+    flex-wrap: wrap;
+    gap: 1rem !important;
+}
+
+/* === CHECKBOX STYLING === */
+.form-check {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0;
+}
+
+.form-check-input {
+    width: 18px;
+    height: 18px;
+    margin-top: 0;
+    accent-color: #3b82f6;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.form-check-input:focus {
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+    outline: none;
+}
+
+.form-check-label {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: #374151;
+    cursor: pointer;
+    margin-bottom: 0;
+    user-select: none;
+}
+
+/* === SELECT DROPDOWN STYLING === */
+.d-flex.align-items-center.gap-2 {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.d-flex.align-items-center.gap-2 .form-label {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: #374151;
+    margin-bottom: 0;
+    white-space: nowrap;
+}
+
+.form-select.form-select-sm {
+    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    padding: 0.4rem 0.75rem;
+    font-size: 0.85rem;
+    color: #374151;
+    transition: all 0.3s ease;
+    width: 200px;
+    cursor: pointer;
+}
+
+.form-select.form-select-sm:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+    outline: none;
+    background: #ffffff;
+}
+
+/* === MAIN TEXTAREA STYLING === */
+#editorContent {
+    flex: 1;
+    min-height: 400px;
+    background: linear-gradient(135deg, #ffffff 0%, #fafbfc 100%);
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 1.5rem;
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    font-size: 14px;
+    line-height: 1.6;
+    color: #1e293b;
+    resize: none;
+    transition: all 0.3s ease;
+    box-shadow: 
+        0 2px 8px rgba(0, 0, 0, 0.05),
+        0 1px 3px rgba(0, 0, 0, 0.02);
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+#editorContent:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    outline: none;
+    background: #ffffff;
+}
+
+#editorContent::placeholder {
+    color: #9ca3af;
+    font-style: italic;
+}
+
+/* === SCROLLBAR STYLING === */
+#editorContent::-webkit-scrollbar {
+    width: 8px;
+}
+
+#editorContent::-webkit-scrollbar-track {
+    background: #f8fafc;
+    border-radius: 4px;
+}
+
+#editorContent::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, #cbd5e1 0%, #94a3b8 100%);
+    border-radius: 4px;
+    border: 1px solid #f8fafc;
+}
+
+#editorContent::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(135deg, #94a3b8 0%, #64748b 100%);
+}
+
+/* === BUTTON HOVER EFFECTS === */
+.btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s;
+}
+
+.btn:hover::before {
+    left: 100%;
+}
+
+.btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none !important;
+}
+
+.btn:disabled::before {
+    display: none;
+}
+
+/* === ANIMATIONS === */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* === FOCUS ENHANCEMENT === */
+.form-control:focus,
+.form-select:focus,
+.form-check-input:focus {
+    outline: 2px solid transparent;
+    outline-offset: 2px;
+}
+
+/* === FORM VALIDATION STATES === */
+.form-control.is-valid {
+    border-color: #16a34a;
+    box-shadow: 0 0 0 2px rgba(22, 163, 74, 0.1);
+}
+
+.form-control.is-invalid {
+    border-color: #dc2626;
+    box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.1);
+}
+
+/* === UTILITY STYLES === */
+.text-danger {
+    color: #dc2626 !important;
+    font-weight: 500;
+}
+
+.text-success {
+    color: #16a34a !important;
+    font-weight: 500;
+}
+
+/* === RESPONSIVE DESIGN === */
+@media (max-width: 768px) {
+    .container-fluid {
+        padding: 15px;
+    }
+    
+    .d-flex.justify-content-between.align-items-center.mb-4 {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+        padding: 1rem 1.5rem;
+    }
+    
+    .btn-group {
+        width: 100%;
+    }
+    
+    .btn-group .btn {
+        flex: 1;
+        padding: 0.5rem 1rem;
+        font-size: 0.85rem;
+    }
+    
+    .d-flex.align-items-center.gap-3.mb-2 {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem !important;
+        padding: 1rem;
+    }
+    
+    .d-flex.align-items-center.gap-2 {
+        width: 100%;
+        justify-content: space-between;
+    }
+    
+    .form-select.form-select-sm {
+        width: 100%;
+        max-width: 200px;
+    }
+    
+    #editorContent {
+        min-height: 300px;
+        padding: 1rem;
+        font-size: 13px;
+    }
+    
+    .mb-3:first-of-type .form-control {
+        font-size: 0.95rem;
+        padding: 0.65rem 0.85rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .container-fluid {
+        padding: 10px;
+    }
+    
+    .d-flex.justify-content-between.align-items-center.mb-4 {
+        padding: 0.75rem 1rem;
+    }
+    
+    .btn-group .btn {
+        padding: 0.4rem 0.8rem;
+        font-size: 0.8rem;
+    }
+    
+    .d-flex.align-items-center.gap-3.mb-2 {
+        padding: 0.75rem;
+    }
+    
+    .form-check-label,
+    .d-flex.align-items-center.gap-2 .form-label {
+        font-size: 0.85rem;
+    }
+    
+    .form-select.form-select-sm {
+        font-size: 0.8rem;
+        padding: 0.35rem 0.6rem;
+    }
+    
+    #editorContent {
+        min-height: 250px;
+        padding: 0.75rem;
+        font-size: 12px;
+    }
+    
+    .mb-3:first-of-type .form-control {
+        font-size: 0.9rem;
+        padding: 0.6rem 0.75rem;
+    }
+    
+    .mb-3:first-of-type .form-label {
+        font-size: 0.95rem;
+    }
+}
+
+/* === ENHANCED VISUAL EFFECTS === */
+
+#editorContent {
+    box-shadow: 
+        0 2px 4px rgba(0, 0, 0, 0.05),
+        0 1px 8px rgba(0, 0, 0, 0.02);
+}
+
+.d-flex.align-items-center.gap-3.mb-2 {
+    box-shadow: 
+        0 1px 3px rgba(0, 0, 0, 0.04),
+        0 1px 6px rgba(0, 0, 0, 0.02);
+}
+
+/* === TYPOGRAPHY ENHANCEMENTS === */
+* {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+.form-label {
+    font-weight: 600;
+    letter-spacing: 0.025em;
+}
+
+/* === ACCESSIBILITY IMPROVEMENTS === */
+.btn:focus-visible {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+}
+
+.form-control:focus-visible,
+.form-select:focus-visible {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+}
+
+/* === DARK MODE SUPPORT (if needed in future) === */
+@media (prefers-color-scheme: dark) {
+    /* Dark mode styles can be added here */
+}
+
+/* === PRINT STYLES === */
+@media print {
+    .d-flex.justify-content-between.align-items-center.mb-4 {
+        display: none !important;
+    }
+    
+    .container-fluid {
+        padding: 0;
+    }
+    
+    #editorContent {
+        border: 1px solid #000;
+        box-shadow: none;
+        background: white !important;
+    }
+}
+{% endblock %}
+
 {% block navbar_content %}
 <ul class="navbar-nav me-auto">
     <li class="nav-item">
-        <a class="nav-link" href="/dashboard">Dashboard</a>
+        <a class="nav-link" href="/dashboard">
+            <i class="bi bi-speedometer2 me-1"></i>Dashboard
+        </a>
     </li>
     <li class="nav-item">
-        <a class="nav-link" href="/editor_list">Documents list</a>
+        <a class="nav-link" href="/editor_list">
+            <i class="bi bi-file-text me-1"></i>Documents list
+        </a>
     </li>
     <li class="nav-item">
-        <a class="nav-link active" href="/editor">Editor</a>
+        <a class="nav-link active" href="/editor">
+            <i class="bi bi-file-text me-1"></i>Document
+        </a>
     </li>
     <li class="nav-item">
-        <a class="nav-link" href="/memo_list">Memo list</a>
+        <a class="nav-link" href="/memo_list">
+            <i class="bi bi-journal-text me-1"></i>Memo list
+        </a>
     </li>
     <li class="nav-item">
-        <a class="nav-link" href="/memo">Memo</a>
+        <a class="nav-link" href="/memo">
+            <i class="bi bi-journal-text me-1"></i>Memo
+        </a>
     </li>
 </ul>
-<div class="d-flex">
-    <a href="{{ url_for('logout') }}" class="btn btn-danger btn-sm">Logout</a>
-</div>
 {% endblock %}
 
 {% block content %}
-<div class="container-fluid mt-4">
-    <!-- Header với buttons -->
+<div class="container-fluid">
+    <!-- Header với buttons - tham khảo memo.html -->
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 id="pageTitle">{{ 'Edit Document' if document else 'New Document' }}</h2>
         <div class="btn-group">
-            <button type="button" class="btn btn-primary" onclick="saveDocument()">Save</button>
-            <a href="{{ url_for('editor_list') }}" class="btn btn-secondary">Cancel</a>
+            <a href="{{ url_for('editor_list') }}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> 戻る
+            </a>
+            <button type="button" class="btn btn-primary" onclick="saveDocument()">
+                <i class="bi bi-save"></i> 保存
+            </button>
         </div>
     </div>
     
     <form id="editorForm">
         <div class="mb-3">
-            <label for="title" class="form-label">Title</label>
+            <label for="title" class="form-label">タイトル</label>
             <input type="text" class="form-control" id="title" name="title" 
                    value="{{ document.title if document else '' }}" required>
         </div>
         
         <!-- Content A và Tab Configuration nằm ngang hàng -->
         <div class="row mb-3">
-            <div class="col-12"> <!-- Changed from col-md-8 -->               
+            <div class="col-12">               
                 <!-- Checkbox và Select trên cùng 1 hàng -->
                 <div class="d-flex align-items-center gap-3 mb-2">
                     <div class="form-check">
@@ -56,8 +557,8 @@
                             <option value="1" selected>1 (skip first tab)</option>
                             <option value="2">2 (skip first 2 tabs)</option>
                             <option value="3">3 (skip first 3 tabs)</option>
-                            <option value="3">4 (skip first 4 tabs)</option>
-                            <option value="3">5 (skip first 5 tabs)</option>
+                            <option value="4">4 (skip first 4 tabs)</option>
+                            <option value="5">5 (skip first 5 tabs)</option>
                         </select>
                     </div>
                 </div>
@@ -80,11 +581,9 @@
 .container-fluid .d-flex:first-child {
     position: sticky;
     top: 0;
-    background: white;
     z-index: 100;
     padding: 10px 0;
     margin-bottom: 20px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 /* Responsive cho mobile */

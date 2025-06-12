@@ -1,26 +1,740 @@
 {% extends "layout.html" %}
 
+{% block extra_styles %}
+/* MEMO LIST PAGE SPECIFIC STYLES */
+
+/* === PAGE LAYOUT OPTIMIZATION === */
+html, body {
+    height: 100vh;
+    overflow-x: hidden;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-size: 16px;
+    display: flex;
+    flex-direction: column;
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* === CONTAINER LAYOUT === */
+.container-fluid {
+    max-width: 100%;
+    padding: 20px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    animation: fadeInUp 0.5s ease-out;
+}
+
+.row.justify-content-center {
+    flex: 1;
+    margin: 0;
+}
+
+.col-12 {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+/* === MAIN CARD STYLING (Container Card) === */
+.card:not(#memoList .card) {
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    background: #ffffff;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+}
+
+/* === CARD HEADER === */
+.card-header {
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    border-bottom: 2px solid #e2e8f0;
+    border-radius: 12px 12px 0 0 !important;
+    padding: 1.5rem 2rem;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.card-header h2 {
+    color: #1e293b;
+    font-weight: 600;
+    font-size: 1.5rem;
+    margin: 0;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.card-header .btn-primary {
+    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+    border: none;
+    color: white;
+    font-weight: 500;
+    padding: 0.6rem 1.2rem;
+    border-radius: 6px;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.card-header .btn-primary:hover {
+    background: linear-gradient(135deg, #1d4ed8 0%, #1e3a8a 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+/* === CARD BODY (Cork Board Background) === */
+.card-body:not(#memoList .card-body) {
+    padding: 2rem;
+    flex: 1;
+    overflow-y: auto;
+    min-height: 400px;
+    background: 
+        radial-gradient(circle at 25% 25%, rgba(139, 69, 19, 0.1) 2px, transparent 2px),
+        radial-gradient(circle at 75% 75%, rgba(139, 69, 19, 0.1) 1px, transparent 1px),
+        linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    background-size: 40px 40px, 30px 30px, 100% 100%;
+}
+
+/* === MEMO GRID LAYOUT === */
+#memoList {
+    min-height: 400px;
+    transition: opacity 0.3s ease;
+}
+
+#memoList .row {
+    margin: 0;
+}
+
+#memoList .col-md-6,
+#memoList .col-lg-4 {
+    padding: 1rem;
+    perspective: 1000px;
+}
+
+/* === STICKY NOTE CARDS - MAIN STYLING === */
+#memoList .card {
+    border: none !important;
+    border-radius: 2px 12px 8px 12px !important;
+    box-shadow: 
+        0 4px 8px rgba(0, 0, 0, 0.15),
+        0 1px 3px rgba(0, 0, 0, 0.1) !important;
+    background: linear-gradient(145deg, #e6fffa 0%, #ccfbf1 100%) !important;
+    background-image: 
+        repeating-linear-gradient(
+            90deg,
+            transparent,
+            transparent 2px,
+            rgba(0, 0, 0, 0.02) 2px,
+            rgba(0, 0, 0, 0.02) 3px
+        ) !important;
+    transition: all 0.3s ease !important;
+    height: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    position: relative !important;
+    transform: rotate(-1deg) !important;
+    margin: 0.5rem 0 !important;
+    animation: stickyNoteAppear 0.6s ease-out forwards !important;
+}
+
+/* === STICKY NOTE COLOR VARIATIONS === */
+#memoList .card:nth-child(2n) {
+    background: linear-gradient(145deg, #e6fffa 0%, #ccfbf1 100%) !important;
+    transform: rotate(1deg) !important;
+}
+
+#memoList .card:nth-child(3n) {
+    background: linear-gradient(145deg, #f0fdfa 0%, #ccfbf1 100%) !important;
+    transform: rotate(-0.5deg) !important;
+}
+
+#memoList .card:nth-child(4n) {
+    background: linear-gradient(145deg, #e6fffa 0%, #a7f3d0 100%) !important;
+    transform: rotate(0.8deg) !important;
+}
+
+#memoList .card:nth-child(5n) {
+    background: linear-gradient(145deg, #ecfeff 0%, #a5f3fc 100%) !important;
+    transform: rotate(-1.2deg) !important;
+}
+
+#memoList .card:nth-child(6n) {
+    background: linear-gradient(145deg, #f0fdf4 0%, #bbf7d0 100%) !important;
+    transform: rotate(0.6deg) !important;
+}
+
+#memoList .card:nth-child(7n) {
+    background: linear-gradient(145deg, #e6fffa 0%, #ccfbf1 100%) !important;
+    transform: rotate(-0.8deg) !important;
+}
+
+/* === STICKY NOTE HOVER EFFECTS === */
+#memoList .card:hover {
+    transform: rotate(0deg) translateY(-8px) scale(1.02) !important;
+    box-shadow: 
+        0 8px 25px rgba(0, 0, 0, 0.2),
+        0 3px 10px rgba(0, 0, 0, 0.15) !important;
+    z-index: 5 !important;
+}
+
+/* === TAPE EFFECTS === */
+#memoList .card::before {
+    content: '';
+    position: absolute;
+    top: -5px;
+    right: 15px;
+    width: 30px;
+    height: 15px;
+    background: rgba(255, 255, 255, 0.7);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    transform: rotate(45deg);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    z-index: 1;
+}
+
+#memoList .card:nth-child(2n)::before {
+    right: 20px;
+    transform: rotate(-45deg);
+}
+
+#memoList .card:nth-child(3n)::before {
+    right: 25px;
+    transform: rotate(30deg);
+}
+
+/* === PIN/TACK EFFECTS === */
+#memoList .card:nth-child(6n)::after {
+    content: '';
+    position: absolute;
+    top: 8px;
+    left: 15px;
+    width: 8px;
+    height: 8px;
+    background: radial-gradient(circle, #dc2626 30%, #b91c1c 70%);
+    border-radius: 50%;
+    box-shadow: 
+        0 1px 2px rgba(0, 0, 0, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    z-index: 3;
+}
+
+#memoList .card:nth-child(7n)::after {
+    content: '';
+    position: absolute;
+    top: 12px;
+    right: 10px;
+    width: 8px;
+    height: 8px;
+    background: radial-gradient(circle, #16a34a 30%, #15803d 70%);
+    border-radius: 50%;
+    box-shadow: 
+        0 1px 2px rgba(0, 0, 0, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    z-index: 3;
+}
+
+/* === STICKY NOTE CONTENT === */
+#memoList .card-body {
+    padding: 1.5rem 1.25rem 1rem !important;
+    flex: 1 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    background: transparent !important;
+    position: relative !important;
+    z-index: 2 !important;
+}
+
+#memoList .card-title {
+    color: #374151 !important;
+    font-weight: 700 !important;
+    font-size: 1.1rem !important;
+    margin-bottom: 0.75rem !important;
+    line-height: 1.3 !important;
+    text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8) !important;
+    font-family: 'Comic Sans MS', cursive, sans-serif !important;
+}
+
+#memoList .card-text {
+    color: #4b5563 !important;
+    font-size: 0.9rem !important;
+    line-height: 1.5 !important;
+    flex: 1 !important;
+    margin-bottom: 1rem !important;
+    font-family: 'Comic Sans MS', cursive, sans-serif !important;
+    text-shadow: 0 1px 1px rgba(255, 255, 255, 0.6) !important;
+}
+
+#memoList .card-footer {
+    background: rgba(0, 0, 0, 0.05) !important;
+    border-top: 1px solid rgba(0, 0, 0, 0.1) !important;
+    padding: 0.75rem 1.25rem !important;
+    border-radius: 0 0 2px 8px !important;
+    backdrop-filter: blur(2px) !important;
+}
+
+#memoList .card-footer .text-muted {
+    font-size: 0.75rem !important;
+    color: #6b7280 !important;
+    line-height: 1.3 !important;
+    font-family: 'Courier New', monospace !important;
+}
+
+/* === BUTTON STYLING === */
+.btn {
+    position: relative;
+    overflow: hidden;
+}
+
+.btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s;
+}
+
+.btn:hover::before {
+    left: 100%;
+}
+
+.btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none !important;
+}
+
+.btn:disabled::before {
+    display: none;
+}
+
+.btn-group {
+    border-radius: 4px;
+    overflow: hidden;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    margin-top: 0.5rem;
+}
+
+.btn-group .btn-sm {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    border: none;
+    transition: all 0.2s ease;
+    font-family: sans-serif;
+}
+
+.btn-group .btn-primary {
+    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+    color: white;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.btn-group .btn-primary:hover {
+    background: linear-gradient(135deg, #1d4ed8 0%, #1e3a8a 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+}
+
+.btn-group .btn-danger {
+    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+    color: white;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.btn-group .btn-danger:hover {
+    background: linear-gradient(135deg, #b91c1c 0%, #991b1b 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(220, 38, 38, 0.3);
+}
+
+/* === ANIMATIONS === */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes stickyNoteAppear {
+    0% {
+        opacity: 0;
+        transform: translateY(20px) rotate(-1deg) scale(0.9);
+    }
+    60% {
+        opacity: 1;
+        transform: translateY(-5px) rotate(-1deg) scale(1.05);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0) rotate(-1deg) scale(1);
+    }
+}
+
+/* === STAGGERED ANIMATION DELAYS === */
+#memoList .card:nth-child(1) { animation-delay: 0.1s !important; }
+#memoList .card:nth-child(2) { animation-delay: 0.2s !important; }
+#memoList .card:nth-child(3) { animation-delay: 0.3s !important; }
+#memoList .card:nth-child(4) { animation-delay: 0.4s !important; }
+#memoList .card:nth-child(5) { animation-delay: 0.5s !important; }
+#memoList .card:nth-child(n+6) { animation-delay: 0.6s !important; }
+
+/* === LOADING STATE === */
+.loading-placeholder {
+    min-height: 400px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #ffffff;
+    border-radius: 8px;
+}
+
+.spinner-border {
+    color: #3b82f6;
+    width: 3rem;
+    height: 3rem;
+}
+
+/* === EMPTY STATE === */
+.text-center.text-muted {
+    padding: 3rem;
+    font-size: 1.1rem;
+    color: #6b7280 !important;
+    min-height: 400px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* === MODAL STYLING === */
+.modal-content {
+    border: none;
+    border-radius: 8px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+}
+
+.modal-header {
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    border-bottom: 2px solid #e2e8f0;
+    border-radius: 8px 8px 0 0;
+    padding: 1.25rem 1.5rem;
+}
+
+.modal-title {
+    color: #1e293b;
+    font-weight: 600;
+    font-size: 1.1rem;
+}
+
+.modal-body {
+    padding: 1.5rem;
+    background: #ffffff;
+}
+
+.modal-footer {
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    border-top: 1px solid #e2e8f0;
+    border-radius: 0 0 8px 8px;
+    padding: 1rem 1.5rem;
+}
+
+/* === FORM CONTROLS === */
+.form-label {
+    color: #374151;
+    font-weight: 600;
+    font-size: 0.95rem;
+    margin-bottom: 0.5rem;
+}
+
+.form-control {
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    padding: 0.75rem;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+    background: #ffffff;
+}
+
+.form-control:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+    outline: none;
+}
+
+#createMemoModal #memoTitle {
+    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+    border: 2px solid #e2e8f0;
+    font-weight: 500;
+}
+
+#createMemoModal #memoContent {
+    background: linear-gradient(135deg, #ffffff 0%, #fafbfc 100%);
+    border: 2px solid #e2e8f0;
+    resize: vertical;
+    min-height: 100px;
+}
+
+/* === MODAL BUTTONS === */
+.modal-footer .btn {
+    padding: 0.6rem 1.5rem;
+    font-size: 0.9rem;
+    font-weight: 500;
+    border-radius: 6px;
+    transition: all 0.3s ease;
+}
+
+.modal-footer .btn-secondary {
+    background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+    border: none;
+    color: white;
+}
+
+.modal-footer .btn-secondary:hover {
+    background: linear-gradient(135deg, #4b5563 0%, #374151 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 3px 8px rgba(107, 114, 128, 0.3);
+}
+
+.modal-footer .btn-primary {
+    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+    border: none;
+    color: white;
+}
+
+.modal-footer .btn-primary:hover {
+    background: linear-gradient(135deg, #1d4ed8 0%, #1e3a8a 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.modal-footer .btn-danger {
+    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+    border: none;
+    color: white;
+}
+
+.modal-footer .btn-danger:hover {
+    background: linear-gradient(135deg, #b91c1c 0%, #991b1b 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+}
+
+/* === ALERT STYLING === */
+.alert-danger {
+    background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+    border: 1px solid #fca5a5;
+    color: #991b1b;
+    border-radius: 6px;
+    padding: 1rem 1.5rem;
+    margin: 2rem 0;
+}
+
+.text-danger {
+    color: #dc2626 !important;
+    font-weight: 500;
+}
+
+/* === SCROLLBAR STYLING === */
+.card-body::-webkit-scrollbar {
+    width: 6px;
+}
+
+.card-body::-webkit-scrollbar-track {
+    background: #f8fafc;
+    border-radius: 3px;
+}
+
+.card-body::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, #cbd5e1 0%, #94a3b8 100%);
+    border-radius: 3px;
+}
+
+.card-body::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(135deg, #94a3b8 0%, #64748b 100%);
+}
+
+/* === FOCUS ENHANCEMENT === */
+.form-control:focus,
+.btn:focus {
+    outline: 2px solid transparent;
+    outline-offset: 2px;
+}
+
+/* === RESPONSIVE DESIGN === */
+@media (max-width: 768px) {
+    .container-fluid {
+        padding: 15px;
+    }
+    
+    .card-header {
+        padding: 1rem 1.5rem;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+    
+    .card-header .d-flex {
+        width: 100%;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .card-body:not(#memoList .card-body) {
+        padding: 1.5rem;
+    }
+    
+    #memoList .col-md-6,
+    #memoList .col-lg-4 {
+        padding: 0.5rem;
+    }
+    
+    #memoList .card {
+        margin: 0.25rem 0 !important;
+        transform: rotate(0deg) !important;
+    }
+    
+    #memoList .card:hover {
+        transform: translateY(-4px) scale(1.01) !important;
+    }
+    
+    #memoList .card::before {
+        display: none;
+    }
+    
+    #memoList .card-title,
+    #memoList .card-text {
+        font-family: sans-serif !important;
+    }
+    
+    #memoList .card-body {
+        padding: 1rem !important;
+    }
+    
+    #memoList .card-footer {
+        padding: 0.75rem 1rem !important;
+    }
+    
+    .btn-group .btn-sm {
+        padding: 0.4rem 0.8rem;
+        font-size: 0.8rem;
+    }
+    
+    .modal-body {
+        padding: 1.25rem;
+    }
+    
+    .modal-footer {
+        padding: 0.75rem 1.25rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .container-fluid {
+        padding: 10px;
+    }
+    
+    .card-header {
+        padding: 0.75rem 1rem;
+    }
+    
+    .card-header h2 {
+        font-size: 1.3rem;
+    }
+    
+    .card-body:not(#memoList .card-body) {
+        padding: 1rem;
+    }
+    
+    #memoList .col-md-6,
+    #memoList .col-lg-4 {
+        flex: 0 0 100%;
+        max-width: 100%;
+        padding: 0.25rem;
+    }
+    
+    #memoList .card-body {
+        padding: 0.75rem !important;
+    }
+    
+    #memoList .card-title {
+        font-size: 1rem !important;
+    }
+    
+    #memoList .card-text {
+        font-size: 0.85rem !important;
+    }
+    
+    .btn-group .btn-sm {
+        padding: 0.35rem 0.6rem;
+        font-size: 0.75rem;
+    }
+    
+    .modal-header {
+        padding: 1rem;
+    }
+    
+    .modal-body {
+        padding: 1rem;
+    }
+    
+    .modal-footer {
+        padding: 0.75rem 1rem;
+    }
+    
+    .modal-footer .btn {
+        padding: 0.5rem 1.25rem;
+        font-size: 0.85rem;
+    }
+}
+{% endblock %}
+
 {% block navbar_content %}
 <ul class="navbar-nav me-auto">
     <li class="nav-item">
-        <a class="nav-link" href="/dashboard">Dashboard</a>
+        <a class="nav-link" href="/dashboard">
+            <i class="bi bi-speedometer2 me-1"></i>Dashboard
+        </a>
     </li>
     <li class="nav-item">
-        <a class="nav-link" href="/editor_list">Documents list</a>
+        <a class="nav-link" href="/editor_list">
+            <i class="bi bi-file-text me-1"></i>Documents list
+        </a>
     </li>
     <li class="nav-item">
-        <a class="nav-link" href="/editor">Editor</a>
+        <a class="nav-link" href="/editor">
+            <i class="bi bi-file-text me-1"></i>Document
+        </a>
     </li>
     <li class="nav-item">
-        <a class="nav-link active" href="/memo_list">Memo list</a>
+        <a class="nav-link active" href="/memo_list">
+            <i class="bi bi-journal-text me-1"></i>Memo list
+        </a>
     </li>
     <li class="nav-item">
-        <a class="nav-link" href="/memo">Memo</a>
+        <a class="nav-link" href="/memo">
+            <i class="bi bi-journal-text me-1"></i>Memo
+        </a>
     </li>
 </ul>
-<div class="d-flex">
-    <a href="{{ url_for('logout') }}" class="btn btn-danger btn-sm">Logout</a>
-</div>
 {% endblock %}
 
 {% block content %}
@@ -28,12 +742,6 @@
     <div class="row justify-content-center">
         <div class="col-12">
             <div class="card">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h2 class="text-primary mb-0">メモ一覧</h2>
-                    <button class="btn btn-primary" onclick="createNewMemo()">
-                        <i class="bi bi-plus-circle"></i> 新規メモ
-                    </button>
-                </div>
                 <div class="card-body">
                     <div id="memoList">
                         <div class="d-flex justify-content-center">
@@ -106,6 +814,17 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function loadMemos() {
+    const container = document.getElementById('memoList');
+    
+    // Set loading state với fixed height
+    container.innerHTML = `
+        <div class="loading-placeholder">
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+    `;
+    
     fetch('/api/memos')
         .then(response => response.json())
         .then(data => {
@@ -116,8 +835,8 @@ function loadMemos() {
         })
         .catch(error => {
             console.error('Error loading memos:', error);
-            document.getElementById('memoList').innerHTML = 
-                '<div class="alert alert-danger">メモの読み込みに失敗しました</div>';
+            container.innerHTML = 
+                '<div class="alert alert-danger" style="min-height: 400px; display: flex; align-items: center; justify-content: center;">メモの読み込みに失敗しました</div>';
         });
 }
 
@@ -125,49 +844,58 @@ function displayMemos(memos) {
     const container = document.getElementById('memoList');
     
     if (memos.length === 0) {
-        container.innerHTML = '<div class="text-center text-muted">メモがありません</div>';
+        container.innerHTML = '<div class="text-center text-muted" style="min-height: 400px; display: flex; align-items: center; justify-content: center;">メモがありません</div>';
         return;
     }
     
-    let html = '<div class="row">';
+    // Smooth transition
+    container.style.opacity = '0';
     
-    memos.forEach(memo => {
-        const createdDate = new Date(memo.created_at).toLocaleDateString('ja-JP');
-        const updatedDate = new Date(memo.updated_at).toLocaleDateString('ja-JP');
-        const contentPreview = memo.content.length > 100 ? 
-            memo.content.substring(0, 100) + '...' : memo.content;
+    setTimeout(() => {
+        let html = '<div class="row">';
         
-        html += `
-            <div class="col-md-6 col-lg-4 mb-3">
-                <div class="card h-100">
-                    <div class="card-body">
-                        <h5 class="card-title">${escapeHtml(memo.title)}</h5>
-                        <p class="card-text text-muted small">${escapeHtml(contentPreview)}</p>
-                        <div class="d-flex justify-content-between align-items-center">
-                            <small class="text-muted">
-                                作成: ${createdDate}<br>
-                                更新: ${updatedDate}<br>
-                                ファイル: ${memo.file_count}個
-                            </small>
+        memos.forEach(memo => {
+            const createdDate = new Date(memo.created_at).toLocaleDateString('ja-JP');
+            const updatedDate = new Date(memo.updated_at).toLocaleDateString('ja-JP');
+            const contentPreview = memo.content.length > 100 ? 
+                memo.content.substring(0, 100) + '...' : memo.content;
+            
+            html += `
+                <div class="col-md-6 col-lg-4 mb-3">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <h5 class="card-title">${escapeHtml(memo.title)}</h5>
+                            <p class="card-text text-muted small">${escapeHtml(contentPreview)}</p>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <small class="text-muted">
+                                    作成: ${createdDate}<br>
+                                    更新: ${updatedDate}<br>
+                                    ファイル: ${memo.file_count}個
+                                </small>
+                            </div>
                         </div>
-                    </div>
-                    <div class="card-footer">
-                        <div class="btn-group w-100" role="group">
-                            <button class="btn btn-primary btn-sm" onclick="openMemo(${memo.id})">
-                                <i class="bi bi-eye"></i> 開く
-                            </button>
-                            <button class="btn btn-danger btn-sm" onclick="deleteMemo(${memo.id})">
-                                <i class="bi bi-trash"></i> 削除
-                            </button>
+                        <div class="card-footer">
+                            <div class="btn-group w-100" role="group">
+                                <button class="btn btn-primary btn-sm" onclick="openMemo(${memo.id})">
+                                    <i class="bi bi-eye"></i> 開く
+                                </button>
+                                <button class="btn btn-danger btn-sm" onclick="deleteMemo(${memo.id})">
+                                    <i class="bi bi-trash"></i> 削除
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
-        `;
-    });
-    
-    html += '</div>';
-    container.innerHTML = html;
+            `;
+        });
+        
+        html += '</div>';
+        container.innerHTML = html;
+        
+        // Fade in effect
+        container.style.opacity = '1';
+        container.style.transition = 'opacity 0.3s ease';
+    }, 50);
 }
 
 function createNewMemo() {

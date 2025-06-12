@@ -20,30 +20,36 @@
             color: var(--text-color);
             font-family: 'Noto Sans JP', sans-serif;
         }
+        
         .card {
             background-color: var(--card-bg) !important;
             color: var(--text-color) !important;
         }
+        
         .btn-primary {
             background-color: var(--primary-color) !important;
             border-color: var(--primary-color) !important;
             color: #fff !important;
         }
+        
         .btn-primary:hover, .btn-primary:focus {
             background-color: var(--primary-color) !important;
             opacity: 0.85;
         }
+        
         .form-label.fw-bold.text-primary.fs-5,
         h2.text-primary,
         .text-primary {
             color: var(--primary-color) !important;
         }
+        
         .diary-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
             gap: 5px;
             padding: 10px;
         }
+        
         .diary-tile {
             aspect-ratio: 1;
             display: flex;
@@ -55,6 +61,7 @@
             cursor: pointer;
             font-size: 0.8rem;
         }
+        
         @media (max-width: 576px) {
             .diary-grid {
                 grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
@@ -63,6 +70,7 @@
                 font-size: 0.7rem;
             }
         }
+        
         .days-alive {
             font-weight: bold;
             color: #0d6efd;
@@ -71,12 +79,15 @@
             border-radius: 5px;
             background-color: #e7f1ff;
         }
+        
         .days-alive:hover {
             background-color: #d0e4ff;
         }
+        
         .nav-link i {
             font-size: 1.2rem;
         }
+        
         .slogan {
             font-style: italic;
             color: #6c757d;
@@ -87,29 +98,114 @@
             text-align: center;
             margin: 0;
         }
+        
         @media (max-width: 991px) {
             .slogan {
                 display: block !important;
                 font-size: 0.95rem;
             }
         }
+
+        /* Enhanced navbar styling */
         .navbar {
-            background-color: var(--card-bg) !important;
-            color: var(--text-color) !important;
+            background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%) !important;
+            border-bottom: 1px solid #e2e8f0;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            padding: 0.75rem 0;
         }
+        
         .navbar .navbar-brand,
         .navbar .nav-link,
         .navbar .navbar-text {
-            color: var(--text-color) !important;
+            color: #374151 !important;
+            font-weight: 500;
+            transition: all 0.3s ease;
         }
-        .navbar .nav-link.active, .navbar .nav-link:focus, .navbar .nav-link:hover {
-            color: var(--primary-color) !important;
+        
+        .navbar .nav-link {
+            padding: 0.6rem 1rem;
+            border-radius: 6px;
+            margin: 0 0.25rem;
         }
+        
+        .navbar .nav-link:hover {
+            color: #3b82f6 !important;
+            background: rgba(59, 130, 246, 0.1);
+            transform: translateY(-1px);
+        }
+        
+        .navbar .nav-link.active {
+            color: #ffffff !important;
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            font-weight: 600;
+            box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+        }
+        
+        .navbar .nav-link.active:hover {
+            background: linear-gradient(135deg, #1d4ed8 0%, #1e3a8a 100%);
+            transform: translateY(-1px);
+        }
+
+        .navbar-toggler {
+            border: none;
+            padding: 0.25rem 0.5rem;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+        }
+        
+        .navbar-toggler:focus {
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+        }
+        
+        .navbar-toggler:hover {
+            background: rgba(59, 130, 246, 0.1);
+        }
+
+        /* Dropdown for mobile */
+        @media (max-width: 991px) {
+            .navbar-collapse {
+                background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+                border-radius: 8px;
+                margin-top: 0.5rem;
+                padding: 1rem;
+                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            }
+            
+            .navbar .nav-link {
+                margin: 0.25rem 0;
+                padding: 0.75rem 1rem;
+            }
+            
+            .navbar .d-flex {
+                margin-top: 1rem;
+                padding-top: 1rem;
+                border-top: 1px solid #e2e8f0;
+            }
+        }
+
+        /* Logout button styling */
+        .btn-danger.btn-sm {
+            background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+            border: none;
+            color: white;
+            font-weight: 500;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-danger.btn-sm:hover {
+            background: linear-gradient(135deg, #b91c1c 0%, #991b1b 100%);
+            transform: translateY(-1px);
+            box-shadow: 0 3px 8px rgba(220, 38, 38, 0.3);
+        }
+        
         .btn-group-responsive {
             display: flex;
             gap: 0.5rem;
             flex-wrap: wrap;
         }
+        
         @media (max-width: 991px) {
             .btn-group-responsive {
                 flex-direction: column;
@@ -121,14 +217,18 @@
                 margin-bottom: 0.25rem;
             }
         }
+        
         {% block extra_styles %}{% endblock %}
     </style>
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg" style="background-color: var(--card-bg);">
+    <nav class="navbar navbar-expand-lg">
         <div class="container-fluid">
+            <a class="navbar-brand fw-bold" href="/dashboard">
+                <i class="bi bi-kanban text-primary me-2"></i>プロジェクト管理
+            </a>
             
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
             
@@ -137,18 +237,21 @@
                 <!-- Default navbar content -->
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item">
-                        <a class="nav-link" href="/dashboard">Dashboard</a>
+                        <a class="nav-link" href="/dashboard">
+                            <i class="bi bi-speedometer2 me-1"></i>Dashboard
+                        </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="/editor_list">Editor</a>
+                        <a class="nav-link" href="/editor_list">
+                            <i class="bi bi-file-text me-1"></i>Documents
+                        </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="/memo_list">Memo</a>
+                        <a class="nav-link" href="/memo_list">
+                            <i class="bi bi-journal-text me-1"></i>Memo
+                        </a>
                     </li>
                 </ul>
-                <div class="d-flex">
-                    <a href="{{ url_for('logout') }}" class="btn btn-danger">Logout</a>
-                </div>
                 {% endblock %}
             </div>
         </div>

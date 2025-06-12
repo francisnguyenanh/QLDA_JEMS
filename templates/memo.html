@@ -1,29 +1,575 @@
 {% extends "layout.html" %}
-
-{% block navbar_content %}
-<ul class="navbar-nav me-auto">
-    <li class="nav-item">
-        <a class="nav-link" href="/dashboard">Dashboard</a>
-    </li>
-    <li class="nav-item">
-        <a class="nav-link" href="/editor_list">Documents list</a>
-    </li>
-    <li class="nav-item">
-        <a class="nav-link" href="/editor">Editor</a>
-    </li>
-    <li class="nav-item">
-        <a class="nav-link" href="/memo_list">Memo list</a>
-    </li>
-    <li class="nav-item">
-        <a class="nav-link active" href="/memo">Memo</a>
-    </li>
-</ul>
-<div class="d-flex">
-    <a href="{{ url_for('logout') }}" class="btn btn-danger btn-sm">Logout</a>
-</div>
-{% endblock %}
-
 {% block extra_styles %}
+/* MEMO PAGE SPECIFIC STYLES */
+/* Page layout optimization */
+html, body {
+    height: 100vh;
+    overflow-x: hidden;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-size: 16px;
+    display: flex;
+    flex-direction: column;
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+}
+
+/* Container styling */
+.container-fluid {
+    max-width: 100%;
+    padding: 0 20px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+/* Toolbar styling - sticky header */
+.toolbar {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 1rem 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    backdrop-filter: blur(10px);
+}
+
+.toolbar .btn {
+    font-weight: 500;
+    padding: 0.6rem 1.2rem;
+    font-size: 0.9rem;
+    border-radius: 6px;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.toolbar .btn-outline-secondary {
+    border: 1px solid #6b7280;
+    color: #6b7280;
+    background: #ffffff;
+}
+
+.toolbar .btn-outline-secondary:hover {
+    background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+    border-color: #4b5563;
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(107, 114, 128, 0.3);
+}
+
+.toolbar .btn-primary {
+    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+    border: none;
+    color: white;
+}
+
+.toolbar .btn-primary:hover {
+    background: linear-gradient(135deg, #1d4ed8 0%, #1e3a8a 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+/* Main content row */
+.row.mt-3 {
+    flex: 1;
+    margin-top: 0 !important;
+    display: flex;
+    min-height: 0;
+}
+
+.row.mt-3 .col-md-8,
+.row.mt-3 .col-md-4 {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+/* Card styling */
+.card {
+    border: none;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    background: #ffffff;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.card-header {
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    border-bottom: 1px solid #e2e8f0;
+    border-radius: 8px 8px 0 0 !important;
+    padding: 1rem 1.5rem;
+}
+
+.card-header h5 {
+    color: #1e293b;
+    font-weight: 600;
+    margin: 0;
+}
+
+.card-body {
+    padding: 1.5rem;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+/* Form controls styling */
+.form-label {
+    color: #374151;
+    font-weight: 600;
+    font-size: 0.95rem;
+    margin-bottom: 0.5rem;
+}
+
+.form-control {
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    padding: 0.75rem;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+    background: #ffffff;
+}
+
+.form-control:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+    outline: none;
+}
+
+/* Title input special styling */
+#memoTitle {
+    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+    border: 2px solid #e2e8f0;
+    font-weight: 500;
+    color: #1e293b;
+}
+
+#memoTitle:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    background: #ffffff;
+}
+
+/* Content textarea styling */
+#memoContent {
+    flex: 1;
+    min-height: 400px;
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    font-size: 14px;
+    line-height: 1.6;
+    resize: none;
+    background: linear-gradient(135deg, #ffffff 0%, #fafbfc 100%);
+    border: 2px solid #e2e8f0;
+}
+
+#memoContent:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    background: #ffffff;
+}
+
+/* Drop zone styling */
+.drop-zone {
+    border: 2px dashed #3b82f6;
+    border-radius: 8px;
+    padding: 2rem;
+    text-align: center;
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-bottom: 1rem;
+}
+
+.drop-zone:hover,
+.drop-zone.dragover {
+    background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+    border-color: #1d4ed8;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+}
+
+.drop-zone i {
+    color: #3b82f6;
+    margin-bottom: 0.5rem;
+}
+
+.drop-zone p {
+    color: #6b7280;
+    font-weight: 500;
+    margin: 0;
+}
+
+/* Clipboard button styling */
+.btn-outline-primary.w-100 {
+    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+    border: 1px solid #3b82f6;
+    color: #3b82f6;
+    font-weight: 500;
+    padding: 0.75rem;
+    border-radius: 6px;
+    transition: all 0.3s ease;
+}
+
+.btn-outline-primary.w-100:hover {
+    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+    border-color: #1d4ed8;
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3);
+}
+
+/* File item styling */
+.file-item {
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 0.75rem;
+    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+    transition: all 0.3s ease;
+}
+
+.file-item:hover {
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    border-color: #cbd5e1;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
+
+.file-item h6 {
+    color: #1e293b;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+}
+
+.file-item .text-muted {
+    color: #6b7280 !important;
+    font-size: 0.85rem;
+}
+
+/* Image thumbnail styling */
+.image-thumbnail {
+    max-width: 150px;
+    max-height: 150px;
+    cursor: pointer;
+    border-radius: 6px;
+    border: 1px solid #e2e8f0;
+    transition: all 0.3s ease;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.image-thumbnail:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    border-color: #3b82f6;
+}
+
+/* Button styling */
+.btn-sm {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.85rem;
+    border-radius: 5px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.btn-outline-danger {
+    border: 1px solid #dc2626;
+    color: #dc2626;
+    background: #ffffff;
+}
+
+.btn-outline-danger:hover {
+    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+    border-color: #b91c1c;
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 3px 8px rgba(220, 38, 38, 0.3);
+}
+
+.btn-outline-primary.btn-sm {
+    border: 1px solid #3b82f6;
+    color: #3b82f6;
+    background: #ffffff;
+}
+
+.btn-outline-primary.btn-sm:hover {
+    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+    border-color: #1d4ed8;
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 3px 8px rgba(59, 130, 246, 0.3);
+}
+
+/* Download all button */
+#downloadAllBtn {
+    border: 1px solid #10b981;
+    color: #10b981;
+    background: #ffffff;
+}
+
+#downloadAllBtn:hover {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    border-color: #059669;
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 3px 8px rgba(16, 185, 129, 0.3);
+}
+
+/* Modal styling */
+.image-preview-modal .modal-dialog {
+    max-width: 90%;
+}
+
+.image-preview-modal .modal-content {
+    border: none;
+    border-radius: 8px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+}
+
+.image-preview-modal .modal-header {
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    border-bottom: 1px solid #e2e8f0;
+    border-radius: 8px 8px 0 0;
+}
+
+.image-preview-modal .modal-body {
+    padding: 2rem;
+    background: #ffffff;
+}
+
+.image-preview-modal img {
+    max-width: 100%;
+    max-height: 80vh;
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Progress indicator styling */
+#uploadProgress {
+    background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+    border: 1px solid #3b82f6;
+    border-radius: 6px;
+    color: #1e40af;
+}
+
+/* Scrollbar styling */
+#memoContent::-webkit-scrollbar,
+#fileList::-webkit-scrollbar {
+    width: 6px;
+}
+
+#memoContent::-webkit-scrollbar-track,
+#fileList::-webkit-scrollbar-track {
+    background: #f8fafc;
+    border-radius: 3px;
+}
+
+#memoContent::-webkit-scrollbar-thumb,
+#fileList::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, #cbd5e1 0%, #94a3b8 100%);
+    border-radius: 3px;
+}
+
+#memoContent::-webkit-scrollbar-thumb:hover,
+#fileList::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(135deg, #94a3b8 0%, #64748b 100%);
+}
+
+/* Animation effects */
+.container-fluid {
+    animation: fadeInUp 0.5s ease-out;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Button hover effects */
+.btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s;
+}
+
+.btn:hover::before {
+    left: 100%;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .container-fluid {
+        padding: 0 15px;
+    }
+    
+    .toolbar {
+        padding: 0.75rem 1rem;
+    }
+    
+    .toolbar .d-flex.justify-content-between {
+        flex-direction: column;
+        gap: 1rem;
+        align-items: flex-start;
+    }
+    
+    .row.mt-3 {
+        flex-direction: column;
+    }
+    
+    .row.mt-3 .col-md-8,
+    .row.mt-3 .col-md-4 {
+        width: 100%;
+        margin-bottom: 1rem;
+    }
+    
+    .card-body {
+        padding: 1rem;
+    }
+    
+    .drop-zone {
+        padding: 1.5rem;
+    }
+    
+    .drop-zone i {
+        font-size: 2rem !important;
+    }
+    
+    #memoContent {
+        min-height: 300px;
+        font-size: 13px;
+    }
+    
+    .image-thumbnail {
+        max-width: 120px;
+        max-height: 120px;
+    }
+    
+    .file-item {
+        padding: 0.75rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .container-fluid {
+        padding: 0 10px;
+    }
+    
+    .toolbar {
+        padding: 0.5rem 0.75rem;
+    }
+    
+    .toolbar .btn {
+        padding: 0.5rem 1rem;
+        font-size: 0.85rem;
+    }
+    
+    .card-header {
+        padding: 0.75rem 1rem;
+    }
+    
+    .card-body {
+        padding: 0.75rem;
+    }
+    
+    .drop-zone {
+        padding: 1rem;
+    }
+    
+    .drop-zone p {
+        font-size: 0.9rem;
+    }
+    
+    #memoContent {
+        min-height: 250px;
+        font-size: 12px;
+    }
+    
+    .image-thumbnail {
+        max-width: 100px;
+        max-height: 100px;
+    }
+    
+    .btn-sm {
+        padding: 0.3rem 0.6rem;
+        font-size: 0.8rem;
+    }
+}
+
+/* Enhanced typography */
+* {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* Focus ring enhancement */
+.form-control:focus,
+.btn:focus {
+    outline: 2px solid transparent;
+    outline-offset: 2px;
+}
+
+/* Success/Error states */
+.form-control.is-valid {
+    border-color: #16a34a;
+    box-shadow: 0 0 0 2px rgba(22, 163, 74, 0.1);
+}
+
+.form-control.is-invalid {
+    border-color: #dc2626;
+    box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.1);
+}
+
+/* Loading states */
+.btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none !important;
+}
+
+.btn:disabled::before {
+    display: none;
+}
+
+/* Professional shadows and depth */
+.toolbar {
+    box-shadow: 
+        0 1px 3px rgba(0, 0, 0, 0.06),
+        0 1px 6px rgba(0, 0, 0, 0.03);
+}
+
+.card {
+    box-shadow: 
+        0 2px 4px rgba(0, 0, 0, 0.05),
+        0 1px 8px rgba(0, 0, 0, 0.02);
+}
+
+.file-item:hover {
+    box-shadow: 
+        0 2px 6px rgba(0, 0, 0, 0.05),
+        0 1px 8px rgba(0, 0, 0, 0.03);
+}
 .file-item {
     border: 1px solid #dee2e6;
     border-radius: 0.375rem;
@@ -71,31 +617,95 @@
     padding: 0.5rem 0;
     border-bottom: 1px solid #dee2e6;
 }
+.btn-outline-primary.w-100::before {
+    display: none;
+}
+/* Button group styling */
+.btn-group {
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.btn-group .btn {
+    font-weight: 500;
+    padding: 0.6rem 1.2rem;
+    font-size: 0.9rem;
+    border: none;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-group .btn-primary {
+    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+    color: white;
+}
+
+.btn-group .btn-primary:hover {
+    background: linear-gradient(135deg, #1d4ed8 0%, #1e3a8a 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.btn-group .btn-secondary {
+    background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+    color: white;
+}
+
+.btn-group .btn-secondary:hover {
+    background: linear-gradient(135deg, #4b5563 0%, #374151 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(107, 114, 128, 0.3);
+}
+{% endblock %}
+{% block navbar_content %}
+<ul class="navbar-nav me-auto">
+    <li class="nav-item">
+        <a class="nav-link" href="/dashboard">
+            <i class="bi bi-speedometer2 me-1"></i>Dashboard
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" href="/editor_list">
+            <i class="bi bi-file-text me-1"></i>Documents list
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" href="/editor">
+            <i class="bi bi-file-text me-1"></i>Document
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" href="/memo_list">
+            <i class="bi bi-journal-text me-1"></i>Memo list
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link active" href="/memo">
+            <i class="bi bi-journal-text me-1"></i>Memo
+        </a>
+    </li>
+</ul>
 {% endblock %}
 
 {% block content %}
 <div class="container-fluid">
-    <div class="toolbar">
-        <div class="d-flex justify-content-between align-items-center">
-            <div>
-                <a href="/memo_list" class="btn btn-outline-secondary">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div class="btn-group">
+            <a href="/memo_list" class="btn btn-outline-secondary">
                     <i class="bi bi-arrow-left"></i> 戻る
                 </a>
-            </div>
-            <div>
-                <button class="btn btn-primary" onclick="saveMemo()">
+            <button class="btn btn-primary" onclick="saveMemo()">
                     <i class="bi bi-save"></i> 保存
                 </button>
-            </div>
+            
         </div>
     </div>
 
     <div class="row mt-3">
         <div class="col-md-8">
             <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0">メモ編集</h5>
-                </div>
                 <div class="card-body">
                     <div class="mb-3">
                         <label for="memoTitle" class="form-label">タイトル</label>
