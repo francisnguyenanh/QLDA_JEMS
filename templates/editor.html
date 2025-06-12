@@ -642,6 +642,37 @@ document.addEventListener('DOMContentLoaded', function() {
             currentTabCount = 0;
         }
 
+        // Reset indent and tab count when deleting back to beginning of line
+        if (e.key === 'Backspace') {
+            setTimeout(() => {
+                const start = textarea.selectionStart;
+                const value = textarea.value;
+                const currentLineStart = value.lastIndexOf('\n', start - 1) + 1;
+                
+                // If cursor is at the beginning of a line, reset state
+                if (start === currentLineStart) {
+                    currentLineIndent = 0;
+                    lastLineIndex = -1;
+                    currentTabCount = 0;
+                }
+            }, 10);
+        }
+
+        if (e.key === 'Backspace' || e.key === 'Delete') {
+            setTimeout(() => {
+                const start = textarea.selectionStart;
+                const value = textarea.value;
+                const currentLineStart = value.lastIndexOf('\n', start - 1) + 1;
+                
+                // If cursor is at the beginning of a line, reset state
+                if (start === currentLineStart) {
+                    currentLineIndent = 0;
+                    lastLineIndex = -1;
+                    currentTabCount = 0;
+                }
+            }, 10);
+        }
+
         // Auto line break at 140 bytes
         if (e.key !== 'Enter' && e.key !== 'Backspace' && e.key !== 'Delete') {
             setTimeout(() => {
