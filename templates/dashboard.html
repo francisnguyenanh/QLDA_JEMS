@@ -764,6 +764,46 @@
     padding: 15px;
     border-bottom: 1px solid #dee2e6;
 }
+/* Cập nhật kích thước cột 操作 */
+.table.table-bordered th:nth-child(2),
+.table.table-bordered td:nth-child(2) { 
+    width: 120px; /* Tăng từ 100px lên 120px để chứa 3 icon */
+    text-align: center;
+}
+
+/* Style cho icon buttons */
+.action-buttons {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 5px;
+}
+
+.action-buttons .btn {
+    padding: 4px 6px;
+    font-size: 14px;
+    border: none;
+    border-radius: 3px;
+    min-width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.action-buttons .btn:hover {
+    transform: scale(1.1);
+    transition: transform 0.2s;
+}
+
+/* Colors for different actions */
+.btn-edit { background-color: #007bff; color: white; }
+.btn-mail { background-color: #17a2b8; color: white; }
+.btn-copy { background-color: #28a745; color: white; }
+
+.btn-edit:hover { background-color: #0056b3; }
+.btn-mail:hover { background-color: #117a8b; }
+.btn-copy:hover { background-color: #1e7e34; }
 
 @media (max-width: 768px) {
     .container-fluid.mb-3 .d-flex {
@@ -877,18 +917,25 @@
                         <tr>
                             <td>{{ loop.index }}</td>
                             <td>
-                                <div class="d-flex gap-2">
-                                    <button class="btn btn-primary btn-sm"
+                                <div class="action-buttons">
+                                    <button class="btn btn-edit" 
                                             data-bs-toggle="modal"
                                             data-bs-target="#editModal"
-                                            onclick='fillEditModal({{ project.id }}, {{ project | tojson | safe }})'>
-                                        編集
+                                            onclick='fillEditModal({{ project.id }}, {{ project | tojson | safe }})'
+                                            title="編集">
+                                        <i class="fas fa-edit"></i>
                                     </button>
-                                    <button class="btn btn-info btn-sm"
+                                    <button class="btn btn-mail"
                                             data-bs-toggle="modal"
                                             data-bs-target="#mailModal"
-                                            onclick='openMailModal({{ project.id }})'>
-                                        メール
+                                            onclick='openMailModal({{ project.id }})'
+                                            title="メール">
+                                        <i class="fas fa-envelope"></i>
+                                    </button>
+                                    <button class="btn btn-copy"
+                                            onclick='copyProjectInfo({{ project | tojson | safe }})'
+                                            title="コピー">
+                                        <i class="fas fa-copy"></i>
                                     </button>
                                 </div>
                             </td>
@@ -1175,6 +1222,177 @@
         </div>
     </div>
 
+    <!-- Copy Modal - Thêm sau Edit Modal -->
+    <div class="modal fade" id="copyModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-scrollable modal-xl">
+            <div class="modal-content">
+                <form method="POST" id="copyForm">
+                    <div class="modal-header">
+                        <h5 class="modal-title">プロジェクト複写</h5>
+                        <div class="d-flex gap-2 align-items-center">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">閉じる</button>
+                            <button type="submit" class="btn btn-primary">複写</button>
+                        </div>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row">
+                            <!-- Column 1 -->
+                            <div class="col-12 col-md-3">
+                                <div class="mb-3">
+                                    <label class="form-label">プロジェクト名</label>
+                                    <input type="text" name="project_name" id="copy_project_name" class="form-control" placeholder="プロジェクト名を入力">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">タスク</label>
+                                    <div class="task-checkboxes d-flex flex-wrap">
+                                        <div class="form-check">
+                                            <input type="checkbox" name="タスク" id="copy_task_設計" value="設計" class="form-check-input">
+                                            <label class="form-check-label" for="copy_task_設計">設計</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input type="checkbox" name="タスク" id="copy_task_Brse" value="Brse" class="form-check-input">
+                                            <label class="form-check-label" for="copy_task_Brse">Brse</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input type="checkbox" name="タスク" id="copy_task_テスト" value="テスト" class="form-check-input">
+                                            <label class="form-check-label" for="copy_task_テスト">テスト</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input type="checkbox" name="タスク" id="copy_task_FB" value="FB" class="form-check-input">
+                                            <label class="form-check-label" for="copy_task_FB">FB</label>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">案件名</label>
+                                    <input type="text" name="案件名" id="copy_案件名" class="form-control">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">案件番号</label>
+                                    <input type="text" name="案件番号" id="copy_案件番号" class="form-control">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">PJNo.</label>
+                                    <input type="text" name="PJNo." id="copy_PJNo." class="form-control">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">PH</label>
+                                    <input type="text" name="PH" id="copy_PH" class="form-control">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">SE</label>
+                                    <input type="text" name="SE" id="copy_SE" class="form-control">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">SE(sub)</label>
+                                    <input type="text" name="SE(sub)" id="copy_SE(sub)" class="form-control">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">BSE</label>
+                                    <input type="text" name="BSE" id="copy_BSE" class="form-control">
+                                </div>
+                            </div>
+                            <!-- Column 2 -->
+                            <div class="col-12 col-md-3">
+                                <div class="mb-3">
+                                    <label class="form-label">ステータス</label>
+                                    <select name="ステータス" id="copy_ステータス" class="form-select">
+                                        {% for status in valid_statuses %}
+                                            <option value="{{ status }}">{{ status }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">開発工数（h）</label>
+                                    <input type="number" name="開発工数（h）" id="copy_開発工数（h）" class="form-control" step="0.1" min="0">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">設計工数（h）</label>
+                                    <input type="number" name="設計工数（h）" id="copy_設計工数（h）" class="form-control" step="0.1" min="0">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">ページ数</label>
+                                    <input type="number" name="ページ数" id="copy_ページ数" class="form-control" min="1">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">注文項目</label>
+                                    <div class="order-checkboxes d-flex flex-wrap">
+                                        <div class="form-check">
+                                            <input type="checkbox" name="注文設計" id="copy_注文設計" class="form-check-input">
+                                            <label class="form-check-label" for="copy_注文設計">注文設計</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input type="checkbox" name="注文テスト" id="copy_注文テスト" class="form-check-input">
+                                            <label class="form-check-label" for="copy_注文テスト">注文テスト</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input type="checkbox" name="注文FB" id="copy_注文FB" class="form-check-input">
+                                            <label class="form-check-label" for="copy_注文FB">注文FB</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input type="checkbox" name="注文BrSE" id="copy_注文BrSE" class="form-check-input">
+                                            <label class="form-check-label" for="copy_注文BrSE">注文BrSE</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Column 3 -->
+                            <div class="col-12 col-md-3">
+                                <div class="mb-3">
+                                    <label class="form-label">要件引継</label>
+                                    <input type="date" name="要件引継" id="copy_要件引継" class="form-control">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">設計開始</label>
+                                    <input type="date" name="設計開始" id="copy_設計開始" class="form-control">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">設計完了</label>
+                                    <input type="date" name="設計完了" id="copy_設計完了" class="form-control">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">設計書送付</label>
+                                    <input type="date" name="設計書送付" id="copy_設計書送付" class="form-control">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">開発開始</label>
+                                    <input type="date" name="開発開始" id="copy_開発開始" class="form-control">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">開発完了</label>
+                                    <input type="date" name="開発完了" id="copy_開発完了" class="form-control">
+                                </div>
+                            </div>
+                            <!-- Column 4 -->
+                            <div class="col-12 col-md-3">
+                                <div class="mb-3">
+                                    <label class="form-label">テスト開始日</label>
+                                    <input type="date" name="テスト開始日" id="copy_テスト開始日" class="form-control">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">テスト完了日</label>
+                                    <input type="date" name="テスト完了日" id="copy_テスト完了日" class="form-control">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">FB完了予定日</label>
+                                    <input type="date" name="FB完了予定日" id="copy_FB完了予定日" class="form-control">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">SE納品</label>
+                                    <input type="date" name="SE納品" id="copy_SE納品" class="form-control">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">備考</label>
+                                    <textarea name="備考" id="copy_備考" class="form-control"></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <!-- Mail Modal -->
     <div class="modal fade mail-modal" id="mailModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-scrollable mail-modal-custom">
@@ -1432,6 +1650,246 @@
             });
         });
 
+        function copyProjectInfo(project) {
+            fillCopyModal(project);
+            const modal = new bootstrap.Modal(document.getElementById('copyModal'));
+            modal.show();
+        }
+
+        // Thêm function mới để fill dữ liệu vào copy modal
+        function fillCopyModal(project) {
+            const fields = [
+                '案件名', '案件番号', 'PJNo.', 'PH', 'SE', 'SE(sub)', 'BSE', '開発工数（h）', '設計工数（h）', 'ページ数',
+                '備考'
+            ];
+            const dateFields = [
+                '要件引継', '設計開始', '設計完了', '設計書送付', '開発開始', '開発完了',
+                'テスト開始日', 'テスト完了日', 'FB完了予定日', 'SE納品'
+            ];
+
+            // Fill project name field (new)
+            const projectNameInput = document.getElementById('copy_project_name');
+            if (projectNameInput) {
+                // Tạo tên project mới dựa trên project gốc
+                const originalName = project['案件名'] || '';
+                const copyName = originalName ? `${originalName}_コピー` : 'プロジェクト_コピー';
+                projectNameInput.value = copyName;
+            }
+
+            // Fill text fields
+            fields.forEach(field => {
+                const element = document.getElementById(`copy_${field}`);
+                if (element) {
+                    element.value = project[field] || '';
+                }
+            });
+
+            // Fill date fields
+            dateFields.forEach(field => {
+                const element = document.getElementById(`copy_${field}`);
+                if (element) {
+                    const dateValue = parseDateToYMD(project[field]);
+                    element.value = dateValue;
+                }
+            });
+
+            // Fill task checkboxes
+            const taskCheckboxes = ['設計', 'Brse', 'テスト', 'FB'];
+            taskCheckboxes.forEach(task => {
+                const checkbox = document.getElementById(`copy_task_${task}`);
+                if (checkbox) {
+                    checkbox.checked = project['タスク'] ? project['タスク'].split(',').includes(task) : false;
+                }
+            });
+
+            // Fill order checkboxes
+            const orderCheckboxes = ['注文設計', '注文テスト', '注文FB', '注文BrSE'];
+            orderCheckboxes.forEach(order => {
+                const checkbox = document.getElementById(`copy_${order}`);
+                if (checkbox) {
+                    checkbox.checked = project[order] === 1 || project[order] === '1' || project[order] === '○';
+                }
+            });
+
+            // Fill status
+            const statusSelect = document.getElementById('copy_ステータス');
+            if (statusSelect) {
+                statusSelect.value = project['ステータス'] || '要件引継待ち';
+            }
+        }
+
+        // Thêm event handler cho copy form
+        document.getElementById('copyForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            
+            // Validate project name
+            const projectName = document.getElementById('copy_project_name').value.trim();
+            if (!projectName) {
+                alert('プロジェクト名を入力してください');
+                return;
+            }
+            
+            // Set project name in form data
+            formData.set('project_name', projectName);
+            
+            // Handle task checkboxes
+            const taskCheckboxes = document.querySelectorAll('input[name="タスク"]:checked');
+            const taskValues = Array.from(taskCheckboxes).map(cb => cb.value);
+            formData.set('タスク', taskValues.join(','));
+            
+            // Handle order checkboxes
+            const orderFields = ['注文設計', '注文テスト', '注文FB', '注文BrSE'];
+            orderFields.forEach(field => {
+                const checkbox = document.getElementById(`copy_${field}`);
+                formData.set(field, checkbox && checkbox.checked ? '1' : '0');
+            });
+            
+            // Submit to copy endpoint
+            fetch('/copy_project', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('プロジェクトが正常に複写されました');
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('copyModal'));
+                    modal.hide();
+                    window.location.reload();
+                } else {
+                    alert('エラー: ' + data.error);
+                }
+            })
+            .catch(error => {
+                alert('エラー: プロジェクトの複写に失敗しました - ' + error.message);
+            });
+        });
+
+        document.getElementById('copy_project_name').addEventListener('blur', function() {
+            const projectName = this.value.trim();
+            if (!projectName) {
+                this.style.borderColor = '#dc3545';
+                this.setCustomValidity('プロジェクト名は必須です');
+            } else {
+                this.style.borderColor = '';
+                this.setCustomValidity('');
+            }
+        });
+
+        // Thêm event listener cho real-time validation
+        document.getElementById('copy_project_name').addEventListener('input', function() {
+            if (this.value.trim()) {
+                this.style.borderColor = '';
+                this.setCustomValidity('');
+            }
+        });
+
+        // Thêm event listeners cho copy modal date inputs
+        document.querySelectorAll('#copyModal input[type="date"]').forEach(input => {
+            // Copy logic từ edit modal cho date handling
+            input.addEventListener('paste', function(e) {
+                e.preventDefault();
+                let paste = (e.clipboardData || window.clipboardData).getData('text');
+                paste = paste.trim();
+                if (!paste) return;
+                let normalized = paste
+                    .replace(/[\/\.]/g, '-')
+                    .replace(/[年月日]/g, '-')
+                    .replace(/-+/g, '-');
+                let m = normalized.match(/^(\d{1,2})-(\d{1,2})-(\d{4})$/);
+                if (m) {
+                    normalized = `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`;
+                }
+                m = normalized.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+                if (m) {
+                    normalized = `${m[1]}-${m[2].padStart(2, '0')}-${m[3].padStart(2, '0')}`;
+                }
+                this.value = normalized;
+                this.dispatchEvent(new Event('input', { bubbles: true }));
+                this.dispatchEvent(new Event('change', { bubbles: true }));
+            });
+
+            input.addEventListener('input', function(e) {
+                let val = this.value.trim();
+                if (!val) return;
+                if (/^\d{4}-\d{2}-\d{2}$/.test(val)) return;
+                let normalized = val
+                    .replace(/[\/\.]/g, '-')
+                    .replace(/[年月日]/g, '-')
+                    .replace(/-+/g, '-');
+                let m = normalized.match(/^(\d{1,2})-(\d{1,2})-(\d{4})$/);
+                if (m) {
+                    normalized = `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`;
+                }
+                m = normalized.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+                if (m) {
+                    normalized = `${m[1]}-${m[2].padStart(2, '0')}-${m[3].padStart(2, '0')}`;
+                    this.value = normalized;
+                }
+            });
+        });
+
+        // Thêm logic tự động tính toán ngày cho copy modal
+        function updateCopyTestDates() {
+            const pageCountInput = document.getElementById('copy_ページ数');
+            const testStartInput = document.getElementById('copy_テスト開始日');
+            const devCompleteInput = document.getElementById('copy_開発完了');
+            const testCompletionInput = document.getElementById('copy_テスト完了日');
+            const fbCompletionInput = document.getElementById('copy_FB完了予定日');
+
+            const pageCount = parseInt(pageCountInput.value);
+            let testStartDate = null;
+
+            if (testStartInput.value) {
+                testStartDate = new Date(testStartInput.value);
+            } else if (devCompleteInput.value) {
+                testStartDate = new Date(devCompleteInput.value);
+                testStartDate.setDate(testStartDate.getDate() + 1);
+            }
+
+            if (pageCount > 0 && testStartDate && !isNaN(testStartDate)) {
+                const testStartDateYMD = testStartDate.toISOString().split('T')[0];
+                fetch('/calculate_test_dates', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        page_count: pageCount,
+                        test_start_date: testStartDateYMD
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (!data.error) {
+                        testCompletionInput.value = data.test_completion_date || '';
+                        fbCompletionInput.value = data.fb_completion_date || '';
+                    }
+                });
+            }
+        }
+
+        // Add event listeners cho copy modal
+        document.getElementById('copy_ページ数').addEventListener('change', updateCopyTestDates);
+        document.getElementById('copy_テスト開始日').addEventListener('change', updateCopyTestDates);
+        document.getElementById('copy_開発完了').addEventListener('change', updateCopyTestDates);
+        document.getElementById('copy_テスト完了日').addEventListener('change', function() {
+            const testCompletionDate = this.value;
+            if (testCompletionDate) {
+                fetch('/calculate_test_dates', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ test_completion_date: testCompletionDate })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (!data.error) {
+                        document.getElementById('copy_FB完了予定日').value = data.fb_completion_date || '';
+                    }
+                });
+            }
+        });
+
         function fetchSortedData(column, direction, searchProjectName = '') {
             const showUnnecessary = document.getElementById('showUnnecessary').checked;
             fetch('/sort_projects', {
@@ -1474,26 +1932,34 @@
                 noCell.textContent = idx + 1;
                 row.appendChild(noCell);
 
-                // Cột 操作
+                // Cột 操作 với icons (cập nhật copy button)
                 const opCell = document.createElement('td');
                 opCell.innerHTML = `
-                    <div class="d-flex gap-2">
-                        <button class="btn btn-primary btn-sm"
+                    <div class="action-buttons">
+                        <button class="btn btn-edit"
                                 data-bs-toggle="modal"
                                 data-bs-target="#editModal"
-                                onclick='fillEditModal(${project.id}, ${JSON.stringify(project)})'>
-                            編集
+                                onclick='fillEditModal(${project.id}, ${JSON.stringify(project)})'
+                                title="編集">
+                            <i class="fas fa-edit"></i>
                         </button>
-                        <button class="btn btn-info btn-sm"
+                        <button class="btn btn-mail"
                                 data-bs-toggle="modal"
                                 data-bs-target="#mailModal"
-                                onclick='openMailModal(${project.id})'>
-                            メール
+                                onclick='openMailModal(${project.id})'
+                                title="メール">
+                            <i class="fas fa-envelope"></i>
+                        </button>
+                        <button class="btn btn-copy"
+                                onclick='copyProjectInfo(${JSON.stringify(project)})'
+                                title="複写">
+                            <i class="fas fa-copy"></i>
                         </button>
                     </div>
                 `;
                 row.appendChild(opCell);
 
+                // ...rest of the existing code for other columns...
                 const displayColumns = {{ display_columns | tojson | safe }};
                 displayColumns.forEach(col => {
                     const cell = document.createElement('td');
@@ -2923,23 +3389,30 @@
         document.addEventListener('DOMContentLoaded', function() {
             const table = document.querySelector('.table.table-bordered');
             if (!table) return;
+            
             const ths = table.querySelectorAll('thead th');
             let left = 0;
+            
+            // Cập nhật width cho 4 cột đầu (bao gồm cột 操作 đã được thay đổi)
             for (let i = 0; i < 4; i++) {
                 ths[i].style.position = 'sticky';
                 ths[i].style.left = left + 'px';
-                // Tính toán left dựa trên offsetWidth thực tế
+                ths[i].style.zIndex = '3';
                 left += ths[i].offsetWidth;
             }
+            
             // Áp dụng cho từng dòng td
             const trs = table.querySelectorAll('tbody tr');
             trs.forEach(tr => {
                 let left = 0;
                 for (let i = 0; i < 4; i++) {
                     const td = tr.children[i];
-                    td.style.position = 'sticky';
-                    td.style.left = left + 'px';
-                    left += ths[i].offsetWidth;
+                    if (td) {
+                        td.style.position = 'sticky';
+                        td.style.left = left + 'px';
+                        td.style.zIndex = '2';
+                        left += ths[i].offsetWidth;
+                    }
                 }
             });
         });

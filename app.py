@@ -2763,5 +2763,88 @@ def serve_memo_file(filename):
         return send_file(file_path, as_attachment=True)
 
 
+@app.route('/copy_project', methods=['POST'])
+def copy_project():
+    """Copy a project with new data."""
+    if 'username' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    try:
+        # Get project name from form - ƯU TIÊN project_name
+        project_name = request.form.get('project_name', '').strip()
+        if not project_name:
+            return jsonify({'error': 'プロジェクト名は必須です'}), 400
+        
+        # Connect to database first to check duplicate
+        conn = sqlite3.connect(DB_FILE)
+        cursor = conn.cursor()
+        
+        # Check if project name already exists - CASE INSENSITIVE
+        cursor.execute('SELECT COUNT(*) FROM projects WHERE LOWER(案件名) = LOWER(?)', (project_name,))
+        existing_count = cursor.fetchone()[0]
+        
+        if existing_count > 0:
+            conn.close()
+            logging.warning(f"Duplicate project name attempt: {project_name}")
+            return jsonify({'error': 'このプロジェクト名は既に存在します'}), 400
+        
+        # Get form data
+        data = {}
+        for key in request.form.keys():
+            if key == 'project_name':
+                # Skip project_name, chúng ta sẽ set sau
+                continue
+            elif key == '案件名':
+                # Bỏ qua 案件名 từ form, dùng project_name thay thế
+                continue
+            elif key == 'タスク':
+                data[key] = request.form.get(key, '')
+            elif key in ['注文設計', '注文テスト', '注文FB', '注文BrSE']:
+                data[key] = 1 if request.form.get(key) == '1' else 0
+            elif key in ['開発工数（h）', '設計工数（h）']:
+                value = request.form.get(key, '')
+                data[key] = float(value) if value else None
+            elif key == 'ページ数':
+                value = request.form.get(key, '')
+                data[key] = int(value) if value else None
+            else:
+                data[key] = request.form.get(key, '')
+        
+        # FORCE set 案件名 to project_name
+        data['案件名'] = project_name
+        
+        # Ensure required fields
+        if 'ステータス' not in data or not data['ステータス']:
+            data['ステータス'] = '要件引継待ち'
+        
+        # Insert new project
+        columns = []
+        values = []
+        placeholders = []
+        
+        for column in DISPLAY_COLUMNS + ['注文設計', '注文テスト', '注文FB', '注文BrSE']:
+            if column in data and data[column] is not None and data[column] != '':
+                columns.append(f'"{column}"')
+                values.append(data[column])
+                placeholders.append('?')
+        
+        if columns:
+            query = f'''
+                INSERT INTO projects ({', '.join(columns)})
+                VALUES ({', '.join(placeholders)})
+            '''
+            cursor.execute(query, values)
+        
+        conn.commit()
+        new_project_id = cursor.lastrowid
+        conn.close()
+        
+        logging.info(f"Project copied successfully with ID: {new_project_id}, name: {project_name}")
+        return jsonify({'success': True, 'project_id': new_project_id})
+        
+    except Exception as e:
+        logging.error(f"Error copying project: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+    
 if __name__ == '__main__':
     app.run(debug=True)
