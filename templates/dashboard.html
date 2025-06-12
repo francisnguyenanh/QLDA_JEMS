@@ -3,222 +3,51 @@
 {% block title %}プロジェクト管理 - Dashboard{% endblock %}
 
 {% block extra_styles %}
-/* Dashboard-specific styles */
+/* Dashboard-specific styles - OPTIMIZED TABLE HEIGHT */
+html, body {
+    height: 100vh;
+    overflow: hidden !important; /* Ẩn scroll của page */
+    margin: 0;
+    padding: 0;
+}
+
 body {
     font-size: 16px;
-    overflow-x: visible !important;
+    display: flex;
+    flex-direction: column;
 }
 
-html {
-    overflow-x: visible !important;
-}
-
+/* Container optimization */
 .container {
-    max-width: 90%;
-    padding: 15px;
+    max-width: 95%;
+    padding: 5px 10px; /* Giảm padding */
     margin-left: auto;
     margin-right: auto;
+    flex: 0 0 auto;
 }
 
+/* Header controls - very compact */
 .container-fluid.mb-3 {
     background-color: #f8f9fa;
-    padding: 15px;
+    padding: 5px 10px; /* Giảm padding mạnh */
     border-bottom: 1px solid #dee2e6;
+    flex: 0 0 auto;
+    margin-bottom: 0 !important;
+    min-height: 50px; /* Set minimum height */
 }
 
-/* Table Styles */
-.table-responsive {
-    overflow-x: auto;
+/* Navbar very compact */
+.navbar {
+    padding: 0.2rem 0.8rem !important; /* Giảm padding mạnh */
+    min-height: 45px; /* Giảm height */
+    flex: 0 0 auto;
 }
 
-.table.table-bordered {
-    font-size: 0.9rem;
-    width: 100%;
-    min-width: 2000px;
-    border-collapse: collapse;
-}
-
-.table.table-bordered th,
-.table.table-bordered td {
-    white-space: nowrap;
-    padding: 8px;
-    border: 1px solid #dee2e6;
-    background: #fff;
-}
-
-/* Sticky columns for first 4 columns */
-.table.table-bordered th:nth-child(1),
-.table.table-bordered td:nth-child(1) {
-    position: sticky;
-    left: 0;
-    background: #e6f3ff;
-    z-index: 2;
-}
-
-.table.table-bordered th:nth-child(2),
-.table.table-bordered td:nth-child(2) {
-    position: sticky;
-    left: 0; /* will be updated by JS */
-    background: #e6f3ff;
-    z-index: 2;
-    width: 120px;
-    text-align: center;
-}
-
-.table.table-bordered th:nth-child(3),
-.table.table-bordered td:nth-child(3) {
-    position: sticky;
-    left: 0; /* will be updated by JS */
-    background: #e6f3ff;
-    z-index: 2;
-}
-
-.table.table-bordered th:nth-child(4),
-.table.table-bordered td:nth-child(4) {
-    position: sticky;
-    left: 0; /* will be updated by JS */
-    background: #e6f3ff;
-    z-index: 2;
-}
-
-/* Specific column widths */
-.table.table-bordered th:nth-child(6),
-.table.table-bordered td:nth-child(6) { width: 150px; }
-
-.table.table-bordered th:nth-child(7),
-.table.table-bordered td:nth-child(7) { width: 150px; }
-
-.table.table-bordered th:nth-child(18),
-.table.table-bordered td:nth-child(18) { width: 140px; }
-
-.table.table-bordered th:nth-child(20),
-.table.table-bordered td:nth-child(20) { width: 180px; }
-
-.table.table-bordered th:nth-child(22),
-.table.table-bordered td:nth-child(22) { width: 140px; }
-
-.table.table-bordered th:nth-child(23),
-.table.table-bordered td:nth-child(23) { width: 100px; }
-
-.table.table-bordered th:nth-child(24),
-.table.table-bordered td:nth-child(24) { width: 100px; }
-
-.table.table-bordered th:nth-child(25),
-.table.table-bordered td:nth-child(25) { width: 100px; }
-
-.table.table-bordered th:nth-child(26),
-.table.table-bordered td:nth-child(26) { width: 100px; }
-
-.table.table-bordered th:nth-child(27),
-.table.table-bordered td:nth-child(27) { width: 250px; }
-
-.table.table-bordered th:nth-child(28),
-.table.table-bordered td:nth-child(28) { width: 100px; }
-
-.table.table-bordered th:nth-child(29),
-.table.table-bordered td:nth-child(29) { width: 100px; }
-
-.table.table-bordered th:nth-child(30),
-.table.table-bordered td:nth-child(30) { width: 100px; }
-
-.table.table-bordered th:nth-child(31),
-.table.table-bordered td:nth-child(31) { width: 100px; }
-
-/* Sticky header */
-.table.table-bordered thead {
-    position: sticky;
-    top: 0;
-    z-index: 3;
-    background: white;
-}
-
-.table.table-bordered thead th:nth-child(-n+4) {
-    z-index: 3;
-}
-
-/* Table highlighting */
-.table.table-bordered .past-date { 
-    background-color: #f0f0f0 !important; 
-}
-
-.table.table-bordered .highlight-date { 
-    background-color: yellow !important; 
-    color: red !important; 
-}
-
-.table.table-bordered .fb-late { 
-    background-color: red !important; 
-    color: white !important; 
-}
-
-/* Custom table container */
-.custom-table-container {
-    height: 80vh;
-    width: 90vw;
-    overflow-y: auto;
-    overflow-x: auto;
-    margin: 0 auto;
-    background: #fff;
-    position: relative;
-}
-
-/* Action buttons in table */
-.action-buttons {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 5px;
-}
-
-.action-buttons .btn {
-    padding: 4px 6px;
-    font-size: 14px;
-    border: none;
-    border-radius: 3px;
-    min-width: 28px;
-    height: 28px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.action-buttons .btn:hover {
-    transform: scale(1.1);
-    transition: transform 0.2s;
-}
-
-.btn-edit { 
-    background-color: #007bff; 
-    color: white; 
-}
-
-.btn-mail { 
-    background-color: #17a2b8; 
-    color: white; 
-}
-
-.btn-copy { 
-    background-color: #28a745; 
-    color: white; 
-}
-
-.btn-edit:hover { 
-    background-color: #0056b3; 
-}
-
-.btn-mail:hover { 
-    background-color: #117a8b; 
-}
-
-.btn-copy:hover { 
-    background-color: #1e7e34; 
-}
-
-/* Professional Navbar Buttons */
+/* Professional Navbar Buttons - very compact */
 .btn-group-professional {
     display: flex;
     flex-wrap: nowrap;
-    gap: 8px;
+    gap: 4px; /* Giảm gap */
     align-items: center;
     justify-content: flex-start;
     overflow: visible;
@@ -229,48 +58,463 @@ html {
 .btn-professional {
     display: flex;
     align-items: center;
-    gap: 5px;
-    padding: 8px 12px;
+    gap: 3px; /* Giảm gap */
+    padding: 4px 8px; /* Giảm padding mạnh */
     border: 1px solid #dee2e6;
-    border-radius: 6px;
-    font-size: 0.8rem;
+    border-radius: 4px; /* Giảm border radius */
+    font-size: 0.7rem; /* Giảm font size */
     font-weight: 500;
     text-decoration: none;
     transition: all 0.3s ease;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    min-width: 90px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    min-width: 70px; /* Giảm min-width */
     white-space: nowrap;
     justify-content: center;
     position: relative;
     overflow: hidden;
     flex-shrink: 0;
-}
-
-.btn-professional::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-    transition: left 0.5s;
-}
-
-.btn-professional:hover::before {
-    left: 100%;
-}
-
-.btn-professional:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    height: 32px; /* Set fixed height */
 }
 
 .btn-professional i {
-    font-size: 1rem;
+    font-size: 0.8rem; /* Giảm icon size */
 }
 
-/* Specific Button Colors */
+/* Search controls - very compact */
+.header-controls {
+    display: flex;
+    align-items: center;
+    gap: 15px; /* Giảm gap */
+    flex-wrap: nowrap;
+    margin-bottom: 5px; /* Giảm margin */
+}
+
+.search-project-name {
+    max-width: 220px; /* Giảm width */
+    min-width: 160px;
+    flex: 0 0 auto;
+}
+
+.input-group {
+    font-size: 0.8rem; /* Giảm font size */
+    height: 35px; /* Set fixed height */
+}
+
+.input-group-text {
+    padding: 0.25rem 0.5rem; /* Giảm padding */
+    font-size: 0.8rem;
+}
+
+.form-control {
+    padding: 0.25rem 0.5rem; /* Giảm padding */
+    font-size: 0.8rem;
+    height: 35px; /* Set fixed height */
+}
+
+.form-check-label {
+    font-size: 0.8rem;
+}
+
+/* Main content container - CALCULATED HEIGHT */
+.main-content-wrapper {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    padding: 0 10px 5px 10px; /* Compact padding */
+    overflow: hidden; /* Prevent overflow */
+}
+
+/* Table container - FIXED HEIGHT CALCULATION */
+.custom-table-container {
+    flex: 1 1 auto;
+    width: 100%;
+    height: calc(100vh - 140px); /* Tính toán chính xác: 100vh trừ navbar + header */
+    max-height: calc(100vh - 140px);
+    overflow-y: auto;
+    overflow-x: auto;
+    background: #ffffff;
+    border-radius: 8px; /* Giảm border radius */
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    border: 1px solid #f0f0f0;
+    position: relative;
+}
+
+/* Table styling - very compact */
+.table.table-bordered {
+    font-size: 0.75rem; /* Giảm font size mạnh */
+    width: 100%;
+    min-width: 2000px;
+    border-collapse: separate;
+    border-spacing: 0;
+    margin: 0;
+    background: #ffffff;
+}
+
+/* Header styling - very compact */
+.table.table-bordered thead {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
+.table.table-bordered thead th {
+    background: transparent;
+    color: #475569;
+    font-weight: 600;
+    font-size: 0.75rem; /* Giảm font size */
+    text-align: center;
+    padding: 8px 6px; /* Giảm padding mạnh */
+    border: 1px solid #e2e8f0;
+    border-bottom: 2px solid #cbd5e1;
+    text-shadow: none;
+    letter-spacing: 0.2px;
+    white-space: nowrap;
+    position: relative;
+    height: 45px; /* Set fixed height */
+}
+
+/* Body cells - very compact */
+.table.table-bordered tbody td {
+    padding: 6px 4px; /* Giảm padding mạnh */
+    border: 1px solid #f1f5f9;
+    background: #ffffff;
+    font-size: 0.75rem; /* Giảm font size */
+    vertical-align: middle;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+    height: 40px; /* Set fixed height */
+}
+
+/* Action buttons - very compact */
+.action-buttons {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 3px; /* Giảm gap */
+    padding: 1px 0; /* Giảm padding */
+}
+
+.action-buttons .btn {
+    padding: 3px 5px; /* Giảm padding mạnh */
+    font-size: 11px; /* Giảm font size */
+    border: none;
+    border-radius: 4px;
+    min-width: 24px; /* Giảm width */
+    height: 24px; /* Giảm height */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+    position: relative;
+    overflow: hidden;
+}
+
+/* STICKY COLUMNS - VERY COMPACT */
+
+/* First column (No) - SOFT PURPLE */
+.table.table-bordered th:nth-child(1),
+.table.table-bordered td:nth-child(1) {
+    position: sticky;
+    left: 0;
+    background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
+    color: #4338ca;
+    font-weight: 600;
+    text-align: center;
+    z-index: 5;
+    border-right: 2px solid rgba(99, 102, 241, 0.2);
+    width: 40px; /* Giảm width mạnh */
+    min-width: 40px;
+    max-width: 40px;
+}
+
+.table.table-bordered tbody td:nth-child(1) {
+    background: linear-gradient(135deg, #ddd6fe 0%, #c4b5fd 100%);
+    color: #5b21b6;
+    font-weight: 600;
+    text-shadow: none;
+}
+
+/* Second column (操作) - SOFT GREEN */
+.table.table-bordered th:nth-child(2),
+.table.table-bordered td:nth-child(2) {
+    position: sticky;
+    left: 40px; /* Điều chỉnh left */
+    background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+    color: #166534;
+    z-index: 5;
+    border-right: 2px solid rgba(34, 197, 94, 0.2);
+    width: 85px; /* Giảm width */
+    min-width: 85px;
+    max-width: 85px;
+    text-align: center;
+}
+
+.table.table-bordered tbody td:nth-child(2) {
+    background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+    padding: 4px; /* Giảm padding */
+}
+
+/* Third column - SOFT BLUE */
+.table.table-bordered th:nth-child(3),
+.table.table-bordered td:nth-child(3) {
+    position: sticky;
+    left: 125px; /* Điều chỉnh left */
+    background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+    color: #1e40af;
+    z-index: 5;
+    border-right: 2px solid rgba(59, 130, 246, 0.2);
+    width: 110px; /* Giảm width */
+    min-width: 110px;
+    max-width: 110px;
+}
+
+.table.table-bordered tbody td:nth-child(3) {
+    background: linear-gradient(135deg, #bfdbfe 0%, #93c5fd 100%);
+    color: #1e3a8a;
+    font-weight: 500;
+}
+
+/* Fourth column - SOFT ORANGE */
+.table.table-bordered th:nth-child(4),
+.table.table-bordered td:nth-child(4) {
+    position: sticky;
+    left: 235px; /* Điều chỉnh left */
+    background: linear-gradient(135deg, #fed7aa 0%, #fdba74 100%);
+    color: #c2410c;
+    z-index: 5;
+    border-right: 3px solid rgba(249, 115, 22, 0.2);
+    width: 150px; /* Giảm width */
+    min-width: 150px;
+    max-width: 150px;
+}
+
+.table.table-bordered tbody td:nth-child(4) {
+    background: linear-gradient(135deg, #fdba74 0%, #fb923c 100%);
+    color: #9a3412;
+    font-weight: 500;
+}
+
+/* Ensure sticky headers have higher z-index */
+.table.table-bordered thead th:nth-child(-n+4) {
+    z-index: 10;
+}
+
+/* Column widths - very compact */
+.table.table-bordered th:nth-child(5),
+.table.table-bordered td:nth-child(5) { width: 100px; min-width: 100px; }
+
+.table.table-bordered th:nth-child(6),
+.table.table-bordered td:nth-child(6) { width: 120px; min-width: 120px; }
+
+.table.table-bordered th:nth-child(7),
+.table.table-bordered td:nth-child(7) { width: 120px; min-width: 120px; }
+
+.table.table-bordered th:nth-child(8),
+.table.table-bordered td:nth-child(8) { width: 80px; min-width: 80px; }
+
+.table.table-bordered th:nth-child(9),
+.table.table-bordered td:nth-child(9) { width: 80px; min-width: 80px; }
+
+.table.table-bordered th:nth-child(10),
+.table.table-bordered td:nth-child(10) { width: 100px; min-width: 100px; }
+
+.table.table-bordered th:nth-child(18),
+.table.table-bordered td:nth-child(18) { width: 110px; min-width: 110px; }
+
+.table.table-bordered th:nth-child(20),
+.table.table-bordered td:nth-child(20) { width: 140px; min-width: 140px; }
+
+.table.table-bordered th:nth-child(22),
+.table.table-bordered td:nth-child(22) { width: 110px; min-width: 110px; }
+
+.table.table-bordered th:nth-child(23),
+.table.table-bordered td:nth-child(23) { width: 75px; min-width: 75px; }
+
+.table.table-bordered th:nth-child(24),
+.table.table-bordered td:nth-child(24) { width: 75px; min-width: 75px; }
+
+.table.table-bordered th:nth-child(25),
+.table.table-bordered td:nth-child(25) { width: 75px; min-width: 75px; }
+
+.table.table-bordered th:nth-child(26),
+.table.table-bordered td:nth-child(26) { width: 75px; min-width: 75px; }
+
+.table.table-bordered th:nth-child(27),
+.table.table-bordered td:nth-child(27) { width: 200px; min-width: 200px; }
+
+.table.table-bordered th:nth-child(28),
+.table.table-bordered td:nth-child(28) { width: 75px; min-width: 75px; }
+
+.table.table-bordered th:nth-child(29),
+.table.table-bordered td:nth-child(29) { width: 75px; min-width: 75px; }
+
+.table.table-bordered th:nth-child(30),
+.table.table-bordered td:nth-child(30) { width: 75px; min-width: 75px; }
+
+.table.table-bordered th:nth-child(31),
+.table.table-bordered td:nth-child(31) { width: 75px; min-width: 75px; }
+
+/* Soft highlighting - giữ nguyên nhưng compact */
+.table.table-bordered .past-date { 
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%) !important;
+    color: #92400e !important;
+    font-weight: 500;
+    position: relative;
+}
+
+.table.table-bordered .past-date::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 2px; /* Giảm width */
+    background: linear-gradient(180deg, #f59e0b 0%, #d97706 100%);
+    opacity: 0.7;
+}
+
+.table.table-bordered .highlight-date { 
+    background: linear-gradient(135deg, #fef08a 0%, #facc15 100%) !important;
+    color: #a16207 !important;
+    font-weight: 600;
+    position: relative;
+    animation: softPulse 3s infinite;
+}
+
+.table.table-bordered .highlight-date::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 2px; /* Giảm width */
+    background: linear-gradient(180deg, #eab308 0%, #ca8a04 100%);
+    opacity: 0.8;
+}
+
+.table.table-bordered .fb-late { 
+    background: linear-gradient(135deg, #fecaca 0%, #fca5a5 100%) !important;
+    color: #7f1d1d !important;
+    font-weight: 600;
+    position: relative;
+    animation: softPulse 3s infinite;
+}
+
+.table.table-bordered .fb-late::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 2px; /* Giảm width */
+    background: linear-gradient(180deg, #ef4444 0%, #dc2626 100%);
+    opacity: 0.7;
+}
+
+/* SOFT ANIMATIONS */
+@keyframes softPulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.85; }
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(2px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.table.table-bordered tbody tr {
+    animation: fadeIn 0.3s ease-out;
+}
+
+/* Row hover effects - softer và compact */
+.table.table-bordered tbody tr {
+    transition: all 0.2s ease;
+}
+
+.table.table-bordered tbody tr:hover {
+    background: linear-gradient(90deg, #f8fafc 0%, #f1f5f9 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+}
+
+.table.table-bordered tbody tr:hover td {
+    border-color: #e2e8f0;
+}
+
+/* Alternating row colors - softer */
+.table.table-bordered tbody tr:nth-child(even) {
+    background: linear-gradient(90deg, #fafbfc 0%, #f8fafc 100%);
+}
+
+.table.table-bordered tbody tr:nth-child(odd) {
+    background: #ffffff;
+}
+
+/* Sort indicators - compact */
+.sort-indicator::after {
+    content: '';
+    display: inline-block;
+    width: 0;
+    height: 0;
+    margin-left: 4px; /* Giảm margin */
+    vertical-align: middle;
+    border-left: 3px solid transparent; /* Giảm size */
+    border-right: 3px solid transparent;
+    opacity: 0.5;
+}
+
+.sort-asc .sort-indicator::after {
+    border-bottom: 3px solid #64748b;
+    opacity: 0.8;
+}
+
+.sort-desc .sort-indicator::after {
+    border-top: 3px solid #64748b;
+    opacity: 0.8;
+}
+
+/* Sortable styling */
+.sortable {
+    cursor: pointer;
+    position: relative;
+    user-select: none;
+}
+
+.sortable:hover {
+    background: rgba(148, 163, 184, 0.1);
+    transition: background 0.3s ease;
+}
+
+/* VERY COMPACT SCROLLBAR STYLING */
+.custom-table-container::-webkit-scrollbar {
+    width: 6px; /* Giảm width */
+    height: 6px; /* Giảm height */
+}
+
+.custom-table-container::-webkit-scrollbar-track {
+    background: #f8fafc;
+    border-radius: 3px;
+}
+
+.custom-table-container::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, #cbd5e1 0%, #94a3b8 100%);
+    border-radius: 3px;
+    border: 1px solid #f8fafc;
+}
+
+.custom-table-container::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(135deg, #94a3b8 0%, #64748b 100%);
+}
+
+.custom-table-container::-webkit-scrollbar-corner {
+    background: #f8fafc;
+}
+
+/* Button styling - very compact */
 .btn-schedule {
     background: linear-gradient(135deg, #e3f2fd 0%, #e1f5fe 100%);
     color: #1976d2;
@@ -348,1104 +592,19 @@ html {
     color: #4527a0;
 }
 
-/* Dropdown Styles */
-.dropdown {
-    position: relative;
-}
-
-.dropdown-menu {
-    font-size: 0.75rem;
-    border-radius: 6px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
-    min-width: 150px;
-    z-index: 1050;
-    border: 1px solid #dee2e6;
-    background-color: white;
-    position: absolute !important;
-    top: 100% !important;
-    left: 0 !important;
-    margin-top: 2px;
-}
-
-.dropdown.show .dropdown-menu {
-    display: block !important;
-    position: absolute !important;
-    top: 100% !important;
-    left: 0 !important;
-    z-index: 1060 !important;
-}
-
-.dropdown-item {
-    padding: 8px 12px;
-    color: #495057;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    transition: background-color 0.2s;
-}
-
-.dropdown-item:hover {
-    background-color: #f8f9fa;
-    color: #212529;
-}
-
-.dropdown-item i {
-    width: 16px;
-    text-align: center;
-    font-size: 0.9rem;
-}
-
-.dropdown-toggle::after {
-    margin-left: 0.255em;
-    vertical-align: 0.255em;
-    border-top: 0.3em solid;
-    border-right: 0.3em solid transparent;
-    border-bottom: 0;
-    border-left: 0.3em solid transparent;
-}
-
-.dropdown-toggle:empty::after {
-    margin-left: 0;
-}
-
-/* Navbar Overrides */
-.navbar,
-.navbar .d-flex,
-.navbar .navbar-nav {
-    overflow: visible !important;
-}
-
-/* Scrollbar Styling */
-.btn-group-professional::-webkit-scrollbar {
-    height: 4px;
-}
-
-.btn-group-professional::-webkit-scrollbar-track {
-    background: #f1f1f1;
-    border-radius: 2px;
-}
-
-.btn-group-professional::-webkit-scrollbar-thumb {
-    background: #c1c1c1;
-    border-radius: 2px;
-}
-
-.btn-group-professional::-webkit-scrollbar-thumb:hover {
-    background: #a8a8a8;
-}
-
-/* Modal Styles */
-.modal-body {
-    max-height: 60vh;
-    overflow-y: auto;
-}
-
-.modal-body .row {
-    margin-left: -5px;
-    margin-right: -5px;
-}
-
-.modal-body .col-12 {
-    padding: 5px;
-}
-
-.modal-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 10px;
-}
-
-.modal-header .d-flex {
-    flex-shrink: 0;
-}
-
-.modal-header .btn {
-    font-size: 0.85rem;
-    padding: 6px 12px;
-}
-
-.modal-header .form-check {
-    margin: 0 10px;
-    display: flex;
-    align-items: center;
-}
-
-.modal-header .form-check-label {
-    font-size: 0.85rem;
-    margin-left: 5px;
-}
-
-.modal-dialog-scrollable .modal-content {
-    max-height: 90vh;
-}
-
-.modal-dialog-scrollable .modal-body {
-    max-height: calc(90vh - 120px);
-    overflow-y: auto;
-    padding: 10px;
-}
-
-/* Edit Modal */
-#editModal .modal-dialog {
-    max-width: 1200px;
-    height: 95vh;
-    max-height: 95vh;
-    margin: 2vh auto;
-    display: flex;
-    flex-direction: column;
-}
-
-#editModal .modal-content {
-    height: 100%;
-    max-height: 95vh;
-    display: flex;
-    flex-direction: column;
-}
-
-#editModal .modal-body {
-    flex: 1 1 auto;
-    overflow-y: auto;
-    max-height: calc(95vh - 120px);
-}
-
-/* Mail Edit Modal */
-#mailEditModal .modal-dialog {
-    width: 90vw;
-    max-width: none;
-    height: 90vh;
-    margin: 5vh auto;
-}
-
-#mailEditModal .modal-content {
-    height: 100%;
-    width: 100%;
-    padding: 0;
-    margin: 0;
-    box-sizing: border-box;
-}
-
-#mailEditModal .modal-body {
-    overflow-y: auto;
-    height: 100%;
-    width: 100%;
-    padding: 0 !important;
-    margin: 0;
-    box-sizing: border-box;
-}
-
-#mailEditModal .modal-header {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    flex-wrap: wrap;
-    padding: 10px;
-}
-
-#mailEditModal .mail-content-container {
-    display: flex;
-    gap: 20px;
-    width: 100% !important;
-    max-width: 100% !important;
-    max-height: 80vh;
-    height: 100%;
-    box-sizing: border-box;
-}
-
-#mailEditModal .uploaded-files-section {
-    flex: 0 0 40%;
-    overflow-y: auto;
-    height: 90%;
-    box-sizing: border-box;
-}
-
-#mailEditModal .replaced-content-section {
-    flex: 0 0 60%;
-    display: flex;
-    flex-direction: column;
-    height: 90%;
-    box-sizing: border-box;
-}
-
-#mailEditModal #uploadedFilesList {
-    height: 100%;
-    overflow-y: auto;
-}
-
-#mailEditModal #mailEditContent {
-    width: 100%;
-    height: 100%;
-    font-size: 0.85rem;
-    resize: vertical;
-}
-
-#mailEditModal .uploaded-file-item {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 8px;
-}
-
-#mailEditModal .uploaded-file-item input.form-control {
-    font-size: 0.85rem;
-    padding: 6px;
-}
-
-#mailEditModal .uploaded-file-item .btn {
-    font-size: 0.85rem;
-    padding: 6px 12px;
-}
-
-#mailEditFiles {
-    flex: 1;
-    min-width: 300px;
-}
-
-/* Mail Modal */
-.mail-modal-custom {
-    max-width: 95%;
-}
-
-.mail-modal .modal-body {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    min-height: 300px;
-    padding: 10px;
-}
-
-.mail-buttons-container {
-    flex: none;
-    max-width: 100%;
-    padding-right: 0;
-}
-
-.mail-buttons .btn {
-    margin-bottom: 8px;
-    font-size: 0.85rem;
-    padding: 8px;
-    text-align: left;
-}
-
-.mail-buttons .btn.copied {
-    background-color: #28a745;
-    color: white;
-    border-color: #28a745;
-    text-align: left;
-}
-
-.mail-content-container {
-    flex: none;
-    max-width: 100%;
-    display: flex;
-    gap: 20px;
-    width: 100%;
-    max-height: 80vh;
-    height: 100%;
-}
-
-#mailContent {
-    width: 100%;
-    height: 300px;
-    max-height: 500px;
-    font-size: 0.85rem;
-    resize: vertical;
-}
-
-.uploaded-files-section {
-    flex: 0 0 40%;
-    overflow-y: auto;
-    height: 90%;
-}
-
-.replaced-content-section {
-    flex: 0 0 60%;
-    display: flex;
-    flex-direction: column;
-    height: 90%;
-}
-
-.uploaded-file-item {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 8px;
-}
-
-.uploaded-file-item input.form-control {
-    font-size: 0.85rem;
-    padding: 6px;
-}
-
-.uploaded-file-item .btn {
-    font-size: 0.85rem;
-    padding: 6px 12px;
-}
-
-#overwriteFileModal .form-select {
-    font-size: 0.85rem;
-    padding: 6px;
-}
-
-/* Form Styles */
-.task-checkboxes, 
-.order-checkboxes {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 15px;
-    align-items: center;
-}
-
-.task-checkboxes .form-check, 
-.order-checkboxes .form-check {
-    display: flex;
-    align-items: center;
-    margin: 0;
-    min-width: 100px;
-}
-
-.task-checkboxes .form-check-label, 
-.order-checkboxes .form-check-label {
-    margin-left: 8px;
-    font-size: 0.85rem;
-}
-
-.form-label {
-    font-size: 0.85rem;
-}
-
-.form-control, 
-.form-check-input, 
-.form-select {
-    font-size: 0.85rem;
-    padding: 6px;
-}
-
-.form-check .form-check-input {
-    margin-left: 0;
-}
-
-textarea.form-control {
-    resize: vertical;
-    min-height: 50px;
-}
-
-textarea[name="備考"] {
-    max-height: 200px;
-    overflow-y: auto;
-    resize: vertical;
-}
-
-/* Button Groups */
-.btn-group-responsive {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-}
-
-.btn-group-responsive .btn {
-    flex: 1;
-    min-width: 130px;
-    font-size: 0.85rem;
-    padding: 8px;
-    white-space: nowrap;
-    text-align: center;
-}
-
-/* Header Controls */
-.header-controls {
-    display: flex;
-    align-items: center;
-    gap: 35px;
-    flex-wrap: nowrap;
-}
-
-.search-project-name {
-    max-width: 300px;
-    min-width: 200px;
-    flex: 0 0 auto;
-}
-
-.form-check-container {
-    flex: 0 0 auto;
-    display: flex;
-    align-items: center;
-}
-
-.show-unnecessary-label {
-    color: #0056b3;
-    font-weight: bold;
-    margin-right: 30px;
-    font-size: 0.9rem;
-}
-
-/* Sorting */
-.sortable {
-    cursor: pointer;
-    position: relative;
-    user-select: none;
-}
-
-.sortable:hover {
-    background-color: #e9ecef;
-}
-
-.sort-indicator::after {
-    content: '';
-    display: inline-block;
-    width: 0;
-    height: 0;
-    margin-left: 4px;
-    vertical-align: middle;
-    border-left: 3px solid transparent;
-    border-right: 3px solid transparent;
-}
-
-.sort-asc .sort-indicator::after {
-    border-bottom: 3px solid #000;
-}
-
-.sort-desc .sort-indicator::after {
-    border-top: 3px solid #000;
-}
-
-/* Daily Report Table */
-.daily-report-table-container {
-    max-height: 60vh;
-    overflow-y: auto;
-    position: relative;
-}
-
-.daily-report-table {
-    width: 100%;
-    border-collapse: collapse;
-}
-
-.daily-report-table thead {
-    position: sticky;
-    top: 0;
-    z-index: 2;
-    background: white;
-}
-
-.daily-report-table th, 
-.daily-report-table td {
-    border: 1px solid #dee2e6;
-    padding: 6px;
-    text-align: center;
-    font-size: 0.85rem;
-}
-
-.daily-report-table input {
-    width: 60px;
-    padding: 2px;
-    font-size: 0.85rem;
-    text-align: center;
-}
-
-.daily-report-table th.project-header {
-    width: 200px;
-    position: sticky;
-    left: 0;
-    background: #f1f3f5;
-    z-index: 3;
-}
-
-.daily-report-table td.project-cell {
-    position: sticky;
-    left: 0;
-    background: white;
-    z-index: 1;
-}
-
-/* Daily report color coding */
-.daily-report-table thead tr:first-child th:not(.project-header):nth-child(4n-2),
-.daily-report-table thead tr:first-child th:not(.project-header):nth-child(8n-6),
-.daily-report-table thead tr:first-child th:not(.project-header):nth-child(8n-4),
-.daily-report-table thead tr:first-child th:not(.project-header):nth-child(4n),
-.daily-report-table thead tr:first-child th:not(.project-header):nth-child(4n+1) {
-    background-color: #e6f3ff;
-}
-
-.daily-report-table thead tr:first-child th:not(.project-header):nth-child(4n-1),
-.daily-report-table thead tr:first-child th:not(.project-header):nth-child(8n-5),
-.daily-report-table thead tr:first-child th:not(.project-header):nth-child(8n-3) {
-    background-color: #ffe6e6;
-}
-
-.daily-report-table tbody td:not(.project-cell):nth-child(4n-2),
-.daily-report-table tbody td:not(.project-cell):nth-child(8n-6),
-.daily-report-table tbody td:not(.project-cell):nth-child(8n-4),
-.daily-report-table tbody td:not(.project-cell):nth-child(4n),
-.daily-report-table tbody td:not(.project-cell):nth-child(4n+1) {
-    background-color: #e6f3ff;
-}
-
-.daily-report-table tbody td:not(.project-cell):nth-child(4n-1),
-.daily-report-table tbody td:not(.project-cell):nth-child(8n-5),
-.daily-report-table tbody td:not(.project-cell):nth-child(8n-3) {
-    background-color: #ffe6e6;
-}
-
-.daily-report-table tbody tr:nth-child(even) td:not(.project-cell) {
-    background-color: #f1f3f5;
-}
-
-.daily-report-table tbody tr:nth-child(odd) td:not(.project-cell) {
-    background-color: white;
-}
-
-.daily-report-table tbody tr:nth-child(even) td.project-cell,
-.daily-report-table tbody tr:nth-child(odd) td.project-cell {
-    background-color: white;
-}
-
-/* Schedule Table */
-.schedule-table-container {
-    max-height: 60vh;
-    overflow-y: auto;
-    position: relative;
-}
-
-.schedule-table {
-    width: 100%;
-    border-collapse: collapse;
-}
-
-.schedule-table thead {
-    position: sticky;
-    top: 0;
-    z-index: 2;
-    background: white;
-}
-
-.schedule-table th,
-.schedule-table td {
-    border: 1px solid #dee2e6;
-    padding: 8px;
-    text-align: left;
-    font-size: 0.85rem;
-}
-
-.schedule-table th:first-child,
-.schedule-table td:first-child {
-    text-align: center;
-}
-
-.schedule-table input[type="checkbox"] {
-    margin: 0 auto;
-    width: 20px;
-    height: 20px;
-}
-
-.week-date-range {
-    font-size: 1rem;
-    font-weight: bold;
-    color: #333;
-    text-align: center;
-}
-
-.week-nav-buttons {
-    display: flex;
-    gap: 10px;
-    justify-content: center;
-    margin-bottom: 10px;
-}
-
-/* Badge and Professional Button Enhancements */
-.btn-professional .badge {
-    position: absolute;
-    top: -3px;
-    right: -3px;
-    background: #dc3545;
-    color: white;
-    font-size: 0.6rem;
-    padding: 1px 4px;
-    border-radius: 8px;
-    min-width: 14px;
-    height: 14px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-/* Copy Mail Checkbox */
-#copyMailCheckbox:checked + .form-check-label {
-    color: #28a745;
-}
-
-/* Responsive Design */
-@media (min-width: 768px) {
-    #mailEditModal .mail-content-container {
-        flex: none !important;
-        max-width: 100% !important;
-        width: 100% !important;
-    }
-    
-    #mailEditModal .modal-body {
-        padding: 30px !important;
-        max-height: none !important;
-    }
-    
-    .container {
-        max-width: 90%;
-    }
-    
-    .table.table-bordered {
-        font-size: 0.9rem;
-    }
-    
-    .table.table-bordered th,
-    .table.table-bordered td {
-        padding: 10px;
-    }
-    
-    .modal-body .row {
-        margin-left: -10px;
-        margin-right: -10px;
-    }
-    
-    .modal-body .col-md-3 {
-        padding: 10px;
-    }
-    
-    .mail-modal .modal-body {
-        flex-direction: row;
-        gap: 15px;
-        padding: 15px;
-    }
-    
-    .mail-buttons-container {
-        flex: 1;
-        max-width: 33.33%;
-        padding-right: 15px;
-    }
-    
-    .mail-content-container {
-        flex: 2;
-        max-width: 66.67%;
-    }
-    
-    #mailContent {
-        height: 600px;
-        max-height: 800px;
-    }
-    
-    .btn-group-responsive .btn {
-        min-width: auto;
-    }
-}
-
-@media (min-width: 1200px) {
-    .btn-professional {
-        min-width: 100px;
-        padding: 8px 14px;
-        font-size: 0.85rem;
-    }
-    
-    .btn-professional i {
-        font-size: 1.1rem;
-    }
-}
-
-@media (max-width: 1199px) {
-    .btn-group-professional {
-        flex-wrap: wrap;
-        gap: 6px;
-    }
-    
-    .btn-professional {
-        min-width: 80px;
-        padding: 6px 10px;
-        font-size: 0.75rem;
-    }
-    
-    .btn-professional i {
-        font-size: 0.9rem;
-    }
-}
-
-@media (max-width: 768px) {
-    .container-fluid.mb-3 .d-flex {
-        flex-direction: column;
-        align-items: flex-start !important;
-        gap: 15px;
-    }
-    
-    .container-fluid.mb-3 .input-group {
-        width: 100% !important;
-        max-width: none;
-    }
-    
-    .btn-group-professional {
-        gap: 4px;
-        flex-wrap: wrap;
-    }
-    
-    .btn-professional {
-        padding: 6px 8px;
-        font-size: 0.7rem;
-        min-width: 70px;
-    }
-    
-    .btn-professional i {
-        font-size: 0.85rem;
-    }
-    
-    .btn-professional span {
-        display: none;
-    }
-    
-    .daily-report-table input {
-        width: 50px;
-    }
-    
-    .header-controls {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 10px;
-    }
-    
-    .search-project-name {
-        width: 100%;
-        max-width: none;
-    }
-    
-    .form-check-container {
-        width: 100%;
-    }
-}
-
-@media (max-width: 576px) {
-    .btn-group-professional {
-        justify-content: center;
-        flex-wrap: wrap;
-    }
-    
-    .btn-professional {
-        min-width: 50px;
-        padding: 6px;
-    }
-    
-    .modal-header {
-        flex-direction: column;
-        align-items: flex-start;
-    }
-    
-    .modal-header .d-flex {
-        width: 100%;
-        justify-content: flex-end;
-    }
-    
-    .modal-header .btn {
-        width: auto;
-        margin-left: 5px;
-    }
-    
-    .modal-body .row {
-        margin-left: -5px;
-        margin-right: -5px;
-    }
-    
-    .modal-body .col-12 {
-        padding: 5px;
-    }
-    
-    .modal-dialog-scrollable .modal-body {
-        max-height: calc(90vh - 150px);
-    }
-    
-    .modal-dialog {
-        margin: 10px;
-    }
-    
-    .task-checkboxes, 
-    .order-checkboxes {
-        gap: 10px;
-    }
-    
-    .task-checkboxes .form-check, 
-    .order-checkboxes .form-check {
-        min-width: 80px;
-    }
-}
-
-/* REDESIGN TABLE STYLES - PROFESSIONAL DASHBOARD - SOFT COLORS */
-
-/* Container styling */
-.custom-table-container {
-    height: 80vh;
-    width: 95vw;
-    overflow-y: auto;
-    overflow-x: auto;
-    margin: 20px auto;
-    background: #ffffff;
-    border-radius: 12px;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06); /* Giảm shadow */
-    border: 1px solid #f0f0f0; /* Border nhẹ hơn */
-    position: relative;
-}
-
-/* Main table styling */
-.table.table-bordered {
-    font-size: 0.875rem;
-    width: 100%;
-    min-width: 2000px;
-    border-collapse: separate;
-    border-spacing: 0;
-    margin: 0;
-    background: #ffffff;
-}
-
-/* Header styling - SOFT GRADIENT */
-.table.table-bordered thead {
-    position: sticky;
-    top: 0;
-    z-index: 10;
-    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%); /* Gradient xám nhẹ */
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08); /* Shadow nhẹ hơn */
-}
-
-.table.table-bordered thead th {
-    background: transparent;
-    color: #475569; /* Màu chữ xám đậm nhẹ */
-    font-weight: 600;
-    font-size: 0.875rem;
-    text-align: center;
-    padding: 16px 12px;
-    border: 1px solid #e2e8f0; /* Border nhẹ hơn */
-    border-bottom: 2px solid #cbd5e1; /* Border bottom nhẹ hơn */
-    text-shadow: none; /* Bỏ text shadow */
-    letter-spacing: 0.3px; /* Giảm letter spacing */
-    white-space: nowrap;
-    position: relative;
-}
-
-/* Header hover effect - SOFTER */
-.table.table-bordered thead th:hover {
-    background: rgba(148, 163, 184, 0.1); /* Hover nhẹ hơn */
-    transition: background 0.3s ease;
-}
-
-/* Sortable header styling */
-.table.table-bordered thead th.sortable {
-    cursor: pointer;
-    user-select: none;
-    transition: all 0.3s ease;
-}
-
-.table.table-bordered thead th.sortable:hover {
-    background: rgba(148, 163, 184, 0.15); /* Hover nhẹ hơn */
-    transform: translateY(-1px);
-}
-
-/* Sort indicators */
-.sort-indicator::after {
-    content: '';
-    display: inline-block;
-    width: 0;
-    height: 0;
-    margin-left: 6px;
-    vertical-align: middle;
-    border-left: 4px solid transparent;
-    border-right: 4px solid transparent;
-    opacity: 0.5;
-}
-
-.sort-asc .sort-indicator::after {
-    border-bottom: 4px solid #64748b; /* Màu xám nhẹ */
-    opacity: 0.8;
-}
-
-.sort-desc .sort-indicator::after {
-    border-top: 4px solid #64748b; /* Màu xám nhẹ */
-    opacity: 0.8;
-}
-
-/* Body cells styling */
-.table.table-bordered tbody td {
-    padding: 12px;
-    border: 1px solid #f1f5f9; /* Border rất nhẹ */
-    background: #ffffff;
-    font-size: 0.875rem;
-    vertical-align: middle;
-    white-space: nowrap;
-    transition: all 0.2s ease;
-}
-
-/* Row hover effects - SOFTER */
-.table.table-bordered tbody tr {
-    transition: all 0.2s ease;
-}
-
-.table.table-bordered tbody tr:hover {
-    background: linear-gradient(90deg, #f8fafc 0%, #f1f5f9 100%); /* Background nhẹ hơn */
-    transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04); /* Shadow rất nhẹ */
-}
-
-.table.table-bordered tbody tr:hover td {
-    border-color: #e2e8f0; /* Border nhẹ hơn khi hover */
-}
-
-/* Alternating row colors - SOFTER */
-.table.table-bordered tbody tr:nth-child(even) {
-    background: linear-gradient(90deg, #fafbfc 0%, #f8fafc 100%); /* Background rất nhẹ */
-}
-
-.table.table-bordered tbody tr:nth-child(odd) {
-    background: #ffffff;
-}
-
-/* STICKY COLUMNS - SOFT PROFESSIONAL DESIGN */
-
-/* First column (No) - SOFT PURPLE */
-.table.table-bordered th:nth-child(1),
-.table.table-bordered td:nth-child(1) {
-    position: sticky;
-    left: 0;
-    background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%); /* Tím nhẹ */
-    color: #4338ca; /* Tím đậm nhẹ */
-    font-weight: 600;
-    text-align: center;
-    z-index: 5;
-    border-right: 2px solid rgba(99, 102, 241, 0.2); /* Border tím nhẹ */
-    width: 60px;
-    min-width: 60px;
-    max-width: 60px;
-}
-
-.table.table-bordered tbody td:nth-child(1) {
-    background: linear-gradient(135deg, #ddd6fe 0%, #c4b5fd 100%); /* Tím nhẹ hơn */
-    color: #5b21b6; /* Tím đậm nhẹ */
-    font-weight: 600;
-    text-shadow: none;
-}
-
-/* Second column (操作) - SOFT GREEN */
-.table.table-bordered th:nth-child(2),
-.table.table-bordered td:nth-child(2) {
-    position: sticky;
-    left: 60px;
-    background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%); /* Xanh lá nhẹ */
-    color: #166534; /* Xanh lá đậm nhẹ */
-    z-index: 5;
-    border-right: 2px solid rgba(34, 197, 94, 0.2); /* Border xanh nhẹ */
-    width: 120px;
-    min-width: 120px;
-    max-width: 120px;
-    text-align: center;
-}
-
-.table.table-bordered tbody td:nth-child(2) {
-    background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%); /* Xanh lá nhẹ hơn */
-    padding: 8px;
-}
-
-/* Third column - SOFT BLUE */
-.table.table-bordered th:nth-child(3),
-.table.table-bordered td:nth-child(3) {
-    position: sticky;
-    left: 180px;
-    background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%); /* Xanh dương nhẹ */
-    color: #1e40af; /* Xanh dương đậm nhẹ */
-    z-index: 5;
-    border-right: 2px solid rgba(59, 130, 246, 0.2); /* Border xanh nhẹ */
-    width: 150px;
-    min-width: 150px;
-    max-width: 150px;
-}
-
-.table.table-bordered tbody td:nth-child(3) {
-    background: linear-gradient(135deg, #bfdbfe 0%, #93c5fd 100%); /* Xanh dương nhẹ hơn */
-    color: #1e3a8a; /* Xanh dương đậm nhẹ */
-    font-weight: 500;
-}
-
-/* Fourth column - SOFT ORANGE */
-.table.table-bordered th:nth-child(4),
-.table.table-bordered td:nth-child(4) {
-    position: sticky;
-    left: 330px;
-    background: linear-gradient(135deg, #fed7aa 0%, #fdba74 100%); /* Cam nhẹ */
-    color: #c2410c; /* Cam đậm nhẹ */
-    z-index: 5;
-    border-right: 3px solid rgba(249, 115, 22, 0.2); /* Border cam nhẹ */
-    width: 200px;
-    min-width: 200px;
-    max-width: 200px;
-}
-
-.table.table-bordered tbody td:nth-child(4) {
-    background: linear-gradient(135deg, #fdba74 0%, #fb923c 100%); /* Cam nhẹ hơn */
-    color: #9a3412; /* Cam đậm nhẹ */
-    font-weight: 500;
-}
-
-/* Ensure sticky headers have higher z-index */
-.table.table-bordered thead th:nth-child(-n+4) {
-    z-index: 10;
-}
-
-/* ACTION BUTTONS SOFT PROFESSIONAL DESIGN */
-.action-buttons {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 6px;
-    padding: 4px 0;
-}
-
-.action-buttons .btn {
-    padding: 6px 8px;
-    font-size: 14px;
-    border: none;
-    border-radius: 6px;
-    min-width: 32px;
-    height: 32px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.3s ease;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08); /* Shadow nhẹ hơn */
-    position: relative;
-    overflow: hidden;
-}
-
-.action-buttons .btn::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent); /* Hiệu ứng nhẹ hơn */
-    transition: left 0.5s;
-}
-
-.action-buttons .btn:hover::before {
-    left: 100%;
-}
-
-.action-buttons .btn:hover {
-    transform: translateY(-1px) scale(1.03); /* Scale nhẹ hơn */
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12); /* Shadow nhẹ hơn */
-}
-
-/* SOFT ACTION BUTTON COLORS */
+/* Action button colors - very compact */
 .btn-edit { 
-    background: linear-gradient(135deg, #bfdbfe 0%, #93c5fd 100%); /* Xanh dương nhẹ */
+    background: linear-gradient(135deg, #bfdbfe 0%, #93c5fd 100%);
     color: #1e40af;
 }
 
 .btn-mail { 
-    background: linear-gradient(135deg, #a5f3fc 0%, #67e8f9 100%); /* Xanh cyan nhẹ */
+    background: linear-gradient(135deg, #a5f3fc 0%, #67e8f9 100%);
     color: #0e7490;
 }
 
 .btn-copy { 
-    background: linear-gradient(135deg, #bbf7d0 0%, #86efac 100%); /* Xanh lá nhẹ */
+    background: linear-gradient(135deg, #bbf7d0 0%, #86efac 100%);
     color: #166534;
 }
 
@@ -1464,170 +623,128 @@ textarea[name="備考"] {
     color: #14532d;
 }
 
-/* HIGHLIGHTING EFFECTS - SOFT ENHANCED */
-.table.table-bordered .past-date { 
-    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%) !important; /* Vàng nhẹ */
-    color: #92400e !important;
-    font-weight: 500; /* Giảm font weight */
+.btn-professional::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    transition: left 0.5s;
+}
+
+.btn-professional:hover::before {
+    left: 100%;
+}
+
+.btn-professional:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+}
+
+.action-buttons .btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s;
+}
+
+.action-buttons .btn:hover::before {
+    left: 100%;
+}
+
+.action-buttons .btn:hover {
+    transform: translateY(-1px) scale(1.02);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.12);
+}
+
+/* Dropdown Styles - compact */
+.dropdown {
     position: relative;
 }
 
-.table.table-bordered .past-date::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    width: 3px; /* Giảm width */
-    background: linear-gradient(180deg, #f59e0b 0%, #d97706 100%);
-    opacity: 0.7; /* Thêm opacity */
+.dropdown-menu {
+    font-size: 0.7rem; /* Giảm font size */
+    border-radius: 4px;
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.15);
+    min-width: 130px; /* Giảm width */
+    z-index: 1050;
+    border: 1px solid #dee2e6;
+    background-color: white;
+    position: absolute !important;
+    top: 100% !important;
+    left: 0 !important;
+    margin-top: 1px;
 }
 
-.table.table-bordered .highlight-date { 
-    background: linear-gradient(135deg, #fef08a 0%, #facc15 100%) !important; /* Vàng đậm nhẹ */
-    color: #a16207 !important;
-    font-weight: 600; /* Giảm font weight */
-    position: relative;
-    animation: softPulse 3s infinite; /* Animation chậm hơn */
+.dropdown.show .dropdown-menu {
+    display: block !important;
+    position: absolute !important;
+    top: 100% !important;
+    left: 0 !important;
+    z-index: 1060 !important;
 }
 
-.table.table-bordered .highlight-date::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    width: 3px; /* Giảm width */
-    background: linear-gradient(180deg, #eab308 0%, #ca8a04 100%);
-    opacity: 0.8; /* Thêm opacity */
+.dropdown-item {
+    padding: 6px 10px; /* Giảm padding */
+    color: #495057;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: background-color 0.2s;
+    font-size: 0.7rem;
 }
 
-.table.table-bordered .fb-late { 
-    background: linear-gradient(135deg, #fecaca 0%, #fca5a5 100%) !important; /* Đỏ nhẹ hơn */
-    color: #7f1d1d !important;
-    font-weight: 600; /* Giảm font weight */
-    position: relative;
-    animation: softPulse 3s infinite; /* Animation chậm hơn */
+.dropdown-item:hover {
+    background-color: #f8f9fa;
+    color: #212529;
 }
 
-.table.table-bordered .fb-late::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    width: 3px; /* Giảm width */
-    background: linear-gradient(180deg, #ef4444 0%, #dc2626 100%);
-    opacity: 0.7; /* Thêm opacity */
+.dropdown-item i {
+    width: 14px; /* Giảm size */
+    text-align: center;
+    font-size: 0.8rem;
 }
 
-/* SOFT ANIMATIONS */
-@keyframes softPulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.85; } /* Opacity nhẹ hơn */
+.dropdown-toggle::after {
+    margin-left: 0.2em;
+    vertical-align: 0.2em;
+    border-top: 0.25em solid;
+    border-right: 0.25em solid transparent;
+    border-bottom: 0;
+    border-left: 0.25em solid transparent;
 }
 
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(5px); } /* Giảm translateY */
-    to { opacity: 1; transform: translateY(0); }
+.dropdown-toggle:empty::after {
+    margin-left: 0;
 }
 
-.table.table-bordered tbody tr {
-    animation: fadeIn 0.4s ease-out; /* Animation chậm hơn */
+/* Navbar Overrides */
+.navbar,
+.navbar .d-flex,
+.navbar .navbar-nav {
+    overflow: visible !important;
 }
 
-/* SOFT SCROLLBAR STYLING */
-.custom-table-container::-webkit-scrollbar {
-    width: 10px; /* Giảm width */
-    height: 10px; /* Giảm height */
-}
-
-.custom-table-container::-webkit-scrollbar-track {
-    background: #f8fafc; /* Background nhẹ hơn */
-    border-radius: 6px;
-}
-
-.custom-table-container::-webkit-scrollbar-thumb {
-    background: linear-gradient(135deg, #cbd5e1 0%, #94a3b8 100%); /* Xám nhẹ */
-    border-radius: 6px;
-    border: 2px solid #f8fafc;
-}
-
-.custom-table-container::-webkit-scrollbar-thumb:hover {
-    background: linear-gradient(135deg, #94a3b8 0%, #64748b 100%); /* Xám đậm nhẹ */
-}
-
-.custom-table-container::-webkit-scrollbar-corner {
-    background: #f8fafc;
-}
-
-/* SOFT PROFESSIONAL SHADOWS AND DEPTH */
-.table.table-bordered thead {
-    box-shadow: 
-        0 1px 4px rgba(0, 0, 0, 0.06), /* Shadow nhẹ hơn */
-        0 2px 8px rgba(0, 0, 0, 0.03);
-}
-
-.table.table-bordered tbody tr:hover {
-    box-shadow: 
-        0 1px 4px rgba(0, 0, 0, 0.04), /* Shadow nhẹ hơn */
-        0 2px 8px rgba(0, 0, 0, 0.02);
-}
-
-/* SOFT STICKY COLUMN BORDERS */
-.table.table-bordered th:nth-child(1),
-.table.table-bordered td:nth-child(1) {
-    border-right: 2px solid rgba(99, 102, 241, 0.2); /* Border nhẹ hơn */
-    box-shadow: 1px 0 3px rgba(0, 0, 0, 0.05); /* Shadow nhẹ hơn */
-}
-
-.table.table-bordered th:nth-child(2),
-.table.table-bordered td:nth-child(2) {
-    border-right: 2px solid rgba(34, 197, 94, 0.2); /* Border nhẹ hơn */
-    box-shadow: 1px 0 3px rgba(0, 0, 0, 0.05); /* Shadow nhẹ hơn */
-}
-
-.table.table-bordered th:nth-child(3),
-.table.table-bordered td:nth-child(3) {
-    border-right: 2px solid rgba(59, 130, 246, 0.2); /* Border nhẹ hơn */
-    box-shadow: 1px 0 3px rgba(0, 0, 0, 0.05); /* Shadow nhẹ hơn */
-}
-
-.table.table-bordered th:nth-child(4),
-.table.table-bordered td:nth-child(4) {
-    border-right: 2px solid rgba(249, 115, 22, 0.2); /* Border nhẹ hơn */
-    box-shadow: 2px 0 4px rgba(0, 0, 0, 0.06); /* Shadow nhẹ hơn */
-}
-
-/* RESPONSIVE ENHANCEMENTS - MAINTAIN SOFT COLORS */
-@media (max-width: 1200px) {
+/* Responsive Design - VERY COMPACT */
+@media (min-width: 1200px) {
+    .btn-professional {
+        min-width: 75px;
+        padding: 4px 10px;
+        font-size: 0.75rem;
+    }
+    
+    .btn-professional i {
+        font-size: 0.85rem;
+    }
+    
     .table.table-bordered {
         font-size: 0.8rem;
-    }
-    
-    .table.table-bordered th,
-    .table.table-bordered td {
-        padding: 10px 8px;
-    }
-    
-    .action-buttons .btn {
-        min-width: 28px;
-        height: 28px;
-        font-size: 12px;
-    }
-}
-
-@media (max-width: 768px) {
-    .custom-table-container {
-        height: 70vh;
-        width: 98vw;
-        margin: 10px auto;
-        border-radius: 8px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04); /* Shadow nhẹ hơn */
-    }
-    
-    .table.table-bordered {
-        font-size: 0.75rem;
     }
     
     .table.table-bordered th,
@@ -1635,16 +752,205 @@ textarea[name="備考"] {
         padding: 8px 6px;
     }
     
-    .table.table-bordered thead th {
-        padding: 12px 8px;
-        font-size: 0.8rem;
+    .custom-table-container {
+        height: calc(100vh - 130px); /* Điều chỉnh cho desktop */
     }
+}
+
+@media (max-width: 1199px) {
+    .btn-group-professional {
+        flex-wrap: wrap;
+        gap: 3px;
+    }
+    
+    .btn-professional {
+        min-width: 60px;
+        padding: 3px 6px;
+        font-size: 0.65rem;
+    }
+    
+    .btn-professional i {
+        font-size: 0.75rem;
+    }
+    
+    .custom-table-container {
+        height: calc(100vh - 135px); /* Điều chỉnh cho tablet */
+    }
+}
+
+@media (max-width: 768px) {
+    .container-fluid.mb-3 {
+        padding: 3px 8px;
+    }
+    
+    .header-controls {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px;
+        margin-bottom: 3px;
+    }
+    
+    .search-project-name {
+        width: 100%;
+        max-width: none;
+    }
+    
+    .btn-group-professional {
+        gap: 2px;
+        flex-wrap: wrap;
+    }
+    
+    .btn-professional {
+        padding: 3px 5px;
+        font-size: 0.6rem;
+        min-width: 50px;
+        height: 28px;
+    }
+    
+    .btn-professional i {
+        font-size: 0.7rem;
+    }
+    
+    .btn-professional span {
+        display: none;
+    }
+    
+    .table.table-bordered {
+        font-size: 0.65rem;
+    }
+    
+    .table.table-bordered th,
+    .table.table-bordered td {
+        padding: 4px 3px;
+        height: 35px;
+    }
+    
+    .table.table-bordered thead th {
+        padding: 6px 4px;
+        font-size: 0.7rem;
+        height: 40px;
+    }
+    
+    .action-buttons .btn {
+        min-width: 20px;
+        height: 20px;
+        font-size: 10px;
+    }
+    
+    .custom-table-container {
+        height: calc(100vh - 150px); /* Điều chỉnh cho mobile */
+        border-radius: 6px;
+    }
+}
+
+@media (max-width: 576px) {
+    .btn-group-professional {
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+    
+    .btn-professional {
+        min-width: 40px;
+        padding: 3px;
+        height: 26px;
+    }
+    
+    .custom-table-container {
+        height: calc(100vh - 160px); /* Điều chỉnh cho mobile nhỏ */
+    }
+}
+
+/* Modal Styles - compact */
+.modal-body {
+    max-height: 65vh;
+    overflow-y: auto;
+}
+
+.modal-header {
+    padding: 0.6rem 0.8rem;
+}
+
+.modal-footer {
+    padding: 0.4rem 0.8rem;
+}
+
+/* Form styles - very compact */
+.form-label {
+    font-size: 0.75rem;
+    margin-bottom: 0.2rem;
+}
+
+.form-control, 
+.form-check-input, 
+.form-select {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.4rem;
+}
+
+/* Badge and enhancements */
+.btn-professional .badge {
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    background: #dc3545;
+    color: white;
+    font-size: 0.55rem;
+    padding: 1px 3px;
+    border-radius: 6px;
+    min-width: 12px;
+    height: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Copy Mail Checkbox */
+#copyMailCheckbox:checked + .form-check-label {
+    color: #28a745;
+}
+
+/* SOFT PROFESSIONAL SHADOWS AND DEPTH */
+.table.table-bordered thead {
+    box-shadow: 
+        0 1px 3px rgba(0, 0, 0, 0.06),
+        0 1px 6px rgba(0, 0, 0, 0.03);
+}
+
+.table.table-bordered tbody tr:hover {
+    box-shadow: 
+        0 1px 3px rgba(0, 0, 0, 0.04),
+        0 1px 6px rgba(0, 0, 0, 0.02);
+}
+
+/* SOFT STICKY COLUMN BORDERS */
+.table.table-bordered th:nth-child(1),
+.table.table-bordered td:nth-child(1) {
+    border-right: 2px solid rgba(99, 102, 241, 0.2);
+    box-shadow: 1px 0 2px rgba(0, 0, 0, 0.05);
+}
+
+.table.table-bordered th:nth-child(2),
+.table.table-bordered td:nth-child(2) {
+    border-right: 2px solid rgba(34, 197, 94, 0.2);
+    box-shadow: 1px 0 2px rgba(0, 0, 0, 0.05);
+}
+
+.table.table-bordered th:nth-child(3),
+.table.table-bordered td:nth-child(3) {
+    border-right: 2px solid rgba(59, 130, 246, 0.2);
+    box-shadow: 1px 0 2px rgba(0, 0, 0, 0.05);
+}
+
+.table.table-bordered th:nth-child(4),
+.table.table-bordered td:nth-child(4) {
+    border-right: 2px solid rgba(249, 115, 22, 0.2);
+    box-shadow: 1px 0 3px rgba(0, 0, 0, 0.06);
 }
 
 /* LOADING STATES - SOFT */
 .table-loading {
     position: relative;
-    opacity: 0.7; /* Opacity nhẹ hơn */
+    opacity: 0.7;
     pointer-events: none;
 }
 
@@ -1653,19 +959,395 @@ textarea[name="備考"] {
     position: absolute;
     top: 50%;
     left: 50%;
-    width: 32px; /* Giảm size */
-    height: 32px; /* Giảm size */
-    margin: -16px 0 0 -16px;
-    border: 3px solid #f1f5f9; /* Border nhẹ hơn */
-    border-top: 3px solid #94a3b8; /* Color nhẹ hơn */
+    width: 28px; /* Giảm size */
+    height: 28px;
+    margin: -14px 0 0 -14px;
+    border: 2px solid #f1f5f9;
+    border-top: 2px solid #94a3b8;
     border-radius: 50%;
-    animation: softSpin 1.5s linear infinite; /* Animation chậm hơn */
+    animation: softSpin 1.5s linear infinite;
 }
 
 @keyframes softSpin {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
 }
+/* Table styling - increased font size by 20% */
+.table.table-bordered {
+    font-size: 0.9rem; /* Tăng từ 0.75rem lên 0.9rem (+20%) */
+    width: 100%;
+    min-width: 2000px;
+    border-collapse: separate;
+    border-spacing: 0;
+    margin: 0;
+    background: #ffffff;
+}
+
+/* Header styling - increased font size */
+.table.table-bordered thead th {
+    background: transparent;
+    color: #475569;
+    font-weight: 600;
+    font-size: 0.9rem; /* Tăng từ 0.75rem lên 0.9rem (+20%) */
+    text-align: center;
+    padding: 10px 8px; /* Tăng padding một chút để cân bằng */
+    border: 1px solid #e2e8f0;
+    border-bottom: 2px solid #cbd5e1;
+    text-shadow: none;
+    letter-spacing: 0.2px;
+    white-space: nowrap;
+    position: relative;
+    height: 50px; /* Tăng height để chứa font lớn hơn */
+}
+
+/* Body cells - increased font size */
+.table.table-bordered tbody td {
+    padding: 8px 6px; /* Tăng padding một chút */
+    border: 1px solid #f1f5f9;
+    background: #ffffff;
+    font-size: 0.9rem; /* Tăng từ 0.75rem lên 0.9rem (+20%) */
+    vertical-align: middle;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+    height: 45px; /* Tăng height để chứa font lớn hơn */
+}
+
+/* Action buttons - increased font size */
+.action-buttons .btn {
+    padding: 4px 6px; /* Tăng padding một chút */
+    font-size: 13px; /* Tăng từ 11px lên 13px (+18%) */
+    border: none;
+    border-radius: 4px;
+    min-width: 28px; /* Tăng width */
+    height: 28px; /* Tăng height */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+    position: relative;
+    overflow: hidden;
+}
+
+/* Navbar buttons - increased font size */
+.btn-professional {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    padding: 5px 10px; /* Tăng padding */
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    font-size: 0.84rem; /* Tăng từ 0.7rem lên 0.84rem (+20%) */
+    font-weight: 500;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    min-width: 80px; /* Tăng min-width */
+    white-space: nowrap;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+    flex-shrink: 0;
+    height: 36px; /* Tăng height */
+}
+
+.btn-professional i {
+    font-size: 0.96rem; /* Tăng từ 0.8rem lên 0.96rem (+20%) */
+}
+
+/* Search controls - increased font size */
+.input-group {
+    font-size: 0.96rem; /* Tăng từ 0.8rem lên 0.96rem (+20%) */
+    height: 40px; /* Tăng height */
+}
+
+.input-group-text {
+    padding: 0.3rem 0.6rem; /* Tăng padding */
+    font-size: 0.96rem; /* Tăng từ 0.8rem lên 0.96rem (+20%) */
+}
+
+.form-control {
+    padding: 0.3rem 0.6rem; /* Tăng padding */
+    font-size: 0.96rem; /* Tăng từ 0.8rem lên 0.96rem (+20%) */
+    height: 40px; /* Tăng height */
+}
+
+.form-check-label {
+    font-size: 0.96rem; /* Tăng từ 0.8rem lên 0.96rem (+20%) */
+}
+
+/* Header controls - adjust height */
+.container-fluid.mb-3 {
+    background-color: #f8f9fa;
+    padding: 8px 12px; /* Tăng padding */
+    border-bottom: 1px solid #dee2e6;
+    flex: 0 0 auto;
+    margin-bottom: 0 !important;
+    min-height: 60px; /* Tăng height để chứa các element lớn hơn */
+}
+
+/* Table container - adjust calculated height */
+.custom-table-container {
+    flex: 1 1 auto;
+    width: 100%;
+    height: calc(100vh - 150px); /* Điều chỉnh để bù cho height tăng */
+    max-height: calc(100vh - 150px);
+    overflow-y: auto;
+    overflow-x: auto;
+    background: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    border: 1px solid #f0f0f0;
+    position: relative;
+}
+
+/* Sort indicators - scale with font size */
+.sort-indicator::after {
+    content: '';
+    display: inline-block;
+    width: 0;
+    height: 0;
+    margin-left: 5px; /* Tăng margin */
+    vertical-align: middle;
+    border-left: 4px solid transparent; /* Tăng size */
+    border-right: 4px solid transparent;
+    opacity: 0.5;
+}
+
+.sort-asc .sort-indicator::after {
+    border-bottom: 4px solid #64748b; /* Tăng size */
+    opacity: 0.8;
+}
+
+.sort-desc .sort-indicator::after {
+    border-top: 4px solid #64748b; /* Tăng size */
+    opacity: 0.8;
+}
+
+/* Modal form elements - increased font size */
+.form-label {
+    font-size: 0.9rem; /* Tăng từ 0.75rem lên 0.9rem (+20%) */
+    margin-bottom: 0.3rem;
+}
+
+.modal .form-control, 
+.modal .form-check-input, 
+.modal .form-select {
+    font-size: 0.9rem; /* Tăng từ 0.75rem lên 0.9rem (+20%) */
+    padding: 0.35rem 0.5rem; /* Tăng padding */
+}
+
+/* Dropdown menu - increased font size */
+.dropdown-menu {
+    font-size: 0.84rem; /* Tăng từ 0.7rem lên 0.84rem (+20%) */
+    border-radius: 4px;
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.15);
+    min-width: 150px; /* Tăng width */
+    z-index: 1050;
+    border: 1px solid #dee2e6;
+    background-color: white;
+    position: absolute !important;
+    top: 100% !important;
+    left: 0 !important;
+    margin-top: 1px;
+}
+
+.dropdown-item {
+    padding: 8px 12px; /* Tăng padding */
+    color: #495057;
+    display: flex;
+    align-items: center;
+    gap: 8px; /* Tăng gap */
+    transition: background-color 0.2s;
+    font-size: 0.84rem; /* Tăng từ 0.7rem lên 0.84rem (+20%) */
+}
+
+.dropdown-item i {
+    width: 16px; /* Tăng size */
+    text-align: center;
+    font-size: 0.96rem; /* Tăng từ 0.8rem lên 0.96rem (+20%) */
+}
+
+/* Badge - increased font size */
+.btn-professional .badge {
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    background: #dc3545;
+    color: white;
+    font-size: 0.66rem; /* Tăng từ 0.55rem lên 0.66rem (+20%) */
+    padding: 2px 4px; /* Tăng padding */
+    border-radius: 6px;
+    min-width: 14px; /* Tăng width */
+    height: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Responsive Design - UPDATE WITH INCREASED FONT SIZES */
+@media (min-width: 1200px) {
+    .btn-professional {
+        min-width: 90px; /* Tăng width */
+        padding: 5px 12px;
+        font-size: 0.9rem; /* Tăng từ 0.75rem lên 0.9rem (+20%) */
+    }
+    
+    .btn-professional i {
+        font-size: 1.02rem; /* Tăng từ 0.85rem lên 1.02rem (+20%) */
+    }
+    
+    .table.table-bordered {
+        font-size: 1.02rem; /* Tăng từ 0.85rem lên 1.02rem (+20%) */
+    }
+    
+    .table.table-bordered th,
+    .table.table-bordered td {
+        padding: 12px 8px; /* Tăng padding */
+    }
+    
+    .custom-table-container {
+        height: calc(100vh - 140px); /* Điều chỉnh cho desktop */
+    }
+}
+
+@media (max-width: 1199px) {
+    .btn-group-professional {
+        flex-wrap: wrap;
+        gap: 4px; /* Tăng gap */
+    }
+    
+    .btn-professional {
+        min-width: 72px; /* Tăng width */
+        padding: 4px 8px; /* Tăng padding */
+        font-size: 0.78rem; /* Tăng từ 0.65rem lên 0.78rem (+20%) */
+    }
+    
+    .btn-professional i {
+        font-size: 0.9rem; /* Tăng từ 0.75rem lên 0.9rem (+20%) */
+    }
+    
+    .custom-table-container {
+        height: calc(100vh - 145px); /* Điều chỉnh cho tablet */
+    }
+}
+
+@media (max-width: 768px) {
+    .container-fluid.mb-3 {
+        padding: 6px 10px; /* Tăng padding */
+    }
+    
+    .header-controls {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px; /* Tăng gap */
+        margin-bottom: 5px;
+    }
+    
+    .search-project-name {
+        width: 100%;
+        max-width: none;
+    }
+    
+    .btn-group-professional {
+        gap: 3px; /* Tăng gap */
+        flex-wrap: wrap;
+    }
+    
+    .btn-professional {
+        padding: 4px 6px;
+        font-size: 0.72rem; /* Tăng từ 0.6rem lên 0.72rem (+20%) */
+        min-width: 60px; /* Tăng width */
+        height: 32px; /* Tăng height */
+    }
+    
+    .btn-professional i {
+        font-size: 0.84rem; /* Tăng từ 0.7rem lên 0.84rem (+20%) */
+    }
+    
+    .btn-professional span {
+        display: none;
+    }
+    
+    .table.table-bordered {
+        font-size: 0.78rem; /* Tăng từ 0.65rem lên 0.78rem (+20%) */
+    }
+    
+    .table.table-bordered th,
+    .table.table-bordered td {
+        padding: 6px 4px; /* Tăng padding */
+        height: 40px; /* Tăng height */
+    }
+    
+    .table.table-bordered thead th {
+        padding: 8px 6px; /* Tăng padding */
+        font-size: 0.84rem; /* Tăng từ 0.7rem lên 0.84rem (+20%) */
+        height: 45px; /* Tăng height */
+    }
+    
+    .action-buttons .btn {
+        min-width: 24px; /* Tăng width */
+        height: 24px;
+        font-size: 12px; /* Tăng từ 10px lên 12px (+20%) */
+    }
+    
+    .custom-table-container {
+        height: calc(100vh - 160px); /* Điều chỉnh cho mobile */
+        border-radius: 6px;
+    }
+}
+
+@media (max-width: 576px) {
+    .btn-group-professional {
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+    
+    .btn-professional {
+        min-width: 48px; /* Tăng width */
+        padding: 4px;
+        height: 30px; /* Tăng height */
+    }
+    
+    .custom-table-container {
+        height: calc(100vh - 170px); /* Điều chỉnh cho mobile nhỏ */
+    }
+}
+
+/* Modal header/footer - increased font size */
+.modal-header {
+    padding: 0.8rem 1rem; /* Tăng padding */
+}
+
+.modal-footer {
+    padding: 0.6rem 1rem; /* Tăng padding */
+}
+
+.modal-title {
+    font-size: 1.2rem; /* Tăng font size cho title */
+}
+
+/* Button trong modal - increased font size */
+.modal .btn {
+    font-size: 0.9rem; /* Tăng font size */
+    padding: 0.5rem 1rem; /* Tăng padding */
+}
+
+/* Loading spinner - scale với font size */
+.table-loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 32px; /* Tăng size */
+    height: 32px;
+    margin: -16px 0 0 -16px;
+    border: 3px solid #f1f5f9;
+    border-top: 3px solid #94a3b8;
+    border-radius: 50%;
+    animation: softSpin 1.5s linear infinite;
+}
+
 {% endblock %}
 
 {% block navbar_content %}
