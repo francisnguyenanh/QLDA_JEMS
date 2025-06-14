@@ -3197,13 +3197,13 @@ def auto_create_todos_for_week():
                     # Determine end date for daily todos
                     if design_end_str and isinstance(design_end_str, str) and design_end_str.strip():
                         try:
-                            design_end_date = parse_date(design_end_str)
+                            design_end_date = parse_date(design_end_str) - timedelta(days=1)  # End date - 1
                         except ValueError:
                             design_end_date = design_start_date  # Only create for start date if end date is invalid
                     else:
                         design_end_date = design_start_date  # Only create for start date if no end date
                     
-                    # Create daily todos from start to end date
+                    # Create daily todos from start to end date - 1
                     current_date = design_start_date
                     while current_date <= design_end_date:
                         # Only create if the date falls within current week
@@ -3217,8 +3217,8 @@ def auto_create_todos_for_week():
                             # Different title format for daily design work
                             if current_date == design_start_date:
                                 todo_title = f"[設計開始] {project_name}{ph_text}"
-                            elif current_date == design_end_date and design_start_date != design_end_date:
-                                todo_title = f"[設計完了] {project_name}{ph_text}"
+                            elif current_date == design_end_date:
+                                todo_title = f"[設計中] {project_name}{ph_text}"  # Changed to 設計中 since it's not the actual end
                             else:
                                 todo_title = f"[設計中] {project_name}{ph_text}"
                             
@@ -3230,8 +3230,6 @@ def auto_create_todos_for_week():
                             # Set priority based on task type
                             if current_date == design_start_date:
                                 priority = 'medium'  # Start
-                            elif current_date == design_end_date and design_start_date != design_end_date:
-                                priority = 'high'   # End
                             else:
                                 priority = 'low'  # Daily work
                             
