@@ -105,9 +105,6 @@ body {
 }
 
 /* === TITLE INPUT STYLING === */
-.mb-3:first-of-type {
-    margin-bottom: 1.5rem !important;
-}
 
 .mb-3:first-of-type .form-label {
     color: #374151;
@@ -120,7 +117,6 @@ body {
     background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
     border: 2px solid #e2e8f0;
     border-radius: 8px;
-    padding: 0.75rem 1rem;
     font-size: 1rem;
     font-weight: 500;
     color: #1e293b;
@@ -150,18 +146,6 @@ body {
     flex-direction: column;
     min-height: 0;
     padding: 0;
-}
-
-/* === SETTINGS CONTROLS STYLING === */
-.d-flex.align-items-center.gap-3.mb-2 {
-    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-    border: 1px solid #e2e8f0;
-    border-radius: 8px;
-    padding: 1rem 1.5rem;
-    margin-bottom: 1rem !important;
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
-    flex-wrap: wrap;
-    gap: 1rem !important;
 }
 
 /* === CHECKBOX STYLING === */
@@ -497,13 +481,106 @@ body {
         background: white !important;
     }
 }
+
+.d-flex.justify-content-between.align-items-center.mb-4 {
+    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    margin-bottom: 1.5rem !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    backdrop-filter: blur(10px);
+    gap: 1rem;
+}
+
+/* Controls styling for header */
+.d-flex.justify-content-between.align-items-center.mb-4 .d-flex.align-items-center.gap-3 {
+    background: none;
+    border: none;
+    padding: 0;
+    margin-bottom: 0 !important;
+    box-shadow: none;
+    flex-wrap: wrap;
+    gap: 1rem !important;
+}
+/* Enhanced responsive design */
+@media (max-width: 992px) {
+    .d-flex.justify-content-between.align-items-center.mb-4 {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+    
+    .d-flex.justify-content-between.align-items-center.mb-4 .d-flex.align-items-center.gap-3 {
+        width: 100%;
+        justify-content: flex-start;
+        flex-wrap: wrap;
+    }
+}
+
+@media (max-width: 768px) {
+    .d-flex.justify-content-between.align-items-center.mb-4 {
+        padding: 1rem;
+    }
+    
+    .btn-group {
+        width: 100%;
+        margin-bottom: 0.5rem;
+    }
+    
+    .d-flex.align-items-center.gap-3 {
+        flex-direction: column;
+        align-items: flex-start !important;
+        gap: 0.75rem !important;
+        width: 100%;
+    }
+    
+    .d-flex.align-items-center.gap-2 {
+        width: 100%;
+        justify-content: space-between;
+    }
+    
+    .form-select.form-select-sm {
+        width: 150px !important;
+    }
+}
+
+@media (max-width: 576px) {
+    .d-flex.align-items-center.gap-3 label:first-child {
+        font-size: 11px !important;
+    }
+    
+    .form-check-label,
+    .d-flex.align-items-center.gap-2 .form-label {
+        font-size: 11px !important;
+    }
+    
+    .form-select.form-select-sm {
+        width: 120px !important;
+        font-size: 0.75rem;
+    }
+    
+    .auto-save-indicator {
+        font-size: 0.7rem;
+    }
+}
+
+/* Responsive cho mobile */
+@media (max-width: 768px) {
+    .col-12 {
+        margin-bottom: 15px;
+    }
+}
+
 {% endblock %}
 
 
 {% block content %}
 <div class="container-fluid">
-    <!-- Header với buttons - tham khảo memo.html -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <!-- Header với buttons và controls cùng hàng -->
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap">
         <div class="btn-group">
             <a href="{{ url_for('editor_list') }}" class="btn btn-outline-secondary">
                 <i class="bi bi-arrow-left"></i> 戻る
@@ -512,42 +589,41 @@ body {
                 <i class="bi bi-save"></i> 保存
             </button>
         </div>
+        
+        <!-- Controls moved to same row -->
+        <div class="d-flex align-items-center gap-3">
+            <label for="enableNumbering" class="form-check-label" style="font-size: 12px;"><strong>Auto save when the title is not blank!</strong></label>
+            <div class="form-check">
+                <input type="checkbox" id="enableNumbering" class="form-check-input" checked>
+                <label for="enableNumbering" class="form-check-label" style="font-size: 12px;">Enable auto numbering</label>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <label for="tabSkipCount" class="form-label mb-0" style="font-size: 12px; white-space: nowrap;">Tab skip count:</label>
+                <select id="tabSkipCount" class="form-select form-select-sm" style="width: 200px;">
+                    <option value="0">0 (immediate numbering)</option>
+                    <option value="1" selected>1 (skip first tab)</option>
+                    <option value="2">2 (skip first 2 tabs)</option>
+                    <option value="3">3 (skip first 3 tabs)</option>
+                    <option value="4">4 (skip first 4 tabs)</option>
+                    <option value="5">5 (skip first 5 tabs)</option>
+                </select>
+                <div class="auto-save-indicator" id="autoSaveIndicator">
+                    <i class="bi bi-check-circle"></i>
+                    <span>Auto-saved</span>
+                </div>
+            </div>
+        </div>
     </div>
     
     <form id="editorForm">
         <div class="mb-3">
-            <label for="title" class="form-label">タイトル</label>
             <input type="text" class="form-control" id="title" name="title" 
                    value="{{ document.title if document else '' }}" required>
         </div>
         
-        <!-- Content A và Tab Configuration nằm ngang hàng -->
+        <!-- Content area simplified -->
         <div class="row mb-3">
             <div class="col-12">               
-                <!-- Checkbox và Select trên cùng 1 hàng -->
-                <div class="d-flex align-items-center gap-3 mb-2">
-                    <label for="enableNumbering" class="form-check-label" style="font-size: 12px;"><strong>Auto save when the title is not blank!</strong></label>
-                    <div class="form-check">
-                        <input type="checkbox" id="enableNumbering" class="form-check-input" checked>
-                        <label for="enableNumbering" class="form-check-label" style="font-size: 12px;">Enable auto numbering</label>
-                    </div>
-                    <div class="d-flex align-items-center gap-2">
-                        <label for="tabSkipCount" class="form-label mb-0" style="font-size: 12px; white-space: nowrap;">Tab skip count:</label>
-                        <select id="tabSkipCount" class="form-select form-select-sm" style="width: 200px;">
-                            <option value="0">0 (immediate numbering)</option>
-                            <option value="1" selected>1 (skip first tab)</option>
-                            <option value="2">2 (skip first 2 tabs)</option>
-                            <option value="3">3 (skip first 3 tabs)</option>
-                            <option value="4">4 (skip first 4 tabs)</option>
-                            <option value="5">5 (skip first 5 tabs)</option>
-                        </select>
-                        <div class="auto-save-indicator" id="autoSaveIndicator">
-                            <i class="bi bi-check-circle"></i>
-                            <span>Auto-saved</span>
-                        </div>
-                    </div>
-                </div>
-                
                 <textarea class="form-control" id="editorContent" name="content" 
                 rows="20" style="font-family: monospace; font-size: 14px;" required>{{ document.content if document else '' }}</textarea>
             </div>
@@ -1432,7 +1508,6 @@ function loadDocument(documentId) {
         if (data.document) {
             document.getElementById('title').value = data.document.title;
             document.getElementById('editorContent').value = data.document.content;
-            document.querySelector('h2').textContent = 'Edit Document';
         } else {
             alert('Error: ' + (data.error || 'Document not found'));
         }
