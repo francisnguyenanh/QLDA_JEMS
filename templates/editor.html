@@ -20,6 +20,31 @@ body {
     -moz-osx-font-smoothing: grayscale;
 }
 
+/* === AUTO-SAVE ICON STYLES === */
+.auto-save-indicator {
+    display: inline-flex;
+    align-items: center;
+    margin-left: 10px;
+    font-size: 0.8rem;
+    color: #16a34a;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.auto-save-indicator.show {
+    opacity: 1;
+}
+
+.auto-save-indicator i {
+    margin-right: 4px;
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
 
 /* === TOOLBAR STYLING (Header with Buttons) === */
 .d-flex.justify-content-between.align-items-center.mb-4 {
@@ -371,6 +396,11 @@ body {
         font-size: 0.95rem;
         padding: 0.65rem 0.85rem;
     }
+
+    .auto-save-indicator {
+        margin-left: 5px;
+        font-size: 0.75rem;
+    }
 }
 
 @media (max-width: 576px) {
@@ -496,6 +526,7 @@ body {
             <div class="col-12">               
                 <!-- Checkbox và Select trên cùng 1 hàng -->
                 <div class="d-flex align-items-center gap-3 mb-2">
+                    <label for="enableNumbering" class="form-check-label" style="font-size: 12px;"><strong>Auto save when the title is not blank!</strong></label>
                     <div class="form-check">
                         <input type="checkbox" id="enableNumbering" class="form-check-input" checked>
                         <label for="enableNumbering" class="form-check-label" style="font-size: 12px;">Enable auto numbering</label>
@@ -510,6 +541,10 @@ body {
                             <option value="4">4 (skip first 4 tabs)</option>
                             <option value="5">5 (skip first 5 tabs)</option>
                         </select>
+                        <div class="auto-save-indicator" id="autoSaveIndicator">
+                            <i class="bi bi-check-circle"></i>
+                            <span>Auto-saved</span>
+                        </div>
                     </div>
                 </div>
                 
@@ -556,14 +591,122 @@ body {
 document.addEventListener('DOMContentLoaded', function() {
     const textarea = document.getElementById('editorContent');
     const form = document.getElementById('editorForm');
+    const titleInput = document.getElementById('title');
+    const autoSaveIndicator = document.getElementById('autoSaveIndicator');
+    
     let currentLineIndent = 0;
     let lastLineIndex = -1;
     let currentTabCount = 0; // Track current tab count for the line
+    let autoSaveTimer = null;
+    let lastSavedTitle = '';
+    let lastSavedContent = '';
+    let isAutoSaving = false;
 
     // Undo/Redo functionality
     let undoStack = [];
     let redoStack = [];
     const maxUndoSteps = 50; // Giới hạn số bước undo để tránh tốn bộ nhớ
+
+    // Auto-save functionality
+    function startAutoSave() {
+        if (autoSaveTimer) {
+            clearInterval(autoSaveTimer);
+        }
+        
+        autoSaveTimer = setInterval(() => {
+            const title = titleInput.value.trim();
+            const content = textarea.value.trim();
+            
+            // Check conditions: title must not be blank and content must have changed
+            if (title && 
+                !isAutoSaving && 
+                (title !== lastSavedTitle || content !== lastSavedContent)) {
+                performAutoSave();
+            }
+        }, 5000); // Auto-save every 5 seconds
+    }
+
+    function performAutoSave() {
+        const title = titleInput.value.trim();
+        const content = textarea.value.trim();
+        
+        if (!title) return;
+        
+        isAutoSaving = true;
+        
+        // Check if we're editing an existing document
+        const urlParams = new URLSearchParams(window.location.search);
+        const documentId = urlParams.get('id');
+        
+        const url = documentId ? `/api/editor_documents/${documentId}` : '/api/editor_documents';
+        const method = documentId ? 'PUT' : 'POST';
+        
+        fetch(url, {
+            method: method,
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ title, content })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                lastSavedTitle = title;
+                lastSavedContent = content;
+                showAutoSaveIndicator();
+                
+                // If it was a new document, update the URL to include the ID
+                if (!documentId && data.document_id) {
+                    const newUrl = window.location.pathname + '?id=' + data.document_id;
+                    window.history.replaceState(null, '', newUrl);
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Auto-save error:', error);
+        })
+        .finally(() => {
+            isAutoSaving = false;
+        });
+    }
+
+    function showAutoSaveIndicator() {
+        autoSaveIndicator.classList.add('show');
+        
+        // Hide the indicator after 3 seconds
+        setTimeout(() => {
+            autoSaveIndicator.classList.remove('show');
+        }, 3000);
+    }
+
+    // Initialize auto-save on page load
+    function initializeAutoSave() {
+        const title = titleInput.value.trim();
+        const content = textarea.value.trim();
+        lastSavedTitle = title;
+        lastSavedContent = content;
+        startAutoSave();
+    }
+
+    // Start auto-save when user starts typing in title or content
+    titleInput.addEventListener('input', function() {
+        if (!autoSaveTimer) {
+            startAutoSave();
+        }
+    });
+
+    textarea.addEventListener('input', function() {
+        if (!autoSaveTimer) {
+            startAutoSave();
+        }
+    });
+
+    // Clean up timer when page unloads
+    window.addEventListener('beforeunload', function() {
+        if (autoSaveTimer) {
+            clearInterval(autoSaveTimer);
+        }
+    });
 
     // Save state for undo
     function saveState() {
@@ -1200,6 +1343,9 @@ document.addEventListener('DOMContentLoaded', function() {
     if (documentId) {
         loadDocument(documentId);
     }
+
+    // Initialize auto-save
+    initializeAutoSave();
 });
 
 // Hàm save được gọi từ button
