@@ -19,6 +19,8 @@ import zipfile
 import tempfile
 from PIL import Image
 import io
+from dateutil.parser import parse as parse_date
+from dateutil.relativedelta import relativedelta
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -106,6 +108,24 @@ def init_db():
             FOREIGN KEY (project_id) REFERENCES projects(id)
         )
     ''')
+    
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS todos (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT NOT NULL,
+            date TEXT NOT NULL,
+            priority TEXT DEFAULT 'medium',
+            completed INTEGER DEFAULT 0,
+            repeat_type TEXT DEFAULT 'none',
+            repeat_interval INTEGER DEFAULT 1,
+            repeat_unit TEXT DEFAULT 'days',
+            end_date TEXT,
+            parent_id INTEGER,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (parent_id) REFERENCES todos(id)
+        )
+    ''')
+    
     cursor.execute("PRAGMA table_info(projects)")
     columns = [col[1] for col in cursor.fetchall()]
     if 'ステータス' not in columns:
@@ -2846,6 +2866,400 @@ def copy_project():
         logging.error(f"Error copying project: {str(e)}")
         return jsonify({'error': str(e)}), 500
     
+@app.route('/todo')
+def todo():
+    """Render TODO page."""
+    if 'username' not in session:
+        return redirect(url_for('login'))
+    return render_template('todo.html')
+
+# TODO API endpoints
+@app.route('/api/todos', methods=['GET'])
+def get_todos():
+    """Get todos for date range."""
+    if 'username' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    start_date = request.args.get('start_date')
+    end_date = request.args.get('end_date')
+    
+    if not start_date or not end_date:
+        return jsonify({'error': 'start_date and end_date are required'}), 400
+    
+    try:
+        conn = sqlite3.connect(DB_FILE)
+        cursor = conn.cursor()
+        cursor.execute('''
+            SELECT id, title, date, priority, completed, repeat_type, repeat_interval, 
+                   repeat_unit, end_date, parent_id, created_at
+            FROM todos 
+            WHERE date BETWEEN ? AND ?
+            ORDER BY date, priority DESC, created_at
+        ''', (start_date, end_date))
+        
+        todos = []
+        for row in cursor.fetchall():
+            todos.append({
+                'id': row[0],
+                'title': row[1],
+                'date': row[2],
+                'priority': row[3],
+                'completed': bool(row[4]),
+                'repeat_type': row[5],
+                'repeat_interval': row[6],
+                'repeat_unit': row[7],
+                'end_date': row[8],
+                'parent_id': row[9],
+                'created_at': row[10]
+            })
+        
+        conn.close()
+        return jsonify(todos)
+        
+    except Exception as e:
+        logging.error(f"Error fetching todos: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/todos', methods=['POST'])
+def create_todo():
+    """Create new todo(s) with repeat support."""
+    if 'username' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    data = request.get_json()
+    title = data.get('title', '').strip()
+    date = data.get('date')
+    priority = data.get('priority', 'medium')
+    repeat_type = data.get('repeat_type', 'none')
+    repeat_interval = data.get('repeat_interval', 1)
+    repeat_unit = data.get('repeat_unit', 'days')
+    end_date = data.get('end_date')
+    
+    if not title or not date:
+        return jsonify({'error': 'Title and date are required'}), 400
+    
+    try:
+        conn = sqlite3.connect(DB_FILE)
+        cursor = conn.cursor()
+        current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        
+        # Create main todo
+        cursor.execute('''
+            INSERT INTO todos (title, date, priority, repeat_type, repeat_interval, 
+                             repeat_unit, end_date, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (title, date, priority, repeat_type, repeat_interval, repeat_unit, end_date, current_time))
+        
+        parent_id = cursor.lastrowid
+        
+        # Create repeated todos if needed
+        if repeat_type != 'none' and end_date:
+            current_date = datetime.strptime(date, '%Y-%m-%d')
+            end_date_obj = datetime.strptime(end_date, '%Y-%m-%d')
+            
+            while True:
+                if repeat_type == 'daily':
+                    current_date += timedelta(days=repeat_interval)
+                elif repeat_type == 'weekly':
+                    current_date += timedelta(weeks=repeat_interval)
+                elif repeat_type == 'monthly':
+                    current_date += relativedelta(months=repeat_interval)
+                elif repeat_type == 'custom':
+                    if repeat_unit == 'days':
+                        current_date += timedelta(days=repeat_interval)
+                    elif repeat_unit == 'weeks':
+                        current_date += timedelta(weeks=repeat_interval)
+                    elif repeat_unit == 'months':
+                        current_date += relativedelta(months=repeat_interval)
+                
+                if current_date.date() > end_date_obj.date():
+                    break
+                
+                cursor.execute('''
+                    INSERT INTO todos (title, date, priority, repeat_type, repeat_interval,
+                                     repeat_unit, end_date, parent_id, created_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ''', (title, current_date.strftime('%Y-%m-%d'), priority, repeat_type, 
+                      repeat_interval, repeat_unit, end_date, parent_id, current_time))
+        
+        conn.commit()
+        conn.close()
+        return jsonify({'success': True, 'id': parent_id})
+        
+    except Exception as e:
+        logging.error(f"Error creating todo: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/todos/<int:todo_id>', methods=['PUT'])
+def update_todo(todo_id):
+    """Update todo."""
+    if 'username' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    data = request.get_json()
+    update_all = data.get('update_all', False)
+    
+    try:
+        conn = sqlite3.connect(DB_FILE)
+        cursor = conn.cursor()
+        
+        if update_all:
+            # Update all related todos
+            cursor.execute('SELECT parent_id FROM todos WHERE id = ?', (todo_id,))
+            row = cursor.fetchone()
+            parent_id = row[0] if row and row[0] else todo_id
+            
+            update_fields = []
+            values = []
+            for key, value in data.items():
+                if key not in ['update_all']:
+                    update_fields.append(f'{key} = ?')
+                    values.append(value)
+            
+            if update_fields:
+                query = f'''
+                    UPDATE todos SET {', '.join(update_fields)}
+                    WHERE parent_id = ? OR id = ?
+                '''
+                values.extend([parent_id, parent_id])
+                cursor.execute(query, values)
+        else:
+            # Update single todo
+            update_fields = []
+            values = []
+            for key, value in data.items():
+                if key not in ['update_all']:
+                    update_fields.append(f'{key} = ?')
+                    values.append(value)
+            
+            if update_fields:
+                query = f'UPDATE todos SET {", ".join(update_fields)} WHERE id = ?'
+                values.append(todo_id)
+                cursor.execute(query, values)
+        
+        conn.commit()
+        conn.close()
+        return jsonify({'success': True})
+        
+    except Exception as e:
+        logging.error(f"Error updating todo: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/todos/<int:todo_id>', methods=['DELETE'])
+def delete_todo(todo_id):
+    """Delete todo."""
+    if 'username' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    delete_all = request.args.get('delete_all', 'false').lower() == 'true'
+    
+    try:
+        conn = sqlite3.connect(DB_FILE)
+        cursor = conn.cursor()
+        
+        if delete_all:
+            # Delete all related todos
+            cursor.execute('SELECT parent_id FROM todos WHERE id = ?', (todo_id,))
+            row = cursor.fetchone()
+            parent_id = row[0] if row and row[0] else todo_id
+            
+            cursor.execute('DELETE FROM todos WHERE parent_id = ? OR id = ?', (parent_id, parent_id))
+        else:
+            # Delete single todo
+            cursor.execute('DELETE FROM todos WHERE id = ?', (todo_id,))
+        
+        conn.commit()
+        conn.close()
+        return jsonify({'success': True})
+        
+    except Exception as e:
+        logging.error(f"Error deleting todo: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+    
+    
+@app.route('/api/auto_create_todos_for_week', methods=['POST'])
+def auto_create_todos_for_week():
+    """Auto create TODOs from schedule data for a given week if not already created."""
+    if 'username' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    data = request.get_json()
+    week_start_str = data.get('week_start')
+    
+    if not week_start_str:
+        return jsonify({'error': 'week_start is required'}), 400
+    
+    try:
+        week_start = datetime.strptime(week_start_str, '%Y-%m-%d')
+        week_end = week_start + timedelta(days=6)
+        
+        conn = sqlite3.connect(DB_FILE)
+        cursor = conn.cursor()
+        
+        # Check if todos already exist for this week
+        cursor.execute('''
+            SELECT COUNT(*) FROM todos 
+            WHERE date >= ? AND date <= ? 
+            AND title LIKE '[%' -- Only count auto-generated todos (start with [TaskName])
+        ''', (week_start.strftime('%Y-%m-%d'), week_end.strftime('%Y-%m-%d')))
+        
+        existing_count = cursor.fetchone()[0]
+        
+        # If todos already exist for this week, skip creation
+        if existing_count > 0:
+            conn.close()
+            return jsonify({
+                'success': True,
+                'todos_created': 0,
+                'todos_skipped': existing_count,
+                'message': f'この週は既に{existing_count}件のTODOが存在します。'
+            })
+        
+        # Get schedule data
+        cursor.execute('''
+            SELECT id, 案件名, 要件引継, 設計開始, 設計完了, 設計書送付, 開発開始, 開発完了, 
+                   テスト開始日, テスト完了日, FB完了予定日, SE納品, SE, PH, "開発工数（h）"
+            FROM projects WHERE 不要 = 0
+        ''')
+        projects = [dict(zip([desc[0] for desc in cursor.description], row)) for row in cursor.fetchall()]
+        
+        date_columns = ['要件引継', '設計開始', '設計完了', '設計書送付', '開発開始', '開発完了', 
+                       'テスト開始日', 'テスト完了日', 'FB完了予定日', 'SE納品']
+        
+        task_mapping = {
+            '要件引継': '要件引継',
+            '設計開始': '設計開始', 
+            '設計完了': '設計完了',
+            '設計書送付': '設計書送付',
+            '開発開始': '開発開始',
+            '開発完了': '開発完了',
+            'テスト開始日': 'テスト開始',
+            'テスト完了日': 'テスト完了',
+            'FB完了予定日': 'FB完了',
+            'SE納品': 'SE納品'
+        }
+        
+        priority_mapping = {
+            '要件引継': 'medium',
+            '設計開始': 'low',
+            '設計完了': 'high',
+            '設計書送付': 'high', 
+            '開発開始': 'low',
+            '開発完了': 'high',
+            'テスト開始日': 'high',
+            'テスト完了日': 'high',
+            'FB完了予定日': 'high',
+            'SE納品': 'high'
+        }
+        
+        todos_created = 0
+        current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        
+        for project in projects:
+            # Handle regular milestones
+            for date_col in date_columns:
+                if date_col == '設計開始':
+                    continue  # Skip here, will handle separately below
+                
+                date_str = project.get(date_col)
+                if date_str and isinstance(date_str, str):
+                    try:
+                        date_obj = parse_date(date_str)
+                        if week_start.date() <= date_obj.date() <= week_end.date():
+                            task_name = task_mapping.get(date_col, date_col)
+                            project_name = project['案件名'] or f"PJ-{project['id']}"
+                            se_name = project['SE'] or ''
+                            ph = project['PH'] or ''
+                            
+                            ph_text = f" PH{ph}" if ph else ""
+                            todo_title = f"【{task_name}】 {project_name}{ph_text}"
+                            
+                            todo_date = date_obj.strftime('%Y-%m-%d')
+                            priority = priority_mapping.get(date_col, 'medium')
+                            
+                            cursor.execute('''
+                                INSERT INTO todos (title, date, priority, created_at)
+                                VALUES (?, ?, ?, ?)
+                            ''', (todo_title, todo_date, priority, current_time))
+                            todos_created += 1
+                                
+                    except ValueError:
+                        continue
+            
+            # Handle 設計開始 special case - create daily todos until 設計完了
+            design_start_str = project.get('設計開始')
+            design_end_str = project.get('設計完了')
+            
+            if design_start_str and isinstance(design_start_str, str):
+                try:
+                    design_start_date = parse_date(design_start_str)
+                    
+                    # Determine end date for daily todos
+                    if design_end_str and isinstance(design_end_str, str) and design_end_str.strip():
+                        try:
+                            design_end_date = parse_date(design_end_str)
+                        except ValueError:
+                            design_end_date = design_start_date  # Only create for start date if end date is invalid
+                    else:
+                        design_end_date = design_start_date  # Only create for start date if no end date
+                    
+                    # Create daily todos from start to end date
+                    current_date = design_start_date
+                    while current_date <= design_end_date:
+                        # Only create if the date falls within current week
+                        if week_start.date() <= current_date.date() <= week_end.date():
+                            project_name = project['案件名'] or f"PJ-{project['id']}"
+                            se_name = project['SE'] or ''
+                            ph = project['PH'] or ''
+                            
+                            ph_text = f" PH{ph}" if ph else ""
+                            
+                            # Different title format for daily design work
+                            if current_date == design_start_date:
+                                todo_title = f"[設計開始] {project_name}{ph_text}"
+                            elif current_date == design_end_date and design_start_date != design_end_date:
+                                todo_title = f"[設計完了] {project_name}{ph_text}"
+                            else:
+                                todo_title = f"[設計中] {project_name}{ph_text}"
+                            
+                            if se_name:
+                                todo_title += f" ({se_name})"
+                            
+                            todo_date = current_date.strftime('%Y-%m-%d')
+                            
+                            # Set priority based on task type
+                            if current_date == design_start_date:
+                                priority = 'medium'  # Start
+                            elif current_date == design_end_date and design_start_date != design_end_date:
+                                priority = 'high'   # End
+                            else:
+                                priority = 'low'  # Daily work
+                            
+                            cursor.execute('''
+                                INSERT INTO todos (title, date, priority, created_at)
+                                VALUES (?, ?, ?, ?)
+                            ''', (todo_title, todo_date, priority, current_time))
+                            todos_created += 1
+                        
+                        # Move to next day
+                        current_date += timedelta(days=1)
+                        
+                except ValueError:
+                    continue
+        
+        conn.commit()
+        conn.close()
+        
+        return jsonify({
+            'success': True,
+            'todos_created': todos_created,
+            'todos_skipped': 0,
+            'message': f'{todos_created}件のTODOを自動作成しました。' if todos_created > 0 else 'この週にはスケジュールタスクがありません。'
+        })
+        
+    except Exception as e:
+        logging.error(f"Error auto creating todos for week: {str(e)}")
+        return jsonify({'error': str(e)}), 500
     
 if __name__ == '__main__':
     app.run(debug=True)

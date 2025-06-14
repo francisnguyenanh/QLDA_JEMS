@@ -20,15 +20,6 @@ body {
     -moz-osx-font-smoothing: grayscale;
 }
 
-/* === CONTAINER LAYOUT === */
-.container-fluid {
-    max-width: 100%;
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    min-height: 0;
-    animation: fadeInUp 0.5s ease-out;
-}
 
 /* === TOOLBAR STYLING (Header with Buttons) === */
 .d-flex.justify-content-between.align-items-center.mb-4 {
@@ -336,10 +327,6 @@ body {
 
 /* === RESPONSIVE DESIGN === */
 @media (max-width: 768px) {
-    .container-fluid {
-        padding: 15px;
-    }
-    
     .d-flex.justify-content-between.align-items-center.mb-4 {
         flex-direction: column;
         align-items: flex-start;
@@ -387,10 +374,6 @@ body {
 }
 
 @media (max-width: 576px) {
-    .container-fluid {
-        padding: 10px;
-    }
-    
     .d-flex.justify-content-between.align-items-center.mb-4 {
         padding: 0.75rem 1rem;
     }
@@ -478,10 +461,6 @@ body {
         display: none !important;
     }
     
-    .container-fluid {
-        padding: 0;
-    }
-    
     #editorContent {
         border: 1px solid #000;
         box-shadow: none;
@@ -490,35 +469,6 @@ body {
 }
 {% endblock %}
 
-{% block navbar_content %}
-<ul class="navbar-nav me-auto">
-    <li class="nav-item">
-        <a class="nav-link" href="/dashboard">
-            <i class="bi bi-speedometer2 me-1"></i>Dashboard
-        </a>
-    </li>
-    <li class="nav-item">
-        <a class="nav-link" href="/editor_list">
-            <i class="bi bi-file-text me-1"></i>Documents list
-        </a>
-    </li>
-    <li class="nav-item">
-        <a class="nav-link active" href="/editor">
-            <i class="bi bi-file-text me-1"></i>Document
-        </a>
-    </li>
-    <li class="nav-item">
-        <a class="nav-link" href="/memo_list">
-            <i class="bi bi-journal-text me-1"></i>Memo list
-        </a>
-    </li>
-    <li class="nav-item">
-        <a class="nav-link" href="/memo">
-            <i class="bi bi-journal-text me-1"></i>Memo
-        </a>
-    </li>
-</ul>
-{% endblock %}
 
 {% block content %}
 <div class="container-fluid">
@@ -575,15 +525,6 @@ body {
     line-height: 1.5;
     white-space: pre-wrap;
     word-wrap: break-word;
-}
-
-/* Sticky header cho dễ truy cập */
-.container-fluid .d-flex:first-child {
-    position: sticky;
-    top: 0;
-    z-index: 100;
-    padding: 10px 0;
-    margin-bottom: 20px;
 }
 
 /* Responsive cho mobile */

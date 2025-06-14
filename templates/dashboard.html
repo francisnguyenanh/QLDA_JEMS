@@ -4198,105 +4198,31 @@ body {
 @media (prefers-color-scheme: dark) {
     /* Dark mode styles can be added here */
 }
-{% endblock %}
 
-{% block navbar_content %}
+/*button todo*/
+.dashboard-buttons {
+    margin-bottom: 1rem;
+}
 
-<!-- BỎ div class="action-toolbar" và để buttons trực tiếp -->
-<div class="btn-group-professional">
-    <!-- Dropdown menu for Documents -->
-    <div class="dropdown">
-        <button class="btn btn-professional btn-schedule dropdown-toggle" 
-                type="button" 
-                id="documentsDropdown"
-                data-bs-toggle="dropdown" 
-                aria-expanded="false">
-            <i class="fas fa-file-alt"></i>
-            <span>ドキュメント</span>
-        </button>
-        <ul class="dropdown-menu" aria-labelledby="documentsDropdown">
-            <li><a class="dropdown-item" href="/editor_list">
-                <i class="fas fa-list"></i> doc list
-            </a></li>
-            <li><a class="dropdown-item" href="/editor">
-                <i class="fas fa-edit"></i> doc
-            </a></li>
-        </ul>
-    </div>
-    
-    <!-- Memo dropdown -->
-    <div class="dropdown">
-        <button class="btn btn-professional btn-report dropdown-toggle" 
-                type="button" 
-                id="memoDropdown"
-                data-bs-toggle="dropdown" 
-                aria-expanded="false">
-            <i class="fas fa-sticky-note"></i>
-            <span>メモ</span>
-        </button>
-        <ul class="dropdown-menu" aria-labelledby="memoDropdown">
-            <li><a class="dropdown-item" href="/memo_list">
-                <i class="fas fa-list"></i> memo list
-            </a></li>
-            <li><a class="dropdown-item" href="/memo">
-                <i class="fas fa-pencil-alt"></i> memo
-            </a></li>
-        </ul>
-    </div>
-    
-    <!-- Main Action Buttons -->
-    <button class="btn btn-professional btn-schedule" 
-            data-bs-toggle="modal" 
-            data-bs-target="#scheduleModal" 
-            onclick="openScheduleModal()">
-        <i class="fas fa-calendar-alt"></i>
-        <span>予定</span>
-    </button>
-    
-    <button class="btn btn-professional btn-report" 
-            data-bs-toggle="modal" 
-            data-bs-target="#dailyReportModal" 
-            onclick="openDailyReportModal()">
-        <i class="fas fa-chart-bar"></i>
-        <span>日報</span>
-    </button>
-    
-    <button class="btn btn-professional btn-excel" 
-            data-bs-toggle="modal" 
-            data-bs-target="#uploadModal">
-        <i class="fas fa-file-excel"></i>
-        <span>Excel</span>
-    </button>
-    
-    <button class="btn btn-professional btn-mail-edit" 
-            data-bs-toggle="modal" 
-            data-bs-target="#mailEditModal">
-        <i class="fas fa-envelope-open-text"></i>
-        <span>メール編集</span>
-    </button>
-    
-    <button class="btn btn-professional btn-task-create" 
-            data-bs-toggle="modal" 
-            data-bs-target="#createTaskModal">
-        <i class="fas fa-tasks"></i>
-        <span>タスク作成</span>
-    </button>
-    
-    <button class="btn btn-professional btn-delete" 
-            data-bs-toggle="modal" 
-            data-bs-target="#deleteAllModal">
-        <i class="fas fa-trash-alt"></i>
-        <span>不要削除</span>
-    </button>
-    
-    <a href="{{ url_for('logout') }}" 
-       class="btn btn-professional btn-logout">
-        <i class="fas fa-sign-out-alt"></i>
-        <span>Logout</span>
-    </a>
-</div>
+.dashboard-buttons .btn {
+    margin-right: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+#showTodoBtn {
+    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+    border: none;
+    box-shadow: 0 2px 4px rgba(0,123,255,0.3);
+    transition: all 0.2s ease;
+}
+
+#showTodoBtn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0,123,255,0.4);
+}
 
 {% endblock %}
+
 {% block content %}
 <div class="container-fluid mb-3">
     <div class="d-flex justify-content-between align-items-center flex-wrap">
@@ -4317,8 +4243,51 @@ body {
                 </div>
             </form>
         </div>
+        <div class="btn-group-professional">
+            <!-- Main Action Buttons -->
+            <button class="btn btn-professional btn-schedule" 
+                    data-bs-toggle="modal" 
+                    data-bs-target="#scheduleModal" 
+                    onclick="openScheduleModal()">
+                <i class="fas fa-calendar-alt"></i>
+                <span>予定</span>
+            </button>
+            
+            <button class="btn btn-professional btn-report" 
+                    data-bs-toggle="modal" 
+                    data-bs-target="#dailyReportModal" 
+                    onclick="openDailyReportModal()">
+                <i class="fas fa-chart-bar"></i>
+                <span>日報</span>
+            </button>
+            
+            <button class="btn btn-professional btn-excel" 
+                    data-bs-toggle="modal" 
+                    data-bs-target="#uploadModal">
+                <i class="fas fa-file-excel"></i>
+                <span>Excel</span>
+            </button>
+            
+            <button class="btn btn-professional btn-mail-edit" 
+                    data-bs-toggle="modal" 
+                    data-bs-target="#mailEditModal">
+                <i class="fas fa-envelope-open-text"></i>
+                <span>メール編集</span>
+            </button>
+            
+            <button class="btn btn-professional btn-task-create" 
+                    data-bs-toggle="modal" 
+                    data-bs-target="#createTaskModal">
+                <i class="fas fa-tasks"></i>
+                <span>タスク作成</span>
+            </button>
+            
+        </div>
+
     </div>
 </div>
+
+
         <div class="dashboard-table-container">
             <table id="dashboardTable" class="table table-bordered table-dashboard">
                 <thead>
@@ -4907,30 +4876,6 @@ body {
         </div>
     </div>
 </div>
-
-    <!-- Delete All Data Modal -->
-    <div class="modal fade" id="deleteAllModal" tabindex="-1">
-        <div class="modal-dialog modal-dialog-scrollable modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">全ての不要データを削除</h5>
-                    <div class="d-flex gap-2">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
-                        <button type="button" class="btn btn-danger" onclick="deleteAllData()">削除</button>
-                    </div>
-                </div>
-                <div class="modal-body">
-                    <p>Chức năng xoá tất cả dự án trong DB, nếu đã suy nghĩ kỹ thì nhập password login để xoá。</p>
-                    <form id="deleteAllForm">
-                        <div class="mb-3">
-                            <label for="confirmPassword" class="form-label">パスワード</label>
-                            <input type="password" class="form-control" id="confirmPassword" name="password" required>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
 
     <!-- Update Mail Edit Modal Header -->
     <div class="modal fade mail-edit-modal" id="mailEditModal" tabindex="-1">

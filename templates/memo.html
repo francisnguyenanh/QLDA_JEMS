@@ -16,16 +16,6 @@ body {
     background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
 }
 
-/* Container styling */
-.container-fluid {
-    max-width: 100%;
-    padding: 0 20px;
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    min-height: 0;
-}
-
 /* Toolbar styling - sticky header */
 .toolbar {
     position: sticky;
@@ -385,12 +375,6 @@ body {
 #fileList::-webkit-scrollbar-thumb:hover {
     background: linear-gradient(135deg, #94a3b8 0%, #64748b 100%);
 }
-
-/* Animation effects */
-.container-fluid {
-    animation: fadeInUp 0.5s ease-out;
-}
-
 @keyframes fadeInUp {
     from {
         opacity: 0;
@@ -420,10 +404,6 @@ body {
 
 /* Responsive design */
 @media (max-width: 768px) {
-    .container-fluid {
-        padding: 0 15px;
-    }
-    
     .toolbar {
         padding: 0.75rem 1rem;
     }
@@ -472,10 +452,6 @@ body {
 }
 
 @media (max-width: 576px) {
-    .container-fluid {
-        padding: 0 10px;
-    }
-    
     .toolbar {
         padding: 0.5rem 0.75rem;
     }
@@ -658,35 +634,6 @@ body {
     transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(107, 114, 128, 0.3);
 }
-{% endblock %}
-{% block navbar_content %}
-<ul class="navbar-nav me-auto">
-    <li class="nav-item">
-        <a class="nav-link" href="/dashboard">
-            <i class="bi bi-speedometer2 me-1"></i>Dashboard
-        </a>
-    </li>
-    <li class="nav-item">
-        <a class="nav-link" href="/editor_list">
-            <i class="bi bi-file-text me-1"></i>Documents list
-        </a>
-    </li>
-    <li class="nav-item">
-        <a class="nav-link" href="/editor">
-            <i class="bi bi-file-text me-1"></i>Document
-        </a>
-    </li>
-    <li class="nav-item">
-        <a class="nav-link" href="/memo_list">
-            <i class="bi bi-journal-text me-1"></i>Memo list
-        </a>
-    </li>
-    <li class="nav-item">
-        <a class="nav-link active" href="/memo">
-            <i class="bi bi-journal-text me-1"></i>Memo
-        </a>
-    </li>
-</ul>
 {% endblock %}
 
 {% block content %}
