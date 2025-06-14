@@ -3222,9 +3222,6 @@ def auto_create_todos_for_week():
                             else:
                                 todo_title = f"[設計中] {project_name}{ph_text}"
                             
-                            if se_name:
-                                todo_title += f" ({se_name})"
-                            
                             todo_date = current_date.strftime('%Y-%m-%d')
                             
                             # Set priority based on task type
