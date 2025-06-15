@@ -866,7 +866,6 @@ function deleteDocument(documentId, title) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            alert('Document deleted successfully!');
             loadDocuments(); // Reload the list
         } else {
             alert('Error: ' + (data.error || 'Unknown error'));

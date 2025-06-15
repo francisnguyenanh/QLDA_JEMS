@@ -100,8 +100,8 @@ body {
     min-height: 0;
 }
 
-.row.mt-3 .col-md-8,
-.row.mt-3 .col-md-4 {
+.row.mt-3 .col-md-10,
+.row.mt-3 .col-md-2 {
     display: flex;
     flex-direction: column;
     min-height: 0;
@@ -428,8 +428,8 @@ body {
         flex-direction: column;
     }
     
-    .row.mt-3 .col-md-8,
-    .row.mt-3 .col-md-4 {
+    .row.mt-3 .col-md-10,
+    .row.mt-3 .col-md-2 {
         width: 100%;
         margin-bottom: 1rem;
     }
@@ -671,7 +671,7 @@ margin-left: 1rem !important;
     </div>
 
     <div class="row mt-3">
-        <div class="col-md-8">
+        <div class="col-md-10">
             <div class="card">
                 <div class="card-body">
                     <div class="mb-3">
@@ -686,7 +686,7 @@ margin-left: 1rem !important;
             </div>
         </div>
 
-        <div class="col-md-4">
+        <div class="col-md-2">
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <button class="btn btn-outline-primary btn-sm" onclick="downloadAllFiles()" id="downloadAllBtn" style="display: none;">
@@ -697,13 +697,13 @@ margin-left: 1rem !important;
                     <!-- File Upload Area -->
                     <div class="drop-zone mb-3" onclick="document.getElementById('fileInput').click()">
                         <i class="bi bi-cloud-upload fs-1 text-primary"></i>
-                        <p class="mb-0">ファイルをドラッグ&ドロップ<br>またはクリックして選択</p>
+                        <p class="mb-0">ドラッグ&ドロップ<br>または選択</p>
                         <input type="file" id="fileInput" multiple accept="*/*" style="display: none;">
                     </div>
 
                     <!-- Clipboard Paste Button -->
                     <button class="btn btn-outline-primary w-100 mb-3" onclick="pasteFromClipboard()">
-                        <i class="bi bi-clipboard"></i> クリップボードから貼り付け
+                        <i class="bi bi-clipboard"></i> 貼り付け
                     </button>
 
                     <!-- File List -->
@@ -826,7 +826,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Save when user clicks outside the form area
     document.addEventListener('click', function(e) {
-        const formArea = document.querySelector('.col-md-8');
+        const formArea = document.querySelector('.col-md-10');
         const clickedInsideForm = formArea && formArea.contains(e.target);
         
         if (!clickedInsideForm) {
