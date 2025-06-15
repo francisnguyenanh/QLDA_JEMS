@@ -168,20 +168,6 @@ body {
     margin-right: 0.5rem;
 }
 
-.table .btn-outline-primary {
-    border: 1px solid #3b82f6;
-    color: #3b82f6;
-    background: #ffffff;
-}
-
-.table .btn-outline-primary:hover {
-    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
-    border-color: #1d4ed8;
-    color: white;
-    transform: translateY(-1px);
-    box-shadow: 0 3px 8px rgba(59, 130, 246, 0.3);
-}
-
 .table .btn-outline-danger {
     border: 1px solid #dc2626;
     color: #dc2626;
@@ -563,8 +549,129 @@ body {
     padding: 2rem 1rem;
 }
 
-.d-flex.justify-content-between.align-items-center.mb-4 {
-    ...
+/* Table row hover effect cho clickable rows */
+.table tbody tr[onclick] {
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+}
+
+.table tbody tr[onclick]:hover {
+    background: linear-gradient(90deg,rgb(16, 93, 171) 0%,rgb(128, 219, 29) 100%) !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04) !important;
+}
+
+/* Prevent button clicks from triggering row click */
+.table tbody tr[onclick] .btn {
+    position: relative;
+    z-index: 10;
+}
+
+/* Mobile responsive cho clickable rows */
+@media (max-width: 576px) {
+    .table tbody tr[onclick] {
+        cursor: pointer !important;
+    }
+    
+    .table tbody tr[onclick]:hover {
+        background: #f8fafc !important;
+        transform: none !important;
+    }
+}
+/* Delete button styling */
+.delete-btn {
+    border: 1px solid #dc2626 !important;
+    color: #dc2626 !important;
+    background: transparent !important;
+    padding: 0.4rem 0.6rem !important;
+    border-radius: 4px !important;
+    transition: all 0.2s ease !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    min-width: 32px !important;
+    min-height: 28px !important;
+}
+
+.delete-btn:hover {
+    background: #dc2626 !important;
+    color: white !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 2px 4px rgba(220, 38, 38, 0.3) !important;
+}
+
+.delete-btn:active {
+    transform: translateY(0) !important;
+    box-shadow: 0 1px 2px rgba(220, 38, 38, 0.3) !important;
+}
+
+.delete-btn i {
+    font-size: 0.85rem !important;
+}
+
+/* Actions column width */
+.table th:last-child,
+.table td:last-child {
+    width: 60px !important;
+    text-align: center !important;
+}
+
+/* Table row hover effect - cập nhật */
+.table tbody tr[onclick] {
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+}
+
+.table tbody tr[onclick]:hover {
+    background: linear-gradient(90deg, #f8fafc 0%, #f1f5f9 100%) !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04) !important;
+}
+
+/* Prevent button clicks from triggering row click */
+.table tbody tr[onclick] .delete-btn {
+    position: relative;
+    z-index: 10;
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+    .delete-btn {
+        padding: 0.3rem 0.5rem !important;
+        min-width: 28px !important;
+        min-height: 24px !important;
+    }
+    
+    .delete-btn i {
+        font-size: 0.8rem !important;
+    }
+    
+    .table th:last-child,
+    .table td:last-child {
+        width: 50px !important;
+    }
+}
+
+@media (max-width: 576px) {
+    .delete-btn {
+        padding: 0.25rem 0.4rem !important;
+        min-width: 26px !important;
+        min-height: 22px !important;
+    }
+    
+    .delete-btn i {
+        font-size: 0.75rem !important;
+    }
+    
+    .table th:last-child,
+    .table td:last-child {
+        width: 45px !important;
+    }
+    
+    /* Mobile stack table - update Actions label */
+    .table tbody td:nth-child(4):before {
+        content: "Actions";
+    }
 }
 */
 {% endblock %}
@@ -603,42 +710,56 @@ body {
     <div class="row justify-content-center">
         <div class="col-12">
             <div class="card">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h2>Document List</h2>
+                        <a href="/editor" class="btn btn-primary">
+                            <i class="bi bi-plus-circle me-1"></i>New Document
+                        </a>
+                    </div>
+                </div>
                 <div class="card-body">
                     <div id="documentsContainer">
-    
                         {% if documents %}
-                            <div class="table-responsive">
-                                <table class="table table-striped">
-                                    <thead>
-                                        <tr>
-                                            <th>Title</th>
-                                            <th>Created</th>
-                                            <th>Updated</th>
-                                            <th>Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {% for doc in documents %}
-                                        <tr>
-                                            <td>{{ doc.title }}</td>
-                                            <td>{{ doc.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
-                                            <td>{{ doc.updated_at.strftime('%Y-%m-%d %H:%M') }}</td>
-                                            <td>
-                                                <a href="{{ url_for('edit_editor_document', id=doc.id) }}" class="btn btn-sm btn-outline-primary">Edit</a>
-                                                <a href="{{ url_for('delete_editor_document', id=doc.id) }}" 
-                                                class="btn btn-sm btn-outline-danger"
-                                                onclick="return confirm('Are you sure you want to delete this document?')">Delete</a>
-                                            </td>
-                                        </tr>
-                                        {% endfor %}
-                                    </tbody>
-                                </table>
-                            </div>
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Title</th>
+                                        <th>Created</th>
+                                        <th>Updated</th>
+                                        <th width="60">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for doc in documents %}
+                                    <tr onclick="openDocument({{ doc.id }})" style="cursor: pointer;" data-doc-id="{{ doc.id }}">
+                                        <td>{{ doc.title }}</td>
+                                        <td>{{ doc.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                                        <td>{{ doc.updated_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                                        <td>
+                                            <button class="btn btn-outline-danger btn-sm delete-btn" 
+                                                    onclick="event.stopPropagation(); deleteDocument({{ doc.id }}, '{{ doc.title|e }}')" 
+                                                    title="Delete document">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
                         {% else %}
-                            <div class="alert alert-info">
-                                No documents found. <a href="{{ url_for('editor') }}">Create your first document</a>.
-                            </div>
+                        <div class="alert alert-info">
+                            No documents found. <a href="/editor">Create your first document</a>.
+                        </div>
                         {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 </div>
                 </div>
             </div>
@@ -687,19 +808,21 @@ function loadDocuments() {
                                 <th>Title</th>
                                 <th>Created</th>
                                 <th>Updated</th>
-                                <th>Actions</th>
+                                <th width="60">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
                             ${data.documents.map(doc => `
-                                <tr>
+                                <tr onclick="openDocument(${doc.id})" style="cursor: pointer;" data-doc-id="${doc.id}">
                                     <td>${escapeHtml(doc.title)}</td>
                                     <td>${formatDateTime(doc.created_at)}</td>
                                     <td>${formatDateTime(doc.updated_at)}</td>
                                     <td>
-                                        <a href="/editor?id=${doc.id}" class="btn btn-sm btn-outline-primary">Edit</a>
-                                        <button onclick="deleteDocument(${doc.id}, '${escapeHtml(doc.title)}')" 
-                                                class="btn btn-sm btn-outline-danger">Delete</button>
+                                        <button class="btn btn-outline-danger btn-sm delete-btn" 
+                                                onclick="event.stopPropagation(); deleteDocument(${doc.id}, '${escapeHtml(doc.title)}')" 
+                                                title="Delete document">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
                                     </td>
                                 </tr>
                             `).join('')}
@@ -725,6 +848,11 @@ function loadDocuments() {
             </div>
         `;
     });
+}
+
+// Thêm function openDocument
+function openDocument(documentId) {
+    window.location.href = `/editor?id=${documentId}`;
 }
 
 function deleteDocument(documentId, title) {
