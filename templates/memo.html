@@ -16,6 +16,32 @@ body {
     background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
 }
 
+/* === AUTO-SAVE ICON STYLES === */
+.auto-save-indicator {
+    display: inline-flex;
+    align-items: center;
+    margin-left: 10px;
+    font-size: 0.8rem;
+    color: #16a34a;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.auto-save-indicator.show {
+    opacity: 1;
+}
+
+.auto-save-indicator i {
+    margin-right: 4px;
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
+
 /* Toolbar styling - sticky header */
 .toolbar {
     position: sticky;
@@ -107,7 +133,6 @@ body {
 }
 
 .card-body {
-    padding: 1.5rem;
     flex: 1;
     display: flex;
     flex-direction: column;
@@ -449,6 +474,11 @@ body {
     .file-item {
         padding: 0.75rem;
     }
+    
+    .auto-save-indicator {
+        margin-left: 5px;
+        font-size: 0.75rem;
+    }
 }
 
 @media (max-width: 576px) {
@@ -490,6 +520,10 @@ body {
     .btn-sm {
         padding: 0.3rem 0.6rem;
         font-size: 0.8rem;
+    }
+    
+    .auto-save-indicator {
+        font-size: 0.7rem;
     }
 }
 
@@ -634,19 +668,22 @@ body {
     transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(107, 114, 128, 0.3);
 }
+.mb-4 {
+margin-bottom: 0 !important;
+}
 {% endblock %}
 
 {% block content %}
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <div class="btn-group">
-            <a href="/memo_list" class="btn btn-outline-secondary">
-                    <i class="bi bi-arrow-left"></i> 戻る
-                </a>
-            <button class="btn btn-primary" onclick="saveMemo()">
-                    <i class="bi bi-save"></i> 保存
-                </button>
-            
+        
+        <!-- Auto-save indicator -->
+        <div class="d-flex align-items-center">
+            <label class="form-label mb-0" style="font-size: 12px;"><strong>Auto save when the title is not blank!</strong></label>
+            <div class="auto-save-indicator" id="autoSaveIndicator">
+                <i class="bi bi-check-circle"></i>
+                <span>Auto-saved</span>
+            </div>
         </div>
     </div>
 
@@ -655,12 +692,10 @@ body {
             <div class="card">
                 <div class="card-body">
                     <div class="mb-3">
-                        <label for="memoTitle" class="form-label">タイトル</label>
                         <input type="text" class="form-control" id="memoTitle" 
                                value="{% if memo %}{{ memo.title }}{% endif %}" required>
                     </div>
                     <div class="mb-3">
-                        <label for="memoContent" class="form-label">内容</label>
                         <textarea class="form-control" id="memoContent" rows="20" 
                                   style="font-family: monospace;">{% if memo %}{{ memo.content }}{% endif %}</textarea>
                     </div>
@@ -671,7 +706,6 @@ body {
         <div class="col-md-4">
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">ファイル</h5>
                     <button class="btn btn-outline-primary btn-sm" onclick="downloadAllFiles()" id="downloadAllBtn" style="display: none;">
                         <i class="bi bi-download"></i> 全てダウンロード
                     </button>
@@ -726,10 +760,19 @@ body {
 let currentMemoId = {% if memo %}{{ memo.id }}{% else %}null{% endif %};
 let currentImageUrl = '';
 
+// Auto-save variables
+let autoSaveTimer = null;
+let lastSavedTitle = '';
+let lastSavedContent = '';
+let isAutoSaving = false;
+
 document.addEventListener('DOMContentLoaded', function() {
     if (currentMemoId) {
         loadFiles();
     }
+    
+    // Initialize auto-save
+    initializeAutoSave();
     
     // File input change event
     document.getElementById('fileInput').addEventListener('change', function(e) {
@@ -754,21 +797,300 @@ document.addEventListener('DOMContentLoaded', function() {
         this.classList.remove('dragover');
         uploadFiles(e.dataTransfer.files);
     });
+    
+    // Auto-save event listeners
+    const titleInput = document.getElementById('memoTitle');
+    const contentTextarea = document.getElementById('memoContent');
+    
+    titleInput.addEventListener('input', function() {
+        if (!autoSaveTimer) {
+            startAutoSave();
+        }
+    });
+    
+    contentTextarea.addEventListener('input', function() {
+        if (!autoSaveTimer) {
+            startAutoSave();
+        }
+    });
+    
+    // Clean up timer when page unloads
+    window.addEventListener('beforeunload', function() {
+        if (autoSaveTimer) {
+            clearInterval(autoSaveTimer);
+        }
+    });
+    
+    // Keyboard shortcut: Ctrl+S to save
+    document.addEventListener('keydown', function(e) {
+        if (e.ctrlKey && e.key === 's') {
+            e.preventDefault();
+            saveMemo();
+        }
+    });
+
+// === NEW: Focus out auto-save functionality ===
+    
+    // Save when title input loses focus
+    titleInput.addEventListener('blur', function() {
+        performAutoSaveOnFocusOut();
+    });
+    
+    // Save when content textarea loses focus
+    contentTextarea.addEventListener('blur', function() {
+        performAutoSaveOnFocusOut();
+    });
+    
+    // Save when user clicks outside the form area
+    document.addEventListener('click', function(e) {
+        const formArea = document.querySelector('.col-md-8');
+        const clickedInsideForm = formArea && formArea.contains(e.target);
+        
+        if (!clickedInsideForm) {
+            performAutoSaveOnFocusOut();
+        }
+    });
+    
+    // Save when user navigates away or closes tab
+    window.addEventListener('beforeunload', function(e) {
+        if (autoSaveTimer) {
+            clearInterval(autoSaveTimer);
+        }
+        // Perform final save before leaving
+        performAutoSaveOnFocusOut(true); // synchronous save
+    });
+    
+    // Save when page loses focus (user switches tabs/apps)
+    window.addEventListener('blur', function() {
+        performAutoSaveOnFocusOut();
+    });
+    
+    // Save when page gains focus back (in case changes were made)
+    window.addEventListener('focus', function() {
+        // Small delay to ensure any programmatic changes are completed
+        setTimeout(() => {
+            performAutoSaveOnFocusOut();
+        }, 100);
+    });
+    
+    // Save when user presses ESC key (common way to "exit" editing)
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            performAutoSaveOnFocusOut();
+        }
+        
+        // Existing Ctrl+S shortcut
+        if (e.ctrlKey && e.key === 's') {
+            e.preventDefault();
+            saveMemo();
+        }
+    });
+    
+    // === Navigation-based auto-save ===
+    
+    // Intercept navigation attempts and save first
+    const originalPushState = history.pushState;
+    const originalReplaceState = history.replaceState;
+    
+    history.pushState = function() {
+        performAutoSaveOnFocusOut(true);
+        return originalPushState.apply(history, arguments);
+    };
+    
+    history.replaceState = function() {
+        performAutoSaveOnFocusOut(true);
+        return originalReplaceState.apply(history, arguments);
+    };
+    
+    // Handle back/forward navigation
+    window.addEventListener('popstate', function() {
+        performAutoSaveOnFocusOut(true);
+    });
+    
+    // Handle link clicks that might navigate away
+    document.addEventListener('click', function(e) {
+        const link = e.target.closest('a');
+        if (link && link.href && !link.href.startsWith('javascript:')) {
+            // Small delay to allow save before navigation
+            e.preventDefault();
+            performAutoSaveOnFocusOut(true).then(() => {
+                window.location.href = link.href;
+            });
+        }
+    });
 });
 
+// === NEW: Focus out auto-save function ===
+function performAutoSaveOnFocusOut(synchronous = false) {
+    const title = document.getElementById('memoTitle').value.trim();
+    const content = document.getElementById('memoContent').value.trim();
+    
+    // Only save if title is not blank and content has changed
+    if (!title || isAutoSaving) return Promise.resolve();
+    
+    if (title === lastSavedTitle && content === lastSavedContent) {
+        return Promise.resolve(); // No changes to save
+    }
+    
+    if (synchronous) {
+        // For beforeunload and navigation events, use synchronous save
+        return performSynchronousAutoSave(title, content);
+    } else {
+        // For focus events, use regular async save
+        return performAutoSave();
+    }
+}
+
+// Synchronous save for critical navigation events
+function performSynchronousAutoSave(title, content) {
+    if (!title) return Promise.resolve();
+    
+    const url = currentMemoId ? `/api/memos/${currentMemoId}` : '/api/memos';
+    const method = currentMemoId ? 'PUT' : 'POST';
+    
+    // Use sendBeacon for reliable sending during page unload
+    if (navigator.sendBeacon) {
+        const data = JSON.stringify({ title, content });
+        const blob = new Blob([data], { type: 'application/json' });
+        navigator.sendBeacon(url, blob);
+        
+        // Update local state
+        lastSavedTitle = title;
+        lastSavedContent = content;
+        return Promise.resolve();
+    } else {
+        // Fallback to synchronous XHR
+        return new Promise((resolve) => {
+            const xhr = new XMLHttpRequest();
+            xhr.open(method, url, false); // synchronous
+            xhr.setRequestHeader('Content-Type', 'application/json');
+            
+            try {
+                xhr.send(JSON.stringify({ title, content }));
+                if (xhr.status >= 200 && xhr.status < 300) {
+                    lastSavedTitle = title;
+                    lastSavedContent = content;
+                }
+            } catch (error) {
+                console.error('Synchronous save error:', error);
+            }
+            resolve();
+        });
+    }
+}
+
+// Auto-save functionality
+function initializeAutoSave() {
+    const title = document.getElementById('memoTitle').value.trim();
+    const content = document.getElementById('memoContent').value.trim();
+    lastSavedTitle = title;
+    lastSavedContent = content;
+    startAutoSave();
+}
+
+function startAutoSave() {
+    if (autoSaveTimer) {
+        clearInterval(autoSaveTimer);
+    }
+    
+    autoSaveTimer = setInterval(() => {
+        const title = document.getElementById('memoTitle').value.trim();
+        const content = document.getElementById('memoContent').value.trim();
+        
+        // Check conditions: title must not be blank and content must have changed
+        if (title && 
+            !isAutoSaving && 
+            (title !== lastSavedTitle || content !== lastSavedContent)) {
+            performAutoSave();
+        }
+    }, 5000); // Auto-save every 5 seconds
+}
+
+// Enhanced auto-save function with promise support
+function performAutoSave() {
+    const title = document.getElementById('memoTitle').value.trim();
+    const content = document.getElementById('memoContent').value.trim();
+    
+    if (!title) return Promise.resolve();
+    
+    isAutoSaving = true;
+    
+    const url = currentMemoId ? `/api/memos/${currentMemoId}` : '/api/memos';
+    const method = currentMemoId ? 'PUT' : 'POST';
+    
+    return fetch(url, {
+        method: method,
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ title, content })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            throw new Error(data.error);
+        }
+        
+        // Update saved values
+        lastSavedTitle = title;
+        lastSavedContent = content;
+        showAutoSaveIndicator();
+        
+        // If it was a new memo, update the currentMemoId and URL
+        if (!currentMemoId) {
+            currentMemoId = data.id;
+            // Update URL without reload
+            window.history.replaceState({}, '', `/memo?id=${data.id}`);
+        }
+        
+        return data;
+    })
+    .catch(error => {
+        console.error('Auto-save error:', error);
+        throw error;
+    })
+    .finally(() => {
+        isAutoSaving = false;
+    });
+}
+
+// Enhanced auto-save indicator with different types
+function showAutoSaveIndicator(type = 'auto') {
+    const autoSaveIndicator = document.getElementById('autoSaveIndicator');
+    const icon = autoSaveIndicator.querySelector('i');
+    const text = autoSaveIndicator.querySelector('span');
+    
+    // Change icon and text based on save type
+    if (type === 'focus-out') {
+        icon.className = 'bi bi-save';
+        text.textContent = 'Saved on focus out';
+    } else {
+        icon.className = 'bi bi-check-circle';
+        text.textContent = 'Auto-saved';
+    }
+    
+    autoSaveIndicator.classList.add('show');
+    
+    // Hide the indicator after 3 seconds
+    setTimeout(() => {
+        autoSaveIndicator.classList.remove('show');
+    }, 3000);
+}
+
+// Update the existing saveMemo function to use promise
 function saveMemo() {
     const title = document.getElementById('memoTitle').value.trim();
     const content = document.getElementById('memoContent').value;
     
     if (!title) {
         showError('タイトルを入力してください');
-        return;
+        return Promise.resolve();
     }
     
     const url = currentMemoId ? `/api/memos/${currentMemoId}` : '/api/memos';
     const method = currentMemoId ? 'PUT' : 'POST';
     
-    fetch(url, {
+    return fetch(url, {
         method: method,
         headers: {
             'Content-Type': 'application/json',
@@ -790,11 +1112,17 @@ function saveMemo() {
             window.history.replaceState({}, '', `/memo?id=${data.id}`);
         }
         
+        // Update saved values for auto-save
+        lastSavedTitle = title;
+        lastSavedContent = content;
+        
         showSuccess('保存しました');
+        return data;
     })
     .catch(error => {
         console.error('Error saving memo:', error);
         showError('保存に失敗しました');
+        throw error;
     });
 }
 

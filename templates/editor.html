@@ -581,14 +581,6 @@ body {
 <div class="container-fluid">
     <!-- Header với buttons và controls cùng hàng -->
     <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap">
-        <div class="btn-group">
-            <a href="{{ url_for('editor_list') }}" class="btn btn-outline-secondary">
-                <i class="bi bi-arrow-left"></i> 戻る
-            </a>
-            <button type="button" class="btn btn-primary" onclick="saveDocument()">
-                <i class="bi bi-save"></i> 保存
-            </button>
-        </div>
         
         <!-- Controls moved to same row -->
         <div class="d-flex align-items-center gap-3">
@@ -702,11 +694,12 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 5000); // Auto-save every 5 seconds
     }
 
+    // Enhanced auto-save function with promise support
     function performAutoSave() {
         const title = titleInput.value.trim();
         const content = textarea.value.trim();
         
-        if (!title) return;
+        if (!title) return Promise.resolve();
         
         isAutoSaving = true;
         
@@ -717,7 +710,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const url = documentId ? `/api/editor_documents/${documentId}` : '/api/editor_documents';
         const method = documentId ? 'PUT' : 'POST';
         
-        fetch(url, {
+        return fetch(url, {
             method: method,
             headers: {
                 'Content-Type': 'application/json',
@@ -736,17 +729,34 @@ document.addEventListener('DOMContentLoaded', function() {
                     const newUrl = window.location.pathname + '?id=' + data.document_id;
                     window.history.replaceState(null, '', newUrl);
                 }
+                return data;
+            } else {
+                throw new Error(data.error || 'Save failed');
             }
         })
         .catch(error => {
             console.error('Auto-save error:', error);
+            throw error;
         })
         .finally(() => {
             isAutoSaving = false;
         });
     }
 
-    function showAutoSaveIndicator() {
+    // Enhanced auto-save indicator with different types
+    function showAutoSaveIndicator(type = 'auto') {
+        const icon = autoSaveIndicator.querySelector('i');
+        const text = autoSaveIndicator.querySelector('span');
+        
+        // Change icon and text based on save type
+        if (type === 'focus-out') {
+            icon.className = 'bi bi-save';
+            text.textContent = 'Saved on focus out';
+        } else {
+            icon.className = 'bi bi-check-circle';
+            text.textContent = 'Auto-saved';
+        }
+        
         autoSaveIndicator.classList.add('show');
         
         // Hide the indicator after 3 seconds
@@ -764,6 +774,69 @@ document.addEventListener('DOMContentLoaded', function() {
         startAutoSave();
     }
 
+    // === NEW: Focus out auto-save function ===
+    function performAutoSaveOnFocusOut(synchronous = false) {
+        const title = titleInput.value.trim();
+        const content = textarea.value.trim();
+        
+        // Only save if title is not blank and content has changed
+        if (!title || isAutoSaving) return Promise.resolve();
+        
+        if (title === lastSavedTitle && content === lastSavedContent) {
+            return Promise.resolve(); // No changes to save
+        }
+        
+        if (synchronous) {
+            // For beforeunload and navigation events, use synchronous save
+            return performSynchronousAutoSave(title, content);
+        } else {
+            // For focus events, use regular async save and show different indicator
+            return performAutoSave().then(() => {
+                showAutoSaveIndicator('focus-out');
+            });
+        }
+    }
+
+    // Synchronous save for critical navigation events
+    function performSynchronousAutoSave(title, content) {
+        if (!title) return Promise.resolve();
+        
+        const urlParams = new URLSearchParams(window.location.search);
+        const documentId = urlParams.get('id');
+        const url = documentId ? `/api/editor_documents/${documentId}` : '/api/editor_documents';
+        const method = documentId ? 'PUT' : 'POST';
+        
+        // Use sendBeacon for reliable sending during page unload
+        if (navigator.sendBeacon) {
+            const data = JSON.stringify({ title, content });
+            const blob = new Blob([data], { type: 'application/json' });
+            navigator.sendBeacon(url, blob);
+            
+            // Update local state
+            lastSavedTitle = title;
+            lastSavedContent = content;
+            return Promise.resolve();
+        } else {
+            // Fallback to synchronous XHR
+            return new Promise((resolve) => {
+                const xhr = new XMLHttpRequest();
+                xhr.open(method, url, false); // synchronous
+                xhr.setRequestHeader('Content-Type', 'application/json');
+                
+                try {
+                    xhr.send(JSON.stringify({ title, content }));
+                    if (xhr.status >= 200 && xhr.status < 300) {
+                        lastSavedTitle = title;
+                        lastSavedContent = content;
+                    }
+                } catch (error) {
+                    console.error('Synchronous save error:', error);
+                }
+                resolve();
+            });
+        }
+    }
+
     // Start auto-save when user starts typing in title or content
     titleInput.addEventListener('input', function() {
         if (!autoSaveTimer) {
@@ -774,6 +847,97 @@ document.addEventListener('DOMContentLoaded', function() {
     textarea.addEventListener('input', function() {
         if (!autoSaveTimer) {
             startAutoSave();
+        }
+    });
+
+    // === NEW: Focus out auto-save functionality ===
+    
+    // Save when title input loses focus
+    titleInput.addEventListener('blur', function() {
+        performAutoSaveOnFocusOut();
+    });
+    
+    // Save when content textarea loses focus
+    textarea.addEventListener('blur', function() {
+        performAutoSaveOnFocusOut();
+    });
+    
+    // Save when user clicks outside the form area
+    document.addEventListener('click', function(e) {
+        const formArea = document.querySelector('#editorForm');
+        const clickedInsideForm = formArea && formArea.contains(e.target);
+        const clickedOnHeader = e.target.closest('.d-flex.justify-content-between.align-items-center.mb-4');
+        
+        if (!clickedInsideForm && !clickedOnHeader) {
+            performAutoSaveOnFocusOut();
+        }
+    });
+    
+    // Save when user navigates away or closes tab
+    window.addEventListener('beforeunload', function(e) {
+        if (autoSaveTimer) {
+            clearInterval(autoSaveTimer);
+        }
+        // Perform final save before leaving
+        performAutoSaveOnFocusOut(true); // synchronous save
+    });
+    
+    // Save when page loses focus (user switches tabs/apps)
+    window.addEventListener('blur', function() {
+        performAutoSaveOnFocusOut();
+    });
+    
+    // Save when page gains focus back (in case changes were made)
+    window.addEventListener('focus', function() {
+        // Small delay to ensure any programmatic changes are completed
+        setTimeout(() => {
+            performAutoSaveOnFocusOut();
+        }, 100);
+    });
+    
+    // Save when user presses ESC key (common way to "exit" editing)
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            performAutoSaveOnFocusOut();
+        }
+        
+        // Existing Ctrl+S shortcut
+        if (e.ctrlKey && e.key === 's') {
+            e.preventDefault();
+            saveDocument();
+        }
+    });
+    
+    // === Navigation-based auto-save ===
+    
+    // Intercept navigation attempts and save first
+    const originalPushState = history.pushState;
+    const originalReplaceState = history.replaceState;
+    
+    history.pushState = function() {
+        performAutoSaveOnFocusOut(true);
+        return originalPushState.apply(history, arguments);
+    };
+    
+    history.replaceState = function() {
+        performAutoSaveOnFocusOut(true);
+        return originalReplaceState.apply(history, arguments);
+    };
+    
+    // Handle back/forward navigation
+    window.addEventListener('popstate', function() {
+        performAutoSaveOnFocusOut(true);
+    });
+    
+    // Handle link clicks that might navigate away
+    document.addEventListener('click', function(e) {
+        const link = e.target.closest('a');
+        if (link && link.href && !link.href.startsWith('javascript:')) {
+            // Small delay to allow save before navigation
+            e.preventDefault();
+            performAutoSaveOnFocusOut(true).then(() => {
+                window.location.href = link.href;
+            });
         }
     });
 
@@ -945,173 +1109,266 @@ document.addEventListener('DOMContentLoaded', function() {
         return i;
     }
 
-        textarea.addEventListener('keydown', function(e) {
-    // Handle Ctrl+Z (Undo) and Ctrl+Y (Redo)
-    if (e.ctrlKey && e.key === 'z') {
-        e.preventDefault();
-        undo();
-        return;
-    }
-    
-    if (e.ctrlKey && e.key === 'y') {
-        e.preventDefault();
-        redo();
-        return;
-    }
-
-    if (e.key === 'Tab') {
-        e.preventDefault();
+    textarea.addEventListener('keydown', function(e) {
+        // Handle Ctrl+Z (Undo) and Ctrl+Y (Redo)
+        if (e.ctrlKey && e.key === 'z') {
+            e.preventDefault();
+            undo();
+            return;
+        }
         
-        // Save state before making changes
-        saveState();
+        if (e.ctrlKey && e.key === 'y') {
+            e.preventDefault();
+            redo();
+            return;
+        }
 
-        const start = textarea.selectionStart;
-        const value = textarea.value;
-        const lines = value.substring(0, start).split('\n');
-        const currentLineIndex = lines.length - 1;
-        const currentLineStart = value.lastIndexOf('\n', start - 1) + 1;
-        const currentLine = value.substring(currentLineStart);
-        const prefixEnd = currentLineStart + findPrefixEnd(currentLine);
-        const restOfLine = value.substring(prefixEnd);
+        if (e.key === 'Tab') {
+            e.preventDefault();
+            
+            // Save state before making changes
+            saveState();
 
-        // Reset tab count if on a new line
-        if (currentLineIndex !== lastLineIndex) {
-            currentTabCount = 0;
-            // Only calculate indent level if numbering is enabled
-            if (isNumberingEnabled()) {
-                // Calculate current indent level from existing prefix
-                const currentLineContent = value.substring(currentLineStart, value.indexOf('\n', currentLineStart) >= 0 ? value.indexOf('\n', currentLineStart) : value.length);
-                
-                // Initialize indentCount for counting spaces
-                let indentCount = 0;
-                for (let i = 0; i < currentLineContent.length && currentLineContent[i] === '　'; i++) {
-                    indentCount++;
-                }
+            const start = textarea.selectionStart;
+            const value = textarea.value;
+            const lines = value.substring(0, start).split('\n');
+            const currentLineIndex = lines.length - 1;
+            const currentLineStart = value.lastIndexOf('\n', start - 1) + 1;
+            const currentLine = value.substring(currentLineStart);
+            const prefixEnd = currentLineStart + findPrefixEnd(currentLine);
+            const restOfLine = value.substring(prefixEnd);
 
-                // Determine current level based on prefix
-                if (currentLineContent.match(/^\s*$/)) {
-                    currentLineIndent = 0; // Empty line
-                } else if (currentLineContent.match(/^[^(]*$/)) {
-                    currentLineIndent = 0; // No parentheses
-                } else if (currentLineContent.match(/^\((\d+)\)/)) {
-                    currentLineIndent = 1; // Format (n)
-                } else if (currentLineContent.match(/^　*\([a-z]\)(?!\-)/) || currentLineContent.match(/^　*\((i+)\)/)) {
-                    currentLineIndent = 2; // Format (a) or (i)
-                } else if (currentLineContent.match(/^　*\([a-z](-\d+)+\)/)) {
-                    const matches = currentLineContent.match(/^　*\([a-z]((-\d+)*)\)/);
-                    if (matches && matches[1]) {
-                        const dashCount = (matches[1].match(/-/g) || []).length;
-                        currentLineIndent = 2 + dashCount;
+            // Reset tab count if on a new line
+            if (currentLineIndex !== lastLineIndex) {
+                currentTabCount = 0;
+                // Only calculate indent level if numbering is enabled
+                if (isNumberingEnabled()) {
+                    // Calculate current indent level from existing prefix
+                    const currentLineContent = value.substring(currentLineStart, value.indexOf('\n', currentLineStart) >= 0 ? value.indexOf('\n', currentLineStart) : value.length);
+                    
+                    // Initialize indentCount for counting spaces
+                    let indentCount = 0;
+                    for (let i = 0; i < currentLineContent.length && currentLineContent[i] === '　'; i++) {
+                        indentCount++;
+                    }
+
+                    // Determine current level based on prefix
+                    if (currentLineContent.match(/^\s*$/)) {
+                        currentLineIndent = 0; // Empty line
+                    } else if (currentLineContent.match(/^[^(]*$/)) {
+                        currentLineIndent = 0; // No parentheses
+                    } else if (currentLineContent.match(/^\((\d+)\)/)) {
+                        currentLineIndent = 1; // Format (n)
+                    } else if (currentLineContent.match(/^　*\([a-z]\)(?!\-)/) || currentLineContent.match(/^　*\((i+)\)/)) {
+                        currentLineIndent = 2; // Format (a) or (i)
+                    } else if (currentLineContent.match(/^　*\([a-z](-\d+)+\)/)) {
+                        const matches = currentLineContent.match(/^　*\([a-z]((-\d+)*)\)/);
+                        if (matches && matches[1]) {
+                            const dashCount = (matches[1].match(/-/g) || []).length;
+                            currentLineIndent = 2 + dashCount;
+                        } else {
+                            currentLineIndent = 2;
+                        }
                     } else {
-                        currentLineIndent = 2;
+                        currentLineIndent = indentCount; // Use space count for non-numbered lines
+                    }
+
+                    // Initialize currentTabCount based on indentCount and currentLineIndent
+                    const tabSkipCount = getTabSkipCount();
+                    currentTabCount = currentLineIndent > 0 ? tabSkipCount + currentLineIndent - 1 : indentCount;
+                } else {
+                    // If numbering is disabled, reset indent to 0
+                    currentLineIndent = 0;
+                    // Count spaces for non-numbered lines
+                    const currentLineContent = value.substring(currentLineStart, value.indexOf('\n', currentLineStart) >= 0 ? value.indexOf('\n', currentLineStart) : value.length);
+                    let indentCount = 0;
+                    for (let i = 0; i < currentLineContent.length && currentLineContent[i] === '　'; i++) {
+                        indentCount++;
+                    }
+                    currentTabCount = indentCount;
+                }
+                lastLineIndex = currentLineIndex;
+            }
+
+            const tabSkipCount = getTabSkipCount();
+            const numberingEnabled = isNumberingEnabled();
+
+            // Handle Shift+Tab (decrease indent)
+            if (e.shiftKey) {
+                // Decrease tab count
+                currentTabCount = Math.max(0, currentTabCount - 1);
+                
+                if (numberingEnabled) {
+                    // Decrease indent level if numbering is enabled
+                    currentLineIndent = Math.max(0, currentLineIndent - 1);
+                    
+                    // Get content after the numbering prefix
+                    const currentLineContent = value.substring(currentLineStart);
+                    const lineEnd = currentLineContent.indexOf('\n');
+                    const fullLine = lineEnd >= 0 ? currentLineContent.substring(0, lineEnd) : currentLineContent;
+                    const prefixEndLocal = findPrefixEnd(fullLine);
+                    const contentAfterPrefix = fullLine.substring(prefixEndLocal);
+                    
+                    if (currentLineIndent === 0) {
+                        // Remove all numbering, keep only spaces up to tabSkipCount or currentTabCount
+                        const spacesToKeep = Math.min(tabSkipCount, currentTabCount);
+                        const newLinePrefix = '　'.repeat(spacesToKeep);
+                        const newValue = value.substring(0, currentLineStart) + newLinePrefix + contentAfterPrefix + value.substring(currentLineStart + fullLine.length);
+                        textarea.value = newValue;
+                        textarea.selectionStart = textarea.selectionEnd = currentLineStart + newLinePrefix.length;
+                    } else {
+                        // Apply numbering for the new indent level
+                        applyNumberingLogicForShiftTab(contentAfterPrefix);
                     }
                 } else {
-                    currentLineIndent = indentCount; // Use space count for non-numbered lines
-                }
-
-                // Initialize currentTabCount based on indentCount and currentLineIndent
-                const tabSkipCount = getTabSkipCount();
-                currentTabCount = currentLineIndent > 0 ? tabSkipCount + currentLineIndent - 1 : indentCount;
-            } else {
-                // If numbering is disabled, reset indent to 0
-                currentLineIndent = 0;
-                // Count spaces for non-numbered lines
-                const currentLineContent = value.substring(currentLineStart, value.indexOf('\n', currentLineStart) >= 0 ? value.indexOf('\n', currentLineStart) : value.length);
-                let indentCount = 0;
-                for (let i = 0; i < currentLineContent.length && currentLineContent[i] === '　'; i++) {
-                    indentCount++;
-                }
-                currentTabCount = indentCount;
-            }
-            lastLineIndex = currentLineIndex;
-        }
-
-        const tabSkipCount = getTabSkipCount();
-        const numberingEnabled = isNumberingEnabled();
-
-        // Handle Shift+Tab (decrease indent)
-        if (e.shiftKey) {
-            // Decrease tab count
-            currentTabCount = Math.max(0, currentTabCount - 1);
-            
-            if (numberingEnabled) {
-                // Decrease indent level if numbering is enabled
-                currentLineIndent = Math.max(0, currentLineIndent - 1);
-                
-                // Get content after the numbering prefix
-                const currentLineContent = value.substring(currentLineStart);
-                const lineEnd = currentLineContent.indexOf('\n');
-                const fullLine = lineEnd >= 0 ? currentLineContent.substring(0, lineEnd) : currentLineContent;
-                const prefixEndLocal = findPrefixEnd(fullLine);
-                const contentAfterPrefix = fullLine.substring(prefixEndLocal);
-                
-                if (currentLineIndent === 0) {
-                    // Remove all numbering, keep only spaces up to tabSkipCount or currentTabCount
-                    const spacesToKeep = Math.min(tabSkipCount, currentTabCount);
-                    const newLinePrefix = '　'.repeat(spacesToKeep);
-                    const newValue = value.substring(0, currentLineStart) + newLinePrefix + contentAfterPrefix + value.substring(currentLineStart + fullLine.length);
-                    textarea.value = newValue;
-                    textarea.selectionStart = textarea.selectionEnd = currentLineStart + newLinePrefix.length;
-                } else {
-                    // Apply numbering for the new indent level
-                    applyNumberingLogicForShiftTab(contentAfterPrefix);
+                    // If numbering is disabled, just remove one space if available
+                    let existingSpaces = 0;
+                    for (let i = 0; i < currentLine.length && currentLine[i] === '　'; i++) {
+                        existingSpaces++;
+                    }
+                    if (existingSpaces > 0) {
+                        const newLinePrefix = '　'.repeat(existingSpaces - 1);
+                        const newValue = value.substring(0, currentLineStart) + newLinePrefix + restOfLine;
+                        textarea.value = newValue;
+                        textarea.selectionStart = textarea.selectionEnd = currentLineStart + newLinePrefix.length;
+                    }
                 }
             } else {
-                // If numbering is disabled, just remove one space if available
-                let existingSpaces = 0;
-                for (let i = 0; i < currentLine.length && currentLine[i] === '　'; i++) {
-                    existingSpaces++;
-                }
-                if (existingSpaces > 0) {
-                    const newLinePrefix = '　'.repeat(existingSpaces - 1);
-                    const newValue = value.substring(0, currentLineStart) + newLinePrefix + restOfLine;
+                // Handle regular Tab (increase indent)
+                currentTabCount++;
+                
+                if (!numberingEnabled) {
+                    // If numbering is disabled, just add one full-width space
+                    const newValue = value.substring(0, start) + '　' + value.substring(start);
                     textarea.value = newValue;
-                    textarea.selectionStart = textarea.selectionEnd = currentLineStart + newLinePrefix.length;
+                    textarea.selectionStart = textarea.selectionEnd = start + 1;
+                    lastLineIndex = currentLineIndex;
+                    return;
                 }
-            }
-        } else {
-            // Handle regular Tab (increase indent)
-            currentTabCount++;
-            
-            if (!numberingEnabled) {
-                // If numbering is disabled, just add one full-width space
-                const newValue = value.substring(0, start) + '　' + value.substring(start);
-                textarea.value = newValue;
-                textarea.selectionStart = textarea.selectionEnd = start + 1;
-                lastLineIndex = currentLineIndex;
-                return;
-            }
-            
-            // Numbering is enabled - check if we should just add spacing without numbering
-            if (currentTabCount <= tabSkipCount) {
-                // Just add full-width space (2-byte character)
-                const newValue = value.substring(0, start) + '　' + value.substring(start);
-                textarea.value = newValue;
-                textarea.selectionStart = textarea.selectionEnd = start + 1;
-                lastLineIndex = currentLineIndex;
-                return;
+                
+                // Numbering is enabled - check if we should just add spacing without numbering
+                if (currentTabCount <= tabSkipCount) {
+                    // Just add full-width space (2-byte character)
+                    const newValue = value.substring(0, start) + '　' + value.substring(start);
+                    textarea.value = newValue;
+                    textarea.selectionStart = textarea.selectionEnd = start + 1;
+                    lastLineIndex = currentLineIndex;
+                    return;
+                }
+                
+                // We're past the skip count and numbering is enabled, so increase indent level and apply numbering
+                currentLineIndent++;
+                applyNumberingLogic();
             }
             
-            // We're past the skip count and numbering is enabled, so increase indent level and apply numbering
-            currentLineIndent++;
-            applyNumberingLogic();
-        }
-        
-        function applyNumberingLogicForShiftTab(contentAfterPrefix) {
-            let number = '';
-            if (currentLineIndent > 0) {
-                if (currentLineIndent === 1) {
-                    const lastNumber = findNearestNumber(textarea.value.split('\n'), currentLineIndex);
-                    number = `(${lastNumber + 1})`;
-                } else if (currentLineIndent === 2) {
-                    if (hasConditionAbove(textarea.value.split('\n'), currentLineIndex)) {
-                        const lastRoman = findNearestRomanNumeral(textarea.value.split('\n'), currentLineIndex);
-                        number = `(${generateRomanNumeral(lastRoman + 1)})`;
-                    } else {
-                        let lastLetter = '';
+            function applyNumberingLogicForShiftTab(contentAfterPrefix) {
+                let number = '';
+                if (currentLineIndent > 0) {
+                    if (currentLineIndent === 1) {
+                        const lastNumber = findNearestNumber(textarea.value.split('\n'), currentLineIndex);
+                        number = `(${lastNumber + 1})`;
+                    } else if (currentLineIndent === 2) {
+                        if (hasConditionAbove(textarea.value.split('\n'), currentLineIndex)) {
+                            const lastRoman = findNearestRomanNumeral(textarea.value.split('\n'), currentLineIndex);
+                            number = `(${generateRomanNumeral(lastRoman + 1)})`;
+                        } else {
+                            let lastLetter = '';
+                            for (let i = currentLineIndex - 1; i >= 0; i--) {
+                                const line = textarea.value.split('\n')[i];
+                                if (line.match(/^\((\d+)\)/)) {
+                                    break;
+                                }
+                                const match = line.match(/^　*\(([a-z])\)(?!\-)/);
+                                if (match) {
+                                    lastLetter = match[1];
+                                    break;
+                                }
+                            }
+                            number = lastLetter ? `(${String.fromCharCode(lastLetter.charCodeAt(0) + 1)})` : '(a)';
+                        }
+                    } else if (currentLineIndent >= 3) {
+                        let parentPattern = '';
+                        let parentLevel = currentLineIndent - 1;
+                        
                         for (let i = currentLineIndex - 1; i >= 0; i--) {
                             const line = textarea.value.split('\n')[i];
                             if (line.match(/^\((\d+)\)/)) {
+                                break;
+                            }
+                            if (parentLevel === 2) {
+                                const letterMatch = line.match(/^　*\(([a-z])\)(?!\-)/);
+                                const romanMatch = line.match(/^　*\((i+)\)/);
+                                if (letterMatch) {
+                                    parentPattern = letterMatch[1];
+                                    break;
+                                } else if (romanMatch) {
+                                    const romanCount = romanMatch[1].length;
+                                    parentPattern = String.fromCharCode('a'.charCodeAt(0) + romanCount - 1);
+                                    break;
+                                }
+                            } else {
+                                const regex = new RegExp(`^　*\\(([a-z](-\\d+){${parentLevel - 2}})\\)(?!\\-)`);
+                                const match = line.match(regex);
+                                if (match) {
+                                    parentPattern = match[1];
+                                    break;
+                                }
+                            }
+                        }
+                        
+                        if (!parentPattern) {
+                            parentPattern = currentLineIndent === 3 ? 'a' : 'a' + '-1'.repeat(currentLineIndent - 3);
+                        }
+                        
+                        let lastNumber = 0;
+                        const searchPattern = `^　*\\(${parentPattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}-(\\d+)\\)`;
+                        const currentRegex = new RegExp(searchPattern);
+                        
+                        for (let i = currentLineIndex - 1; i >= 0; i--) {
+                            const line = textarea.value.split('\n')[i];
+                            if (line.match(/^\((\d+)\)/)) {
+                                break;
+                            }
+                            const match = line.match(currentRegex);
+                            if (match) {
+                                lastNumber = parseInt(match[1]);
+                                break;
+                            }
+                        }
+                        
+                        number = `(${parentPattern}-${lastNumber + 1})`;
+                    }
+
+                    // Calculate spaces needed for new indent level
+                    const totalSpaces = tabSkipCount + Math.max(0, currentLineIndent - 1);
+                    const indent = '　'.repeat(totalSpaces);
+                    const newLinePrefix = indent + number + ' ';
+
+                    // Replace the current line
+                    const lineEnd = textarea.value.substring(currentLineStart).indexOf('\n');
+                    const newValue = textarea.value.substring(0, currentLineStart) + 
+                                   newLinePrefix + contentAfterPrefix + 
+                                   textarea.value.substring(currentLineStart + (lineEnd >= 0 ? lineEnd : textarea.value.length - currentLineStart));
+                    textarea.value = newValue;
+
+                    // Update cursor position
+                    textarea.selectionStart = textarea.selectionEnd = currentLineStart + newLinePrefix.length;
+                }
+            }
+
+            function applyNumberingLogic() {
+                let number = '';
+                if (currentLineIndent > 0) {
+                    if (currentLineIndent === 1) {
+                        const lastNumber = findNearestNumber(value.split('\n'), currentLineIndex);
+                        number = `(${lastNumber + 1})`;
+                    } else if (currentLineIndent === 2) {
+                        let lastLetter = '';
+                        for (let i = currentLineIndex - 1; i >= 0; i--) {
+                            const line = lines[i];
+                            if (/^\s*\(\d+\)/.test(line)) {
+                                // Nếu gặp mục số, reset về (a)
+                                lastLetter = '';
                                 break;
                             }
                             const match = line.match(/^　*\(([a-z])\)(?!\-)/);
@@ -1121,253 +1378,160 @@ document.addEventListener('DOMContentLoaded', function() {
                             }
                         }
                         number = lastLetter ? `(${String.fromCharCode(lastLetter.charCodeAt(0) + 1)})` : '(a)';
-                    }
-                } else if (currentLineIndent >= 3) {
-                    let parentPattern = '';
-                    let parentLevel = currentLineIndent - 1;
-                    
-                    for (let i = currentLineIndex - 1; i >= 0; i--) {
-                        const line = textarea.value.split('\n')[i];
-                        if (line.match(/^\((\d+)\)/)) {
-                            break;
-                        }
-                        if (parentLevel === 2) {
-                            const letterMatch = line.match(/^　*\(([a-z])\)(?!\-)/);
-                            const romanMatch = line.match(/^　*\((i+)\)/);
-                            if (letterMatch) {
-                                parentPattern = letterMatch[1];
-                                break;
-                            } else if (romanMatch) {
-                                const romanCount = romanMatch[1].length;
-                                parentPattern = String.fromCharCode('a'.charCodeAt(0) + romanCount - 1);
+                    } else if (currentLineIndent >= 3) {
+                        let parentPattern = '';
+                        let parentLevel = currentLineIndent - 1;
+                        const lines = value.split('\n');
+
+                        for (let i = currentLineIndex - 1; i >= 0; i--) {
+                            const line = lines[i];
+                            if (/^[\s\u3000]{0,5}\(\d+\)/.test(line)) {
                                 break;
                             }
-                        } else {
-                            const regex = new RegExp(`^　*\\(([a-z](-\\d+){${parentLevel - 2}})\\)(?!\\-)`);
-                            const match = line.match(regex);
+                            if (parentLevel === 2) {
+                                const letterMatch = line.match(/^[\s\u3000]{0,5}\(([a-z])\)(?!\-)/);
+                                const romanMatch = line.match(/^[\s\u3000]{0,5}\((i+)\)/);
+                                if (letterMatch) {
+                                    parentPattern = letterMatch[1];
+                                    break;
+                                } else if (romanMatch) {
+                                    const romanCount = romanMatch[1].length;
+                                    parentPattern = String.fromCharCode('a'.charCodeAt(0) + romanCount - 1);
+                                    break;
+                                }
+                            } else {
+                                const regex = new RegExp(`^[\\s\\u3000]{0,5}\\(([a-z](-\\d+){${parentLevel - 2}})\\)(?!\\-)`);
+                                const match = line.match(regex);
+                                if (match) {
+                                    parentPattern = match[1];
+                                    break;
+                                }
+                            }
+                        }
+
+                        if (!parentPattern) {
+                            parentPattern = currentLineIndent === 3 ? 'a' : 'a' + '-1'.repeat(currentLineIndent - 3);
+                        }
+
+                        let lastNumber = 0;
+                        const searchPattern = `^[\\s\\u3000]{0,5}\\(${parentPattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}-(\\d+)\\)`;
+                        const currentRegex = new RegExp(searchPattern);
+
+                        for (let i = currentLineIndex - 1; i >= 0; i--) {
+                            const line = lines[i];
+                            if (/^[\s\u3000]{0,5}\(\d+\)/.test(line)) {
+                                break;
+                            }
+                            const match = line.match(currentRegex);
                             if (match) {
-                                parentPattern = match[1];
+                                lastNumber = parseInt(match[1]);
                                 break;
                             }
                         }
-                    }
-                    
-                    if (!parentPattern) {
-                        parentPattern = currentLineIndent === 3 ? 'a' : 'a' + '-1'.repeat(currentLineIndent - 3);
-                    }
-                    
-                    let lastNumber = 0;
-                    const searchPattern = `^　*\\(${parentPattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}-(\\d+)\\)`;
-                    const currentRegex = new RegExp(searchPattern);
-                    
-                    for (let i = currentLineIndex - 1; i >= 0; i--) {
-                        const line = textarea.value.split('\n')[i];
-                        if (line.match(/^\((\d+)\)/)) {
-                            break;
-                        }
-                        const match = line.match(currentRegex);
-                        if (match) {
-                            lastNumber = parseInt(match[1]);
-                            break;
-                        }
-                    }
-                    
-                    number = `(${parentPattern}-${lastNumber + 1})`;
-                }
 
-                // Calculate spaces needed for new indent level
-                const totalSpaces = tabSkipCount + Math.max(0, currentLineIndent - 1);
-                const indent = '　'.repeat(totalSpaces);
-                const newLinePrefix = indent + number + ' ';
-
-                // Replace the current line
-                const lineEnd = textarea.value.substring(currentLineStart).indexOf('\n');
-                const newValue = textarea.value.substring(0, currentLineStart) + 
-                               newLinePrefix + contentAfterPrefix + 
-                               textarea.value.substring(currentLineStart + (lineEnd >= 0 ? lineEnd : textarea.value.length - currentLineStart));
-                textarea.value = newValue;
-
-                // Update cursor position
-                textarea.selectionStart = textarea.selectionEnd = currentLineStart + newLinePrefix.length;
-            }
-        }
-
-        function applyNumberingLogic() {
-            let number = '';
-            if (currentLineIndent > 0) {
-                if (currentLineIndent === 1) {
-                    const lastNumber = findNearestNumber(value.split('\n'), currentLineIndex);
-                    number = `(${lastNumber + 1})`;
-                } else if (currentLineIndent === 2) {
-                    let lastLetter = '';
-                    for (let i = currentLineIndex - 1; i >= 0; i--) {
-                        const line = lines[i];
-                        if (/^\s*\(\d+\)/.test(line)) {
-                            // Nếu gặp mục số, reset về (a)
-                            lastLetter = '';
-                            break;
-                        }
-                        const match = line.match(/^　*\(([a-z])\)(?!\-)/);
-                        if (match) {
-                            lastLetter = match[1];
-                            break;
-                        }
-                    }
-                    number = lastLetter ? `(${String.fromCharCode(lastLetter.charCodeAt(0) + 1)})` : '(a)';
-                } else if (currentLineIndent >= 3) {
-                    let parentPattern = '';
-                    let parentLevel = currentLineIndent - 1;
-                    const lines = value.split('\n');
-
-                    for (let i = currentLineIndex - 1; i >= 0; i--) {
-                        const line = lines[i];
-                        if (/^[\s\u3000]{0,5}\(\d+\)/.test(line)) {
-                            break;
-                        }
-                        if (parentLevel === 2) {
-                            const letterMatch = line.match(/^[\s\u3000]{0,5}\(([a-z])\)(?!\-)/);
-                            const romanMatch = line.match(/^[\s\u3000]{0,5}\((i+)\)/);
-                            if (letterMatch) {
-                                parentPattern = letterMatch[1];
-                                break;
-                            } else if (romanMatch) {
-                                const romanCount = romanMatch[1].length;
-                                parentPattern = String.fromCharCode('a'.charCodeAt(0) + romanCount - 1);
-                                break;
-                            }
-                        } else {
-                            const regex = new RegExp(`^[\\s\\u3000]{0,5}\\(([a-z](-\\d+){${parentLevel - 2}})\\)(?!\\-)`);
-                            const match = line.match(regex);
-                            if (match) {
-                                parentPattern = match[1];
-                                break;
-                            }
-                        }
+                        number = `(${parentPattern}-${lastNumber + 1})`;
                     }
 
-                    if (!parentPattern) {
-                        parentPattern = currentLineIndent === 3 ? 'a' : 'a' + '-1'.repeat(currentLineIndent - 3);
-                    }
+                    // Calculate total spaces needed
+                    const totalSpaces = tabSkipCount + Math.max(0, currentLineIndent - 1);
+                    const indent = '　'.repeat(totalSpaces);
+                    const newLinePrefix = indent + number + ' ';
 
-                    let lastNumber = 0;
-                    const searchPattern = `^[\\s\\u3000]{0,5}\\(${parentPattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}-(\\d+)\\)`;
-                    const currentRegex = new RegExp(searchPattern);
-
-                    for (let i = currentLineIndex - 1; i >= 0; i--) {
-                        const line = lines[i];
-                        if (/^[\s\u3000]{0,5}\(\d+\)/.test(line)) {
-                            break;
-                        }
-                        const match = line.match(currentRegex);
-                        if (match) {
-                            lastNumber = parseInt(match[1]);
-                            break;
-                        }
-                    }
-
-                    number = `(${parentPattern}-${lastNumber + 1})`;
-                }
-
-                // Calculate total spaces needed
-                const totalSpaces = tabSkipCount + Math.max(0, currentLineIndent - 1);
-                const indent = '　'.repeat(totalSpaces);
-                const newLinePrefix = indent + number + ' ';
-
-                // Replace the current line's prefix
-                const newValue = value.substring(0, currentLineStart) + newLinePrefix + restOfLine;
-                textarea.value = newValue;
-
-                // Update cursor position
-                textarea.selectionStart = textarea.selectionEnd = currentLineStart + newLinePrefix.length;
-            } else {
-                // currentLineIndent is 0, keep only spaces from skip count
-                const spacesToKeep = Math.min(tabSkipCount, currentTabCount);
-                const newLinePrefix = '　'.repeat(spacesToKeep);
-                const newValue = value.substring(0, currentLineStart) + newLinePrefix + restOfLine;
-                textarea.value = newValue;
-                textarea.selectionStart = textarea.selectionEnd = currentLineStart + newLinePrefix.length;
-            }
-        }
-
-        // Update last line index
-        lastLineIndex = currentLineIndex;
-
-    } else {
-        // Save state for other significant changes
-        if (e.key === 'Enter' || e.key === 'Backspace' || e.key === 'Delete') {
-            saveState();
-        }
-        
-        // Reset indent and tab count on Enter
-        if (e.key === 'Enter') {
-            currentLineIndent = 0;
-            lastLineIndex = -1;
-            currentTabCount = 0;
-        }
-
-        // Reset indent and tab count when deleting back to beginning of line
-        if (e.key === 'Backspace') {
-            setTimeout(() => {
-                const start = textarea.selectionStart;
-                const value = textarea.value;
-                const currentLineStart = value.lastIndexOf('\n', start - 1) + 1;
-                
-                // If cursor is at the beginning of a line, reset state
-                if (start === currentLineStart) {
-                    currentLineIndent = 0;
-                    lastLineIndex = -1;
-                    currentTabCount = 0;
-                }
-            }, 10);
-        }
-
-        if (e.key === 'Backspace' || e.key === 'Delete') {
-            setTimeout(() => {
-                const start = textarea.selectionStart;
-                const value = textarea.value;
-                const currentLineStart = value.lastIndexOf('\n', start - 1) + 1;
-                
-                // If cursor is at the beginning of a line, reset state
-                if (start === currentLineStart) {
-                    currentLineIndent = 0;
-                    lastLineIndex = -1;
-                    currentTabCount = 0;
-                }
-            }, 10);
-        }
-
-        // Auto line break at 140 bytes
-        if (e.key !== 'Enter' && e.key !== 'Backspace' && e.key !== 'Delete') {
-            setTimeout(() => {
-                const start = textarea.selectionStart;
-                const value = textarea.value;
-                const currentLineStart = value.lastIndexOf('\n', start - 1) + 1;
-                const currentLine = value.substring(currentLineStart, start);
-
-                if (getByteLength(currentLine) > 140) {
-                    saveState(); // Save state before auto line break
-                    
-                    let breakPoint = currentLine.length;
-                    for (let i = currentLine.length - 1; i >= 0; i--) {
-                        if (getByteLength(currentLine.substring(0, i)) <= 140) {
-                            if (currentLine[i] === ' ') {
-                                breakPoint = i;
-                                break;
-                            }
-                            if (i === 0) breakPoint = i;
-                        }
-                    }
-
-                    const newValue = value.substring(0, currentLineStart + breakPoint) + 
-                                    '\n' + 
-                                    value.substring(currentLineStart + breakPoint);
+                    // Replace the current line's prefix
+                    const newValue = value.substring(0, currentLineStart) + newLinePrefix + restOfLine;
                     textarea.value = newValue;
-                    textarea.selectionStart = textarea.selectionEnd = currentLineStart + breakPoint + 1;
+
+                    // Update cursor position
+                    textarea.selectionStart = textarea.selectionEnd = currentLineStart + newLinePrefix.length;
+                } else {
+                    // currentLineIndent is 0, keep only spaces from skip count
+                    const spacesToKeep = Math.min(tabSkipCount, currentTabCount);
+                    const newLinePrefix = '　'.repeat(spacesToKeep);
+                    const newValue = value.substring(0, currentLineStart) + newLinePrefix + restOfLine;
+                    textarea.value = newValue;
+                    textarea.selectionStart = textarea.selectionEnd = currentLineStart + newLinePrefix.length;
                 }
-            }, 10);
+            }
+
+            // Update last line index
+            lastLineIndex = currentLineIndex;
+
+        } else {
+            // Save state for other significant changes
+            if (e.key === 'Enter' || e.key === 'Backspace' || e.key === 'Delete') {
+                saveState();
+            }
+            
+            // Reset indent and tab count on Enter
+            if (e.key === 'Enter') {
+                currentLineIndent = 0;
+                lastLineIndex = -1;
+                currentTabCount = 0;
+            }
+
+            // Reset indent and tab count when deleting back to beginning of line
+            if (e.key === 'Backspace') {
+                setTimeout(() => {
+                    const start = textarea.selectionStart;
+                    const value = textarea.value;
+                    const currentLineStart = value.lastIndexOf('\n', start - 1) + 1;
+                    
+                    // If cursor is at the beginning of a line, reset state
+                    if (start === currentLineStart) {
+                        currentLineIndent = 0;
+                        lastLineIndex = -1;
+                        currentTabCount = 0;
+                    }
+                }, 10);
+            }
+
+            if (e.key === 'Backspace' || e.key === 'Delete') {
+                setTimeout(() => {
+                    const start = textarea.selectionStart;
+                    const value = textarea.value;
+                    const currentLineStart = value.lastIndexOf('\n', start - 1) + 1;
+                    
+                    // If cursor is at the beginning of a line, reset state
+                    if (start === currentLineStart) {
+                        currentLineIndent = 0;
+                        lastLineIndex = -1;
+                        currentTabCount = 0;
+                    }
+                }, 10);
+            }
+
+            // Auto line break at 140 bytes
+            if (e.key !== 'Enter' && e.key !== 'Backspace' && e.key !== 'Delete') {
+                setTimeout(() => {
+                    const start = textarea.selectionStart;
+                    const value = textarea.value;
+                    const currentLineStart = value.lastIndexOf('\n', start - 1) + 1;
+                    const currentLine = value.substring(currentLineStart, start);
+
+                    if (getByteLength(currentLine) > 140) {
+                        saveState(); // Save state before auto line break
+                        
+                        let breakPoint = currentLine.length;
+                        for (let i = currentLine.length - 1; i >= 0; i--) {
+                            if (getByteLength(currentLine.substring(0, i)) <= 140) {
+                                if (currentLine[i] === ' ') {
+                                    breakPoint = i;
+                                    break;
+                                }
+                                if (i === 0) breakPoint = i;
+                            }
+                        }
+
+                        const newValue = value.substring(0, currentLineStart + breakPoint) + 
+                                        '\n' + 
+                                        value.substring(currentLineStart + breakPoint);
+                        textarea.value = newValue;
+                        textarea.selectionStart = textarea.selectionEnd = currentLineStart + breakPoint + 1;
+                    }
+                }, 10);
+            }
         }
-    }
-});
+    });
 
     // Save state on input (for typing)
     let inputTimer;
@@ -1388,6 +1552,7 @@ document.addEventListener('DOMContentLoaded', function() {
             currentTabCount = 0;
         });
     }
+    
     // Thay thế form submit handler
     form.addEventListener('submit', function(e) {
         e.preventDefault();
@@ -1424,14 +1589,14 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeAutoSave();
 });
 
-// Hàm save được gọi từ button
+// Update saveDocument function to use promise
 function saveDocument() {
     const title = document.getElementById('title').value.trim();
     const content = document.getElementById('editorContent').value.trim();
     
     if (!title) {
         alert('Title is required');
-        return;
+        return Promise.resolve();
     }
     
     // Kiểm tra xem đang edit hay tạo mới
@@ -1440,10 +1605,10 @@ function saveDocument() {
     
     if (documentId) {
         // Update existing document
-        updateDocument(documentId, title, content);
+        return updateDocument(documentId, title, content);
     } else {
         // Create new document
-        createDocument(title, content);
+        return createDocument(title, content);
     }
 }
 
@@ -1456,7 +1621,7 @@ document.addEventListener('keydown', function(e) {
 });
 
 function createDocument(title, content) {
-    fetch('/api/editor_documents', {
+    return fetch('/api/editor_documents', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -1471,15 +1636,17 @@ function createDocument(title, content) {
         } else {
             alert('Error: ' + (data.error || 'Unknown error'));
         }
+        return data;
     })
     .catch(error => {
         console.error('Error:', error);
         alert('Error saving document');
+        throw error;
     });
 }
 
 function updateDocument(documentId, title, content) {
-    fetch(`/api/editor_documents/${documentId}`, {
+    return fetch(`/api/editor_documents/${documentId}`, {
         method: 'PUT',
         headers: {
             'Content-Type': 'application/json',
@@ -1494,10 +1661,12 @@ function updateDocument(documentId, title, content) {
         } else {
             alert('Error: ' + (data.error || 'Unknown error'));
         }
+        return data;
     })
     .catch(error => {
         console.error('Error:', error);
         alert('Error updating document');
+        throw error;
     });
 }
 
@@ -1508,6 +1677,14 @@ function loadDocument(documentId) {
         if (data.document) {
             document.getElementById('title').value = data.document.title;
             document.getElementById('editorContent').value = data.document.content;
+            
+            // Update saved values for auto-save
+            const titleInput = document.getElementById('title');
+            const textarea = document.getElementById('editorContent');
+            if (titleInput && textarea) {
+                lastSavedTitle = data.document.title;
+                lastSavedContent = data.document.content;
+            }
         } else {
             alert('Error: ' + (data.error || 'Document not found'));
         }
