@@ -5108,6 +5108,76 @@ body {
         let sortDirection = 'asc';
         let currentWeekStart = null;
 
+        // Thêm hàm normalizeDate vào đầu script section
+        function normalizeDate(dateStr) {
+            if (!dateStr || dateStr.trim() === '') return '';
+            
+            let normalized = dateStr.trim();
+            const currentYear = new Date().getFullYear();
+            
+            // Remove text in parentheses first
+            normalized = normalized.replace(/\([^)]*\)/g, '').trim();
+            
+            // Remove time part if exists
+            normalized = normalized.split(' ')[0];
+            
+            // Handle various separators
+            normalized = normalized
+                .replace(/[\/\.\,\|\_]/g, '-')
+                .replace(/[年月日]/g, '-')
+                .replace(/\s+/g, '-')
+                .replace(/-+/g, '-')
+                .replace(/^-|-$/g, '');
+            
+            let m;
+            
+            // yyyymmdd (8 digits)
+            if (/^\d{8}$/.test(normalized)) {
+                return `${normalized.substr(0,4)}-${normalized.substr(4,2)}-${normalized.substr(6,2)}`;
+            }
+            
+            // yyyy-mm-dd (already correct)
+            m = normalized.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+            if (m) {
+                return `${m[1]}-${m[2].padStart(2, '0')}-${m[3].padStart(2, '0')}`;
+            }
+            
+            // Handle m/dd/yyyy and dd/mm/yyyy patterns
+            m = normalized.match(/^(\d{1,2})-(\d{1,2})-(\d{4})$/);
+            if (m) {
+                const day = parseInt(m[1]);
+                const month = parseInt(m[2]);
+                const year = parseInt(m[3]);
+                
+                // Smart detection: if first number > 12, it's day-month-year
+                if (day > 12) {
+                    // Must be dd-mm-yyyy
+                    return `${year}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`;
+                } else if (month > 12) {
+                    // Must be mm-dd-yyyy  
+                    return `${year}-${m[1].padStart(2, '0')}-${m[2].padStart(2, '0')}`;
+                } else {
+                    // Ambiguous case - default to mm-dd-yyyy (US format)
+                    return `${year}-${m[1].padStart(2, '0')}-${m[2].padStart(2, '0')}`;
+                }
+            }
+            
+            // dd-mm-yy
+            m = normalized.match(/^(\d{1,2})-(\d{1,2})-(\d{2})$/);
+            if (m) {
+                const year = parseInt(m[3]) < 50 ? `20${m[3]}` : `19${m[3]}`;
+                return `${year}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`;
+            }
+            
+            // dd-mm (no year)
+            m = normalized.match(/^(\d{1,2})-(\d{1,2})$/);
+            if (m) {
+                return `${currentYear}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`;
+            }
+            
+            return normalized;
+        }
+
         // Thêm sự kiện focusout cho trường tìm kiếm 案件名
         document.getElementById('searchProjectName').addEventListener('focusout', function() {
             const searchValue = this.value.trim();
@@ -6901,54 +6971,44 @@ body {
         });
 
         document.querySelectorAll('#editModal input[type="date"]').forEach(input => {
-    // Xử lý khi paste
-    input.addEventListener('paste', function(e) {
-        e.preventDefault();
-        let paste = (e.clipboardData || window.clipboardData).getData('text');
-        paste = paste.trim();
-        if (!paste) return;
-        // Normalize các định dạng ngày tháng phổ biến
-        let normalized = paste
-            .replace(/[\/\.]/g, '-') // đổi / hoặc . thành -
-            .replace(/[年月日]/g, '-') // đổi ký tự Nhật thành -
-            .replace(/-+/g, '-'); // loại bỏ nhiều dấu -
-        // Nếu là dd-mm-yyyy thì chuyển sang yyyy-mm-dd
-        let m = normalized.match(/^(\d{1,2})-(\d{1,2})-(\d{4})$/);
-        if (m) {
-            normalized = `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`;
-        }
-        // Nếu là yyyy-mm-dd
-        m = normalized.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
-        if (m) {
-            normalized = `${m[1]}-${m[2].padStart(2, '0')}-${m[3].padStart(2, '0')}`;
-        }
-        // Gán lại giá trị đã chuẩn hóa
-        this.value = normalized;
-        // Kích hoạt sự kiện input/change nếu cần
-        this.dispatchEvent(new Event('input', { bubbles: true }));
-        this.dispatchEvent(new Event('change', { bubbles: true }));
-    });
+            // Xử lý khi paste
+            input.addEventListener('paste', function(e) {
+                e.preventDefault();
+                let paste = (e.clipboardData || window.clipboardData).getData('text');
+                paste = paste.trim();
+                if (!paste) return;
+                
+                // Sử dụng hàm normalizeDate mới
+                const normalized = normalizeDate(paste);
+                
+                // Validate result
+                if (/^\d{4}-\d{2}-\d{2}$/.test(normalized)) {
+                    this.value = normalized;
+                    this.dispatchEvent(new Event('input', { bubbles: true }));
+                    this.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+            });
 
-    // Xử lý khi nhập tay (giữ nguyên như cũ)
-    input.addEventListener('input', function(e) {
-        let val = this.value.trim();
-        if (!val) return;
-        if (/^\d{4}-\d{2}-\d{2}$/.test(val)) return;
-        let normalized = val
-            .replace(/[\/\.]/g, '-')
-            .replace(/[年月日]/g, '-')
-            .replace(/-+/g, '-');
-        let m = normalized.match(/^(\d{1,2})-(\d{1,2})-(\d{4})$/);
-        if (m) {
-            normalized = `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`;
-        }
-        m = normalized.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
-        if (m) {
-            normalized = `${m[1]}-${m[2].padStart(2, '0')}-${m[3].padStart(2, '0')}`;
-            this.value = normalized;
-        }
-    });
-});
+            // Xử lý khi nhập tay (giữ nguyên như cũ)
+            input.addEventListener('input', function(e) {
+                let val = this.value.trim();
+                if (!val) return;
+                if (/^\d{4}-\d{2}-\d{2}$/.test(val)) return;
+                let normalized = val
+                    .replace(/[\/\.]/g, '-')
+                    .replace(/[年月日]/g, '-')
+                    .replace(/-+/g, '-');
+                let m = normalized.match(/^(\d{1,2})-(\d{1,2})-(\d{4})$/);
+                if (m) {
+                    normalized = `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`;
+                }
+                m = normalized.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+                if (m) {
+                    normalized = `${m[1]}-${m[2].padStart(2, '0')}-${m[3].padStart(2, '0')}`;
+                    this.value = normalized;
+                }
+            });
+        });
 
 function openSettingsModal() {
     // Lấy username hiện tại từ session
