@@ -3256,5 +3256,84 @@ def auto_create_todos_for_week():
         logging.error(f"Error auto creating todos for week: {str(e)}")
         return jsonify({'error': str(e)}), 500
     
+@app.route('/get_current_user', methods=['GET'])
+def get_current_user():
+    """Get current logged in user."""
+    if 'username' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    return jsonify({
+        'success': True,
+        'username': session['username']
+    })
+
+@app.route('/update_user_settings', methods=['POST'])
+def update_user_settings():
+    """Update user settings (username and password)."""
+    if 'username' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    try:
+        data = request.get_json()
+        current_password = data.get('current_password', '')
+        new_username = data.get('new_username', '').strip()
+        new_password = data.get('new_password', '')
+        
+        if not current_password:
+            return jsonify({'error': '現在のパスワードが必要です'}), 400
+        
+        if not new_username:
+            return jsonify({'error': '新しいユーザー名が必要です'}), 400
+        
+        # Read current users
+        users = read_users()
+        current_username = session['username']
+        
+        # Verify current password
+        if current_username not in users or users[current_username] != current_password:
+            return jsonify({'error': '現在のパスワードが正しくありません'}), 400
+        
+        # Check if new username already exists (if changed)
+        if new_username != current_username and new_username in users:
+            return jsonify({'error': 'このユーザー名は既に存在します'}), 400
+        
+        # Validate new password
+        if new_password and len(new_password) < 4:
+            return jsonify({'error': 'パスワードは4文字以上で入力してください'}), 400
+        
+        # Update users dictionary
+        if new_username != current_username:
+            # Remove old username
+            del users[current_username]
+            # Add new username
+            users[new_username] = new_password if new_password else current_password
+            username_changed = True
+        else:
+            # Just update password
+            users[current_username] = new_password if new_password else current_password
+            username_changed = False
+        
+        # Write back to file
+        try:
+            with open('users.txt', 'w', encoding='utf-8') as f:
+                for username, password in users.items():
+                    f.write(f'{username}:{password}\n')
+        except Exception as e:
+            logging.error(f"Error writing users.txt: {str(e)}")
+            return jsonify({'error': 'ファイルの書き込みに失敗しました'}), 500
+        
+        # Update session if username changed
+        if username_changed:
+            session['username'] = new_username
+        
+        return jsonify({
+            'success': True,
+            'username_changed': username_changed,
+            'message': '設定が正常に更新されました'
+        })
+        
+    except Exception as e:
+        logging.error(f"Error updating user settings: {str(e)}")
+        return jsonify({'error': str(e)}), 500
 if __name__ == '__main__':
     app.run(debug=True)

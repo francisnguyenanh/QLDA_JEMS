@@ -4217,6 +4217,77 @@ body {
     transform: translateY(-1px);
     box-shadow: 0 4px 8px rgba(0,123,255,0.4);
 }
+.btn-settings {
+    background: linear-gradient(135deg, #6366f1 0%, #4338ca 100%);
+    color: white;
+    border-color: #6366f1;
+}
+
+.btn-settings:hover {
+    background: linear-gradient(135deg, #4338ca 0%, #3730a3 100%);
+    color: white;
+    border-color: #4338ca;
+}
+
+/* Settings Modal specific styles */
+#settingsModal .modal-content {
+    border: none;
+    box-shadow: 
+        0 15px 50px rgba(0, 0, 0, 0.2),
+        0 5px 20px rgba(0, 0, 0, 0.1);
+    border-radius: 16px;
+    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+}
+
+#settingsModal .modal-header {
+    background: linear-gradient(135deg, #6366f1 0%, #4338ca 100%);
+    color: white;
+    border-bottom: none;
+    border-radius: 16px 16px 0 0;
+    padding: 1.5rem 2rem;
+}
+
+#settingsModal .modal-title {
+    color: white;
+    font-weight: 700;
+    font-size: 1.4rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+#settingsModal .modal-title::before {
+    content: '⚙️';
+    font-size: 1.2rem;
+}
+
+#settingsModal .form-label {
+    color: #374151;
+    font-weight: 600;
+    font-size: 1rem;
+    margin-bottom: 0.5rem;
+}
+
+#settingsModal .form-control {
+    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+}
+
+#settingsModal .form-control:focus {
+    border-color: #6366f1;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+    outline: none;
+    background: #ffffff;
+}
+
+#settingsModal .form-control[readonly] {
+    background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+    color: #64748b;
+}
 
 {% endblock %}
 
@@ -4277,6 +4348,12 @@ body {
                     data-bs-target="#createTaskModal">
                 <i class="fas fa-tasks"></i>
                 <span>タスク作成</span>
+            </button>
+            <button class="btn btn-professional btn-settings" 
+                    data-bs-toggle="modal" 
+                    data-bs-target="#settingsModal">
+                <i class="fas fa-cog"></i>
+                <span>設定</span>
             </button>
             
         </div>
@@ -4355,6 +4432,44 @@ body {
             </table>
         </div>
     
+        <div class="modal fade" id="settingsModal" tabindex="-1">
+            <div class="modal-dialog modal-dialog-scrollable modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">ユーザー設定</h5>
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">閉じる</button>
+                            <button type="button" class="btn btn-primary" onclick="saveUserSettings()">保存</button>
+                        </div>
+                    </div>
+                    <div class="modal-body">
+                        <form id="settingsForm">
+                            <div class="mb-3">
+                                <label for="currentUsername" class="form-label">現在のユーザー名</label>
+                                <input type="text" class="form-control" id="currentUsername" readonly>
+                            </div>
+                            <div class="mb-3">
+                                <label for="newUsername" class="form-label">新しいユーザー名</label>
+                                <input type="text" class="form-control" id="newUsername" placeholder="新しいユーザー名を入力">
+                            </div>
+                            <div class="mb-3">
+                                <label for="currentPassword" class="form-label">現在のパスワード</label>
+                                <input type="password" class="form-control" id="currentPassword" placeholder="現在のパスワードを入力" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="newPassword" class="form-label">新しいパスワード</label>
+                                <input type="password" class="form-control" id="newPassword" placeholder="新しいパスワードを入力">
+                            </div>
+                            <div class="mb-3">
+                                <label for="confirmPassword" class="form-label">新しいパスワード（確認）</label>
+                                <input type="password" class="form-control" id="confirmPassword" placeholder="新しいパスワードを再入力">
+                            </div>
+                        </form>
+                        <div id="settingsResult"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
     <!-- Schedule Modal -->
     <div class="modal fade" id="scheduleModal" tabindex="-1">
@@ -6833,6 +6948,109 @@ body {
             this.value = normalized;
         }
     });
+});
+
+function openSettingsModal() {
+    // Lấy username hiện tại từ session
+    fetch('/get_current_user')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById('currentUsername').value = data.username;
+                document.getElementById('newUsername').value = data.username;
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching current user:', error);
+        });
+    
+    // Clear form
+    document.getElementById('newUsername').value = '';
+    document.getElementById('currentPassword').value = '';
+    document.getElementById('newPassword').value = '';
+    document.getElementById('confirmPassword').value = '';
+    document.getElementById('settingsResult').innerHTML = '';
+}
+
+function saveUserSettings() {
+    const currentPassword = document.getElementById('currentPassword').value;
+    const newUsername = document.getElementById('newUsername').value.trim();
+    const newPassword = document.getElementById('newPassword').value;
+    const confirmPassword = document.getElementById('confirmPassword').value;
+    const resultDiv = document.getElementById('settingsResult');
+    
+    // Validation
+    if (!currentPassword) {
+        resultDiv.innerHTML = '<div class="alert alert-danger">現在のパスワードを入力してください</div>';
+        return;
+    }
+    
+    if (!newUsername) {
+        resultDiv.innerHTML = '<div class="alert alert-danger">新しいユーザー名を入力してください</div>';
+        return;
+    }
+    
+    if (newPassword && newPassword !== confirmPassword) {
+        resultDiv.innerHTML = '<div class="alert alert-danger">新しいパスワードが一致しません</div>';
+        return;
+    }
+    
+    if (newPassword && newPassword.length < 4) {
+        resultDiv.innerHTML = '<div class="alert alert-danger">パスワードは4文字以上で入力してください</div>';
+        return;
+    }
+    
+    // Show loading
+    resultDiv.innerHTML = '<div class="alert alert-info">保存中...</div>';
+    
+    // Send request
+    fetch('/update_user_settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            current_password: currentPassword,
+            new_username: newUsername,
+            new_password: newPassword
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            resultDiv.innerHTML = '<div class="alert alert-success">設定が正常に保存されました</div>';
+            // Update current username display
+            document.getElementById('currentUsername').value = newUsername;
+            // Clear sensitive fields
+            document.getElementById('currentPassword').value = '';
+            document.getElementById('newPassword').value = '';
+            document.getElementById('confirmPassword').value = '';
+            
+            // Auto close modal after 2 seconds
+            setTimeout(() => {
+                const modal = bootstrap.Modal.getInstance(document.getElementById('settingsModal'));
+                modal.hide();
+                
+                // Show logout message if username changed
+                if (data.username_changed) {
+                    alert('ユーザー名が変更されました。再ログインしてください。');
+                    window.location.href = '/logout';
+                }
+            }, 2000);
+        } else {
+            resultDiv.innerHTML = `<div class="alert alert-danger">エラー: ${data.error}</div>`;
+        }
+    })
+    .catch(error => {
+        resultDiv.innerHTML = '<div class="alert alert-danger">設定の保存に失敗しました</div>';
+        console.error('Error saving settings:', error);
+    });
+}
+
+// Add event listener to open settings modal
+document.addEventListener('DOMContentLoaded', function() {
+    const settingsBtn = document.querySelector('.btn-settings');
+    if (settingsBtn) {
+        settingsBtn.addEventListener('click', openSettingsModal);
+    }
 });
     </script>
 {% endblock %}
