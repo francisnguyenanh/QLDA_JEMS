@@ -992,14 +992,51 @@ document.addEventListener('DOMContentLoaded', function() {
     // Find the nearest Roman numeral in format (i), (ii), etc.
     function findNearestRomanNumeral(lines, currentIndex) {
         for (let i = currentIndex - 1; i >= 0; i--) {
-            const match = lines[i].match(/\((i+)\)/);
+            // Updated regex to match proper Roman numerals
+            const match = lines[i].match(/\((i{1,3}|iv|v|vi{0,3}|ix|x{1,3}|xl|l|lx{0,3}|xc|c{1,3}|cd|d|dc{0,3}|cm|m{1,3})\)/i);
             if (match) {
-                return match[1].length; // Return the count of 'i' characters
+                const romanStr = match[1].toLowerCase();
+                
+                // Convert Roman numeral back to number
+                const romanToNumber = {
+                    'i': 1, 'ii': 2, 'iii': 3, 'iv': 4, 'v': 5, 'vi': 6, 'vii': 7, 'viii': 8, 'ix': 9, 'x': 10,
+                    'xi': 11, 'xii': 12, 'xiii': 13, 'xiv': 14, 'xv': 15, 'xvi': 16, 'xvii': 17, 'xviii': 18, 'xix': 19, 'xx': 20,
+                    'xxi': 21, 'xxii': 22, 'xxiii': 23, 'xxiv': 24, 'xxv': 25, 'xxvi': 26, 'xxvii': 27, 'xxviii': 28, 'xxix': 29, 'xxx': 30
+                };
+                
+                if (romanToNumber[romanStr]) {
+                    return romanToNumber[romanStr];
+                }
+                
+                // For complex Roman numerals > 30, use algorithmic conversion
+                return convertRomanToNumber(romanStr);
             }
         }
-        return 0; // Default to 0 if no Roman numeral is found
+        return 0;
     }
 
+    function convertRomanToNumber(roman) {
+        const romanValues = {
+            'i': 1, 'v': 5, 'x': 10, 'l': 50, 'c': 100, 'd': 500, 'm': 1000
+        };
+        
+        let result = 0;
+        let prevValue = 0;
+        
+        for (let i = roman.length - 1; i >= 0; i--) {
+            const currentValue = romanValues[roman[i].toLowerCase()];
+            
+            if (currentValue < prevValue) {
+                result -= currentValue;
+            } else {
+                result += currentValue;
+            }
+            
+            prevValue = currentValue;
+        }
+        
+        return result;
+    }
     // Check if there's a line with <条件> or ＜条件＞ above the current line
     function hasConditionAbove(lines, currentIndex) {
         for (let i = currentIndex - 1; i >= 0; i--) {
@@ -1016,7 +1053,31 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Generate Roman numeral
     function generateRomanNumeral(count) {
-        return 'i'.repeat(count);
+        const romanNumerals = [
+            '', 'i', 'ii', 'iii', 'iv', 'v', 'vi', 'vii', 'viii', 'ix', 'x',
+            'xi', 'xii', 'xiii', 'xiv', 'xv', 'xvi', 'xvii', 'xviii', 'xix', 'xx',
+            'xxi', 'xxii', 'xxiii', 'xxiv', 'xxv', 'xxvi', 'xxvii', 'xxviii', 'xxix', 'xxx'
+        ];
+        
+        if (count <= 30) {
+            return romanNumerals[count];
+        }
+        
+        // For numbers > 30, use algorithmic approach
+        const values = [1000, 900, 500, 400, 100, 90, 50, 40, 10, 9, 5, 4, 1];
+        const symbols = ['m', 'cm', 'd', 'cd', 'c', 'xc', 'l', 'xl', 'x', 'ix', 'v', 'iv', 'i'];
+        
+        let result = '';
+        let num = count;
+        
+        for (let i = 0; i < values.length; i++) {
+            while (num >= values[i]) {
+                result += symbols[i];
+                num -= values[i];
+            }
+        }
+        
+        return result;
     }
 
     // Generate number based on indentation level and previous numbers
@@ -1249,13 +1310,24 @@ document.addEventListener('DOMContentLoaded', function() {
                                     if (line.match(/^\((\d+)\)/)) {
                                         break;
                                     }
+                                    // THÊM LOGIC ROMAN NUMERAL Ở ĐÂY
+                                    const romanMatch = line.match(/^　*\((i{1,3}|iv|v|vi{0,3}|ix|x{1,3}|xl|l|lx{0,3}|xc|c{1,3}|cd|d|dc{0,3}|cm|m{1,3})\)/i);
+                                    if (romanMatch) {
+                                        const lastRoman = convertRomanToNumber(romanMatch[1]);
+                                        number = `(${generateRomanNumeral(lastRoman + 1)})`;
+                                        break;
+                                    }
+                                    
                                     const match = line.match(/^　*\(([a-z])\)(?!\-)/);
                                     if (match) {
                                         lastLetter = match[1];
                                         break;
                                     }
                                 }
-                                number = lastLetter ? `(${String.fromCharCode(lastLetter.charCodeAt(0) + 1)})` : '(a)';
+                            
+                                if (!number) {
+                                    number = lastLetter ? `(${String.fromCharCode(lastLetter.charCodeAt(0) + 1)})` : '(a)';
+                                }
                             }
                         } else if (currentLineIndent >= 3) {
                             let parentPattern = '';
@@ -1334,21 +1406,34 @@ document.addEventListener('DOMContentLoaded', function() {
                             const lastNumber = findNearestNumber(value.split('\n'), currentLineIndex);
                             number = `(${lastNumber + 1})`;
                         } else if (currentLineIndent === 2) {
-                            let lastLetter = '';
-                            for (let i = currentLineIndex - 1; i >= 0; i--) {
-                                const line = lines[i];
-                                if (/^\s*\(\d+\)/.test(line)) {
-                                    // Nếu gặp mục số, reset về (a)
-                                    lastLetter = '';
-                                    break;
+                            if (hasConditionAbove(textarea.value.split('\n'), currentLineIndex)) {
+                                const lastRoman = findNearestRomanNumeral(textarea.value.split('\n'), currentLineIndex);
+                                number = `(${generateRomanNumeral(lastRoman + 1)})`;
+                            } else {
+                                let lastLetter = '';
+                                for (let i = currentLineIndex - 1; i >= 0; i--) {
+                                    const line = textarea.value.split('\n')[i];
+                                    if (line.match(/^\((\d+)\)/)) {
+                                        break;
+                                    }
+                                    // THÊM LOGIC ROMAN NUMERAL Ở ĐÂY
+                                    const romanMatch = line.match(/^　*\((i{1,3}|iv|v|vi{0,3}|ix|x{1,3}|xl|l|lx{0,3}|xc|c{1,3}|cd|d|dc{0,3}|cm|m{1,3})\)/i);
+                                    if (romanMatch) {
+                                        const lastRoman = convertRomanToNumber(romanMatch[1]);
+                                        number = `(${generateRomanNumeral(lastRoman + 1)})`;
+                                        break;
+                                    }
+                                    
+                                    const match = line.match(/^　*\(([a-z])\)(?!\-)/);
+                                    if (match) {
+                                        lastLetter = match[1];
+                                        break;
+                                    }
                                 }
-                                const match = line.match(/^　*\(([a-z])\)(?!\-)/);
-                                if (match) {
-                                    lastLetter = match[1];
-                                    break;
+                                if (!number) {
+                                    number = lastLetter ? `(${String.fromCharCode(lastLetter.charCodeAt(0) + 1)})` : '(a)';
                                 }
                             }
-                            number = lastLetter ? `(${String.fromCharCode(lastLetter.charCodeAt(0) + 1)})` : '(a)';
                         } else if (currentLineIndent >= 3) {
                             let parentPattern = '';
                             let parentLevel = currentLineIndent - 1;
