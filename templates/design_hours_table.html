@@ -1,0 +1,143 @@
+{% extends "layout.html" %}
+{% block title %}設計工数週別一覧{% endblock %}
+
+{% block content %}
+<style>
+    th.date-col, td.date-col, td, th {
+        text-align: center !important;
+        vertical-align: middle !important;
+    }
+</style>
+<div class="container">
+    <h3 class="mb-3">設計工数週別一覧</h3>
+    <div class="d-flex align-items-center mb-2 gap-2">
+        <button class="btn btn-outline-secondary btn-sm" id="prev-week">&lt; 前週</button>
+        <button class="btn btn-outline-primary btn-sm" id="this-week">今週</button>
+        <button class="btn btn-outline-secondary btn-sm" id="next-week">次週 &gt;</button>
+        <span id="week-range" class="fw-bold ms-auto"></span>
+    </div>
+    <table class="table table-bordered table-sm align-middle" id="hours-table">
+        <thead>
+            <tr>
+                <th rowspan="2">案件名</th>
+                <th rowspan="2">設計工数（h）</th>
+                {% for d in date_headers %}
+                    {% set jp = d|datetimeformat_jp %}
+                    <th class="date-col" data-date="{{ d }}">
+                        {{ jp[:10] }}<br>
+                        {{ jp[11:12] }}
+                    </th>
+                {% endfor %}
+            </tr>
+            <tr>
+                {% for total in total_hours_per_day %}
+                    <th class="date-col" data-date="{{ date_headers[loop.index0] }}" data-total="{{ total }}">{% if total %}{{ total }}{% endif %}</th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in table_data %}
+                <tr class="project-row">
+                    <td>{{ row.project_name }}</td>
+                    <td>{{ row.total_hours }}</td>
+                    {% for h in row.daily_hours %}
+                        <td class="date-col" data-date="{{ date_headers[loop.index0] }}">{{ h if h else "" }}</td>
+                    {% endfor %}
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+<script>
+function getMonday(d) {
+    d = new Date(d);
+    var day = d.getDay(),
+        diff = d.getDate() - day + (day === 0 ? -6 : 1);
+    return new Date(d.setDate(diff));
+}
+function formatDateJP(date) {
+    const y = date.getFullYear();
+    const m = ('0' + (date.getMonth() + 1)).slice(-2);
+    const d = ('0' + date.getDate()).slice(-2);
+    const weekdays = ['月', '火', '水', '木', '金', '土', '日'];
+    const wd = weekdays[date.getDay() === 0 ? 6 : date.getDay() - 1];
+    return `${y}/${m}/${d}(${wd})`;
+}
+function formatDateISO(date) {
+    const y = date.getFullYear();
+    const m = ('0' + (date.getMonth() + 1)).slice(-2);
+    const d = ('0' + date.getDate()).slice(-2);
+    return `${y}-${m}-${d}`;
+}
+function getWeekDates(monday) {
+    let dates = [];
+    for (let i = 0; i < 7; i++) {
+        let d = new Date(monday);
+        d.setDate(d.getDate() + i);
+        dates.push(formatDateISO(d));
+    }
+    return dates;
+}
+function updateTableForWeek(mondayStr) {
+    const monday = new Date(mondayStr);
+    const weekDates = getWeekDates(monday);
+    const weekRange = `${formatDateJP(monday)} ～ ${formatDateJP(new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + 6))}`;
+    document.getElementById('week-range').innerText = weekRange;
+
+    document.querySelectorAll('th.date-col, td.date-col').forEach(cell => {
+        const date = cell.getAttribute('data-date');
+        if (weekDates.includes(date)) {
+            cell.style.display = '';
+        } else {
+            cell.style.display = 'none';
+        }
+    });
+
+    document.querySelectorAll('tr.project-row').forEach(row => {
+        let show = false;
+        row.querySelectorAll('td.date-col').forEach(cell => {
+            if (cell.style.display !== 'none' && cell.textContent.trim() !== '') {
+                show = true;
+            }
+        });
+        row.style.display = show ? '' : 'none';
+    });
+
+    document.querySelectorAll('tr:nth-child(2) th.date-col').forEach(cell => {
+        if (cell.style.display === 'none') {
+            cell.innerText = '';
+        } else {
+            cell.innerText = cell.getAttribute('data-total') || '';
+        }
+    });
+}
+document.addEventListener('DOMContentLoaded', function() {
+    const dateHeaders = Array.from(document.querySelectorAll('th.date-col')).map(th => th.getAttribute('data-date'));
+    let today = new Date();
+    let monday = getMonday(today);
+
+    function hasDataInWeek(monday) {
+        const weekDates = getWeekDates(monday);
+        return weekDates.some(d => dateHeaders.includes(d));
+    }
+    while (!hasDataInWeek(monday) && monday > new Date(dateHeaders[0])) {
+        monday.setDate(monday.getDate() - 7);
+    }
+    updateTableForWeek(formatDateISO(monday));
+
+    document.getElementById('prev-week').onclick = function() {
+        monday.setDate(monday.getDate() - 7);
+        updateTableForWeek(formatDateISO(monday));
+    };
+    document.getElementById('next-week').onclick = function() {
+        monday.setDate(monday.getDate() + 7);
+        updateTableForWeek(formatDateISO(monday));
+    };
+    document.getElementById('this-week').onclick = function() {
+        today = new Date();
+        monday = getMonday(today);
+        updateTableForWeek(formatDateISO(monday));
+    };
+});
+</script>
+{% endblock %}

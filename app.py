@@ -21,6 +21,8 @@ from PIL import Image
 import io
 from dateutil.parser import parse as parse_date
 from dateutil.relativedelta import relativedelta
+from collections import OrderedDict
+from datetime import timedelta
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -3335,5 +3337,104 @@ def update_user_settings():
     except Exception as e:
         logging.error(f"Error updating user settings: {str(e)}")
         return jsonify({'error': str(e)}), 500
+    
+    
+    
+    
+#DEMO giờ dự án
+@app.route('/design_hours_table')
+def design_hours_table():
+    if 'username' not in session:
+        return redirect(url_for('login'))
+
+    conn = sqlite3.connect(DB_FILE)
+    cursor = conn.cursor()
+    cursor.execute('''
+        SELECT 案件名, 設計工数（h）, 設計開始, 設計完了, ステータス
+        FROM projects
+        WHERE ステータス != '不要'
+    ''')
+    projects = cursor.fetchall()
+    conn.close()
+
+    # Tìm tất cả ngày xuất hiện trong các dự án
+    all_dates = set()
+    project_rows = []
+    for name, hours, start, end, status in projects:
+        if not name or not hours or not start or not end:
+            continue
+        try:
+            start_date = datetime.strptime(start, '%Y-%m-%d')
+            end_date = datetime.strptime(end, '%Y-%m-%d')
+        except Exception:
+            continue
+        days = (end_date - start_date).days + 1
+        if days <= 0:
+            continue
+        date_list = [(start_date + timedelta(days=i)).strftime('%Y-%m-%d') for i in range(days)]
+        all_dates.update(date_list)
+        project_rows.append({
+            'project_name': name,
+            'total_hours': float(hours),
+            'date_list': date_list,
+            'days': days
+        })
+
+    # Sắp xếp header ngày
+    date_headers = sorted(list(all_dates))
+    # Chuẩn bị dữ liệu từng row
+    table_data = []
+    for p in project_rows:
+        daily = []
+        # Chia đều, làm tròn 1 chữ số thập phân
+        if p['days'] == 1:
+            daily_hours = [round(p['total_hours'], 1)]
+        else:
+            avg = round(p['total_hours'] / p['days'], 1)
+            daily_hours = [avg] * p['days']
+            # Dồn phần dư vào ngày cuối
+            total_assigned = round(avg * (p['days'] - 1), 1)
+            last_day = round(p['total_hours'] - total_assigned, 1)
+            daily_hours[-1] = last_day
+        # Map vào từng ngày của header
+        daily_map = []
+        for d in date_headers:
+            if d in p['date_list']:
+                idx = p['date_list'].index(d)
+                daily_map.append(daily_hours[idx])
+            else:
+                daily_map.append("")
+        table_data.append({
+            'project_name': p['project_name'],
+            'total_hours': round(p['total_hours'], 1),
+            'daily_hours': daily_map
+        })
+
+    # Tính tổng số giờ cho từng ngày
+    total_hours_per_day = []
+    for col_idx in range(len(date_headers)):
+        s = sum(row['daily_hours'][col_idx] if isinstance(row['daily_hours'][col_idx], (int, float)) else 0 for row in table_data)
+        total_hours_per_day.append(round(s, 1) if s > 0 else "")
+
+    return render_template(
+        'design_hours_table.html',
+        date_headers=date_headers,
+        table_data=table_data,
+        total_hours_per_day=total_hours_per_day
+    )
+
+@app.template_filter('datetimeformat_jp')
+def datetimeformat_jp(value):
+    # value dạng yyyy-mm-dd
+    import datetime
+    weekdays = ['月', '火', '水', '木', '金', '土', '日']
+    try:
+        dt = datetime.datetime.strptime(value, '%Y-%m-%d')
+        jp = dt.strftime('%Y/%m/%d')
+        wd = weekdays[dt.weekday()]
+        return f"{jp}({wd})"
+    except Exception:
+        return value
+    
 if __name__ == '__main__':
     app.run(debug=True)
