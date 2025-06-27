@@ -7,7 +7,53 @@
         text-align: center !important;
         vertical-align: middle !important;
     }
+    th.date-col, td.date-col, td, th {
+        text-align: center !important;
+        vertical-align: middle !important;
+    }
+    .temp-project-name {
+        color: #d9534f !important; /* đỏ */
+        font-weight: bold;
+    }
+    .temp-project-hour {
+        color: #d9534f !important; /* đỏ */
+        font-weight: bold;
+    }
 </style>
+<div class="mb-3">
+    <button class="btn btn-outline-secondary btn-sm mb-2" type="button" data-bs-toggle="collapse" data-bs-target="#temp-project-collapse" aria-expanded="false" aria-controls="temp-project-collapse" id="toggle-temp-form">
+        <span id="toggle-temp-form-icon">▼</span> 一時案件追加
+    </button>
+    <div class="collapse show" id="temp-project-collapse">
+        <div class="card">
+            <div class="card-body">
+                <form id="temp-project-form" class="row g-2 align-items-end">
+                    <div class="col-md-3">
+                        <label class="form-label mb-1">案件名</label>
+                        <input type="text" class="form-control form-control-sm" id="temp-project-name" required>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label mb-1">設計工数（h）</label>
+                        <input type="number" step="0.1" min="0" class="form-control form-control-sm" id="temp-project-hours" required>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label mb-1">設計開始日付</label>
+                        <input type="date" class="form-control form-control-sm" id="temp-project-start" required>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label mb-1">設計完了日付</label>
+                        <input type="date" class="form-control form-control-sm" id="temp-project-end" required>
+                    </div>
+                    <div class="col-md-2">
+                        <button type="submit" class="btn btn-success btn-sm">追加</button>
+                        <button type="button" class="btn btn-outline-danger btn-sm ms-2" id="clear-temp-projects">クリア</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="container">
     <h3 class="mb-3">設計工数週別一覧</h3>
     <div class="d-flex align-items-center mb-2 gap-2">
@@ -16,6 +62,7 @@
         <button class="btn btn-outline-secondary btn-sm" id="next-week">次週 &gt;</button>
         <span id="week-range" class="fw-bold ms-auto"></span>
     </div>
+    <div id="no-hours-message" class="text-center text-secondary my-4" style="display:none;">稼働時間なし</div>
     <table class="table table-bordered table-sm align-middle" id="hours-table">
         <thead>
             <tr>
@@ -48,6 +95,8 @@
         </tbody>
     </table>
 </div>
+
+
 <script>
 function getMonday(d) {
     d = new Date(d);
@@ -93,6 +142,8 @@ function updateTableForWeek(mondayStr) {
         }
     });
 
+    // Ẩn row dự án không có giờ trong tuần
+    let visibleRowCount = 0;
     document.querySelectorAll('tr.project-row').forEach(row => {
         let show = false;
         row.querySelectorAll('td.date-col').forEach(cell => {
@@ -101,8 +152,10 @@ function updateTableForWeek(mondayStr) {
             }
         });
         row.style.display = show ? '' : 'none';
+        if (show) visibleRowCount++;
     });
 
+    // Cập nhật lại tổng giờ từng ngày khi hiện cột
     document.querySelectorAll('tr:nth-child(2) th.date-col').forEach(cell => {
         if (cell.style.display === 'none') {
             cell.innerText = '';
@@ -110,6 +163,17 @@ function updateTableForWeek(mondayStr) {
             cell.innerText = cell.getAttribute('data-total') || '';
         }
     });
+
+    // Hiển thị/ẩn bảng hoặc thông báo
+    const table = document.getElementById('hours-table');
+    const msg = document.getElementById('no-hours-message');
+    if (visibleRowCount === 0) {
+        table.style.display = 'none';
+        msg.style.display = '';
+    } else {
+        table.style.display = '';
+        msg.style.display = 'none';
+    }
 }
 document.addEventListener('DOMContentLoaded', function() {
     const dateHeaders = Array.from(document.querySelectorAll('th.date-col')).map(th => th.getAttribute('data-date'));
@@ -138,6 +202,181 @@ document.addEventListener('DOMContentLoaded', function() {
         monday = getMonday(today);
         updateTableForWeek(formatDateISO(monday));
     };
+});
+
+// --- DỰ ÁN TẠM ---
+function getTempProjects() {
+    return JSON.parse(localStorage.getItem('tempProjects') || '[]');
+}
+function saveTempProjects(arr) {
+    localStorage.setItem('tempProjects', JSON.stringify(arr));
+}
+function addTempProject(proj) {
+    const arr = getTempProjects();
+    arr.push(proj);
+    saveTempProjects(arr);
+}
+function clearTempProjects() {
+    localStorage.removeItem('tempProjects');
+}
+function getAllProjects() {
+    // Lấy dữ liệu từ table_data (server render) + tempProjects (client)
+    const serverProjects = window.serverProjects || [];
+    const tempProjects = getTempProjects();
+    return serverProjects.concat(tempProjects);
+}
+
+// Hook vào form
+document.getElementById('temp-project-form').onsubmit = function(e) {
+    e.preventDefault();
+    const name = document.getElementById('temp-project-name').value.trim();
+    const hours = parseFloat(document.getElementById('temp-project-hours').value);
+    const start = document.getElementById('temp-project-start').value;
+    const end = document.getElementById('temp-project-end').value;
+    if (!name || !hours || !start || !end) return;
+    addTempProject({
+        project_name: name,
+        total_hours: hours,
+        start: start,
+        end: end
+    });
+    this.reset();
+    renderTempProjectsToTable();
+};
+document.getElementById('clear-temp-projects').onclick = function() {
+    clearTempProjects();
+    renderTempProjectsToTable();
+};
+
+// Hàm render lại bảng với cả dự án tạm
+function renderTempProjectsToTable() {
+    const tempProjects = getTempProjects();
+    let tableData = JSON.parse(JSON.stringify(window.serverProjects || []));
+    let dateHeaders = window.serverDateHeaders || [];
+
+    // Lấy các ngày đang hiển thị (tuần hiện tại)
+    const visibleDates = [];
+    document.querySelectorAll('th.date-col').forEach(th => {
+        if (th.style.display !== 'none') visibleDates.push(th.getAttribute('data-date'));
+    });
+
+    // Thêm dự án tạm vào tableData
+    tempProjects.forEach(p => {
+        const start = new Date(p.start);
+        const end = new Date(p.end);
+        const days = Math.floor((end - start) / (1000*60*60*24)) + 1;
+        if (days <= 0) return;
+        const dateList = [];
+        for(let i=0; i<days; i++) {
+            const d = new Date(start);
+            d.setDate(d.getDate() + i);
+            dateList.push(d.toISOString().slice(0,10));
+        }
+        let dailyHours = [];
+        if (days === 1) {
+            dailyHours = [Number(p.total_hours.toFixed(1))];
+        } else {
+            const avg = Number((p.total_hours / days).toFixed(1));
+            dailyHours = Array(days-1).fill(avg);
+            const lastDay = Number((p.total_hours - avg*(days-1)).toFixed(1));
+            dailyHours.push(lastDay);
+        }
+        const dailyMap = dateHeaders.map(d => {
+            const idx = dateList.indexOf(d);
+            return idx >= 0 ? dailyHours[idx] : "";
+        });
+        tableData.push({
+            project_name: p.project_name,
+            total_hours: Number(p.total_hours),
+            daily_hours: dailyMap
+        });
+    });
+
+    // Tính lại tổng số giờ từng ngày
+    let totalHoursPerDay = [];
+    for(let col=0; col<dateHeaders.length; col++) {
+        let s = 0;
+        for(let row of tableData) {
+            let val = row.daily_hours[col];
+            if (typeof val === "string" && val.trim() === "") continue;
+            s += Number(val) || 0;
+        }
+        totalHoursPerDay.push(s > 0 ? Number(s.toFixed(1)) : "");
+    }
+
+    // Render lại tbody chỉ với các ngày đang hiển thị
+    const tbody = document.querySelector('#hours-table tbody');
+    tbody.innerHTML = '';
+    tableData.forEach(row => {
+        // Kiểm tra có phải dự án tạm không
+        const isTemp = tempProjects.some(tp =>
+            tp.project_name === row.project_name &&
+            Number(tp.total_hours) === Number(row.total_hours)
+        );
+        // Chỉ render nếu có giờ trong tuần đang xem
+        let show = false;
+        row.daily_hours.forEach((h, idx) => {
+            if (visibleDates.includes(dateHeaders[idx]) && h) show = true;
+        });
+        if (!show) return;
+        const tr = document.createElement('tr');
+        tr.className = 'project-row';
+        // 2 cột đầu
+        tr.innerHTML = `<td${isTemp ? ' class="temp-project-name"' : ''}>${row.project_name}</td>`
+            + `<td${isTemp ? ' class="temp-project-hour"' : ''}>${row.total_hours}</td>`;
+        // Các cột ngày trong tuần hiện tại
+        row.daily_hours.forEach((h, idx) => {
+            if (visibleDates.includes(dateHeaders[idx])) {
+                tr.innerHTML += `<td class="date-col${isTemp && h ? ' temp-project-hour' : ''}" data-date="${dateHeaders[idx]}">${h ? h : ""}</td>`;
+            }
+        });
+        tbody.appendChild(tr);
+    });
+
+    // Render lại tổng giờ cho các ngày đang hiển thị
+    document.querySelectorAll('tr:nth-child(2) th.date-col').forEach((cell, idx) => {
+        if (visibleDates.includes(dateHeaders[idx])) {
+            cell.setAttribute('data-total', totalHoursPerDay[idx]);
+            cell.innerText = totalHoursPerDay[idx] || '';
+        } else {
+            cell.innerText = '';
+        }
+    });
+
+    // Ẩn/hiện bảng hoặc thông báo
+    const table = document.getElementById('hours-table');
+    const msg = document.getElementById('no-hours-message');
+    if (!tbody.querySelector('tr')) {
+        table.style.display = 'none';
+        msg.style.display = '';
+    } else {
+        table.style.display = '';
+        msg.style.display = 'none';
+    }
+}
+
+// Lưu dữ liệu server vào window để JS dùng lại
+window.serverProjects = {{ table_data|tojson }};
+window.serverDateHeaders = {{ date_headers|tojson }};
+
+// Gọi lại renderTempProjectsToTable mỗi khi chuyển tuần
+const oldUpdateTableForWeek = updateTableForWeek;
+updateTableForWeek = function(mondayStr) {
+    oldUpdateTableForWeek(mondayStr);
+    renderTempProjectsToTable();
+};
+document.addEventListener('DOMContentLoaded', function() {
+    renderTempProjectsToTable();
+});
+document.addEventListener('DOMContentLoaded', function() {
+    var collapseEl = document.getElementById('temp-project-collapse');
+    var icon = document.getElementById('toggle-temp-form-icon');
+    collapseEl.addEventListener('show.bs.collapse', function () {
+        icon.textContent = '▼';
+    });
+    collapseEl.addEventListener('hide.bs.collapse', function () {
+        icon.textContent = '▲';
+    });
 });
 </script>
 {% endblock %}
