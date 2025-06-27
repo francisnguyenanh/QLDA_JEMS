@@ -3,22 +3,192 @@
 
 {% block content %}
 <style>
-    th.date-col, td.date-col, td, th {
-        text-align: center !important;
-        vertical-align: middle !important;
+    <style>
+/* ====== TABLE CONTAINER & HEADER ====== */
+.container {
+    background: #f8f9fa;
+    border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.10);
+    padding: 2rem 1.5rem 1.5rem 1.5rem;
+    margin-top: 2rem;
+    margin-bottom: 2rem;
+    max-width: 98vw;
+}
+
+h3.mb-3 {
+    text-align: center;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: #3a3a3a;
+    margin-bottom: 1.5rem !important;
+}
+
+/* ====== WEEK NAVIGATION ====== */
+.d-flex.align-items-center.mb-2.gap-2 {
+    background: linear-gradient(135deg, #d5d7e0 0%, #c2eaec 100%);
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    padding: 0.7rem 1rem;
+    margin-bottom: 1.5rem !important;
+    align-items: center;
+}
+
+#week-range {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #1a1a1a;
+    letter-spacing: 1px;
+}
+
+.btn-outline-secondary, .btn-outline-primary, .btn-success, .btn-outline-danger {
+    border-radius: 6px !important;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+}
+
+.btn-outline-primary, .btn-success {
+    box-shadow: 0 2px 8px rgba(39,168,255,0.08);
+}
+
+/* ====== TEMP PROJECT FORM ====== */
+#temp-project-form .form-label {
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 0.2rem;
+}
+
+#temp-project-form input[type="text"],
+#temp-project-form input[type="number"],
+#temp-project-form input[type="date"] {
+    border-radius: 6px;
+    font-size: 0.95rem;
+    padding: 0.3rem 0.6rem;
+}
+
+#temp-project-form .btn {
+    min-width: 60px;
+}
+
+/* ====== TABLE STYLE ====== */
+.table {
+    background: #fff;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+    margin-bottom: 0;
+}
+
+.table thead tr {
+    background: #e9ecef;
+}
+
+.table th, .table td {
+    text-align: center !important;
+    vertical-align: middle !important;
+    font-size: 0.98rem;
+    padding: 0.5rem 0.3rem;
+}
+
+.table th {
+    font-weight: 700;
+    background: #e9ecef;
+    border-bottom: 2px solid #dee2e6;
+}
+
+.table tbody tr {
+    transition: background 0.2s;
+}
+
+.table tbody tr:hover {
+    background: #f3f7fa;
+}
+
+th.date-col, td.date-col {
+    min-width: 80px;
+    max-width: 110px;
+    font-size: 0.97rem;
+    background: #f8f9fa;
+    border-radius: 6px;
+    border: 1px solid #e0e0e0;
+    padding: 0.3rem 0.2rem;
+}
+
+.temp-project-name {
+    color: #d9534f !important;
+    font-weight: bold;
+    background: #fff0f0 !important;
+    border-radius: 6px;
+}
+
+.temp-project-hour {
+    color: #d9534f !important;
+    font-weight: bold;
+    background: #fff0f0 !important;
+    border-radius: 6px;
+}
+
+#no-hours-message {
+    font-size: 1.2rem;
+    color: #b0b0b0;
+    font-weight: 600;
+    letter-spacing: 1px;
+    margin: 2rem 0;
+}
+
+/* ====== CARD (FORM) ====== */
+.card {
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(220,53,69,0.07);
+    border: none;
+    background: #fff;
+}
+
+.card-body {
+    padding: 1.2rem 1.5rem;
+}
+
+/* ====== RESPONSIVE ====== */
+@media (max-width: 900px) {
+    .container {
+        padding: 1rem 0.2rem;
     }
-    th.date-col, td.date-col, td, th {
-        text-align: center !important;
-        vertical-align: middle !important;
+    th.date-col, td.date-col {
+        min-width: 60px;
+        font-size: 0.93rem;
     }
-    .temp-project-name {
-        color: #d9534f !important; /* đỏ */
-        font-weight: bold;
+    .table th, .table td {
+        font-size: 0.93rem;
     }
-    .temp-project-hour {
-        color: #d9534f !important; /* đỏ */
-        font-weight: bold;
+}
+@media (max-width: 600px) {
+    .container {
+        padding: 0.2rem 0.1rem;
     }
+    .table th, .table td {
+        padding: 0.3rem 0.1rem;
+    }
+    .card-body {
+        padding: 0.7rem 0.5rem;
+    }
+}
+th.date-col {
+    background: linear-gradient(135deg, #b6e0fe 0%, #e0f7fa 100%) !important;
+    color: #1565c0 !important;
+    font-weight: 700;
+    border-radius: 8px 8px 0 0;
+    border: 1px solid #b6e0fe;
+    box-shadow: 0 2px 6px rgba(22, 101, 192, 0.06);
+}
+
+/* Nếu muốn tổng giờ (dòng 2) nổi bật hơn: */
+tr:nth-child(2) th.date-col {
+    background: linear-gradient(135deg, #ffe082 0%, #fffde7 100%) !important;
+    color: #b26a00 !important;
+    font-weight: 700;
+    border-radius: 0 0 8px 8px;
+    border-top: 1px solid #ffe082;
+    border-bottom: 2px solid #ffd54f;
+}
 </style>
 <div class="mb-3">
     <button class="btn btn-outline-secondary btn-sm mb-2" type="button" data-bs-toggle="collapse" data-bs-target="#temp-project-collapse" aria-expanded="false" aria-controls="temp-project-collapse" id="toggle-temp-form">
@@ -55,7 +225,6 @@
 </div>
 
 <div class="container">
-    <h3 class="mb-3">設計工数週別一覧</h3>
     <div class="d-flex align-items-center mb-2 gap-2">
         <button class="btn btn-outline-secondary btn-sm" id="prev-week">&lt; 前週</button>
         <button class="btn btn-outline-primary btn-sm" id="this-week">今週</button>
