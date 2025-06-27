@@ -194,7 +194,7 @@ tr:nth-child(2) th.date-col {
     <button class="btn btn-outline-secondary btn-sm mb-2" type="button" data-bs-toggle="collapse" data-bs-target="#temp-project-collapse" aria-expanded="false" aria-controls="temp-project-collapse" id="toggle-temp-form">
         <span id="toggle-temp-form-icon">▼</span> 一時案件追加
     </button>
-    <div class="collapse show" id="temp-project-collapse">
+    <div class="collapse" id="temp-project-collapse">
         <div class="card">
             <div class="card-body">
                 <form id="temp-project-form" class="row g-2 align-items-end">
@@ -454,7 +454,7 @@ function renderTempProjectsToTable() {
             const idx = dateList.indexOf(d);
             return idx >= 0 ? dailyHours[idx] : "";
         });
-        tableData.push({
+        tableData.unshift({ // <-- đổi từ push sang unshift
             project_name: p.project_name,
             total_hours: Number(p.total_hours),
             daily_hours: dailyMap
