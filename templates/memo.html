@@ -654,6 +654,14 @@ body {
 margin-bottom: 0 !important;
 margin-left: 1rem !important;
 }
+
+#memoContent:disabled {
+    background: #f1f5f9 !important;
+    color: #b0b0b0 !important;
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
 {% endblock %}
 
 {% block content %}
@@ -901,6 +909,20 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
     });
+
+    function updateMemoEditorActiveState() {
+        const title = titleInput.value.trim();
+        contentTextarea.disabled = !title;
+        if (!title) {
+            contentTextarea.classList.add('bg-light');
+        } else {
+            contentTextarea.classList.remove('bg-light');
+        }
+    }
+
+    updateMemoEditorActiveState();
+    titleInput.addEventListener('input', updateMemoEditorActiveState);
+
 });
 
 // === NEW: Focus out auto-save function ===

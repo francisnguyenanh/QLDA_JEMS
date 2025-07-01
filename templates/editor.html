@@ -568,6 +568,12 @@ body {
         margin-bottom: 15px;
     }
 }
+#editorContent:disabled {
+    background: #f1f5f9 !important;
+    color: #b0b0b0 !important;
+    cursor: not-allowed;
+    opacity: 0.7;
+}
 
 {% endblock %}
 
@@ -1788,7 +1794,21 @@ document.addEventListener('DOMContentLoaded', function() {
         getCurrentDocumentId: () => currentDocumentId,
         getAutoSaveStatus: () => ({ isAutoSaving, lastSavedTitle, lastSavedContent })
     };
+
+    function updateEditorActiveState() {
+        const title = titleInput.value.trim();
+        textarea.disabled = !title;
+        if (!title) {
+            textarea.classList.add('bg-light');
+        } else {
+            textarea.classList.remove('bg-light');
+        }
+    }
+
+    updateEditorActiveState();
+    titleInput.addEventListener('input', updateEditorActiveState);
 });
+
 </script>
 
 {% endblock %}
