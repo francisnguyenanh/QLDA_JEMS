@@ -128,6 +128,11 @@ def init_db():
         )
     ''')
     
+    cursor.execute("PRAGMA table_info(todos)")
+    todo_columns = [col[1] for col in cursor.fetchall()]
+    if 'project_id' not in todo_columns:
+        cursor.execute('ALTER TABLE todos ADD COLUMN project_id INTEGER')
+        
     cursor.execute("PRAGMA table_info(projects)")
     columns = [col[1] for col in cursor.fetchall()]
     if 'ステータス' not in columns:
@@ -881,6 +886,12 @@ def dashboard():
                 updates[field] = 0
             
         update_project(project_id, updates)
+        project_name = updates.get('案件名', '')
+        ph = updates.get('PH', '')
+        new_start = updates.get('設計開始', '')
+        new_end = updates.get('設計完了', '')
+        if project_name and new_start and new_end:
+            sync_design_todo(project_id, project_name, ph, new_start, new_end)
         flash('プロジェクトが正常に更新されました', 'success')
         return redirect(url_for('dashboard'))
 
@@ -3179,10 +3190,10 @@ def auto_create_todos_for_week():
                             todo_date = date_obj.strftime('%Y-%m-%d')
                             priority = priority_mapping.get(date_col, 'medium')
                             
-                            cursor.execute('''
-                                INSERT INTO todos (title, date, priority, created_at)
-                                VALUES (?, ?, ?, ?)
-                            ''', (todo_title, todo_date, priority, current_time))
+                            cursor.execute(
+                                "INSERT INTO todos (project_id, title, date, priority, created_at) VALUES (?, ?, ?, ?, ?)",
+                                (project['id'], todo_title, todo_date, priority, current_time)
+                            )
                             todos_created += 1
                                 
                     except ValueError:
@@ -3435,6 +3446,43 @@ def datetimeformat_jp(value):
         return f"{jp}({wd})"
     except Exception:
         return value
+
+def sync_design_todo(project_id, project_name, ph, new_start, new_end):
+    """Đồng bộ TODO [設計中] cho dự án khi update ngày."""
+    conn = sqlite3.connect(DB_FILE)
+    cursor = conn.cursor()
+    ph_text = f" PH{ph}" if ph else ""
+    todo_title = f"[設計中] {project_name}{ph_text}"
+
+    if not new_start or not new_end:
+        conn.close()
+        return
+    start_date = datetime.strptime(new_start, '%Y-%m-%d')
+    end_date = datetime.strptime(new_end, '%Y-%m-%d')
+    days = (end_date - start_date).days + 1
+    new_dates = set((start_date + timedelta(days=i)).strftime('%Y-%m-%d') for i in range(days))
+
+    # Lấy danh sách TODO [設計中] hiện có của dự án này (lọc theo project_id)
+    cursor.execute('SELECT id, date FROM todos WHERE project_id = ? AND title = ?', (project_id, todo_title))
+    todos = cursor.fetchall()
+    old_dates = set(row[1] for row in todos)
+
+    # Xóa TODO cũ không còn trong khoảng mới
+    for todo_id, date in todos:
+        if date not in new_dates:
+            cursor.execute('DELETE FROM todos WHERE id = ?', (todo_id,))
+
+    # Thêm TODO mới cho ngày chưa có
+    current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    for date in new_dates:
+        if date not in old_dates:
+            cursor.execute(
+                "INSERT INTO todos (project_id, title, date, priority, created_at) VALUES (?, ?, ?, ?, ?)",
+                (project_id, todo_title, date, 'low', current_time)
+            )
+
+    conn.commit()
+    conn.close()
     
 if __name__ == '__main__':
     app.run(debug=True)
