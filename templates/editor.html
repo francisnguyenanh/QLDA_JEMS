@@ -997,25 +997,35 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Find the nearest Roman numeral in format (i), (ii), etc.
     function findNearestRomanNumeral(lines, currentIndex) {
+        // Map Unicode La Mã nhỏ về số
+        const romanToNumber = {
+            'ⅰ': 1, 'ⅱ': 2, 'ⅲ': 3, 'ⅳ': 4, 'ⅴ': 5, 'ⅵ': 6,
+            'ⅶ': 7, 'ⅷ': 8, 'ⅸ': 9, 'ⅹ': 10, 'ⅺ': 11, 'ⅻ': 12
+        };
+        
         for (let i = currentIndex - 1; i >= 0; i--) {
-            // Updated regex to match proper Roman numerals
-            const match = lines[i].match(/\((i{1,3}|iv|v|vi{0,3}|ix|x{1,3}|xl|l|lx{0,3}|xc|c{1,3}|cd|d|dc{0,3}|cm|m{1,3})\)/i);
-            if (match) {
-                const romanStr = match[1].toLowerCase();
+            const line = lines[i];
+            
+            // Tìm pattern với Unicode La Mã nhỏ
+            const unicodeMatch = line.match(/^\s*\(([\u2170-\u217F]+)\)/);
+            if (unicodeMatch) {
+                const romanStr = unicodeMatch[1];
+                let total = 0;
                 
-                // Convert Roman numeral back to number
-                const romanToNumber = {
-                    'i': 1, 'ii': 2, 'iii': 3, 'iv': 4, 'v': 5, 'vi': 6, 'vii': 7, 'viii': 8, 'ix': 9, 'x': 10,
-                    'xi': 11, 'xii': 12, 'xiii': 13, 'xiv': 14, 'xv': 15, 'xvi': 16, 'xvii': 17, 'xviii': 18, 'xix': 19, 'xx': 20,
-                    'xxi': 21, 'xxii': 22, 'xxiii': 23, 'xxiv': 24, 'xxv': 25, 'xxvi': 26, 'xxvii': 27, 'xxviii': 28, 'xxix': 29, 'xxx': 30
-                };
-                
-                if (romanToNumber[romanStr]) {
-                    return romanToNumber[romanStr];
+                // Tính tổng giá trị của chuỗi La Mã Unicode
+                for (let char of romanStr) {
+                    if (romanToNumber[char]) {
+                        total += romanToNumber[char];
+                    }
                 }
                 
-                // For complex Roman numerals > 30, use algorithmic conversion
-                return convertRomanToNumber(romanStr);
+                return total;
+            }
+            
+            // Vẫn support legacy format "i", "ii", "iii" cho backward compatibility
+            const legacyMatch = line.match(/^\s*\((i+)\)/);
+            if (legacyMatch) {
+                return legacyMatch[1].length;
             }
         }
         return 0;
@@ -1059,31 +1069,35 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Generate Roman numeral
     function generateRomanNumeral(count) {
+        // Unicode La Mã nhỏ từ U+2170 (ⅰ) đến U+217F
         const romanNumerals = [
-            '', 'i', 'ii', 'iii', 'iv', 'v', 'vi', 'vii', 'viii', 'ix', 'x',
-            'xi', 'xii', 'xiii', 'xiv', 'xv', 'xvi', 'xvii', 'xviii', 'xix', 'xx',
-            'xxi', 'xxii', 'xxiii', 'xxiv', 'xxv', 'xxvi', 'xxvii', 'xxviii', 'xxix', 'xxx'
+            '', 'ⅰ', 'ⅱ', 'ⅲ', 'ⅳ', 'ⅴ', 'ⅵ', 'ⅶ', 'ⅷ', 'ⅸ', 'ⅹ', 'ⅺ', 'ⅻ'
         ];
         
-        if (count <= 30) {
+        if (count > 0 && count <= 12) {
             return romanNumerals[count];
         }
         
-        // For numbers > 30, use algorithmic approach
-        const values = [1000, 900, 500, 400, 100, 90, 50, 40, 10, 9, 5, 4, 1];
-        const symbols = ['m', 'cm', 'd', 'cd', 'c', 'xc', 'l', 'xl', 'x', 'ix', 'v', 'iv', 'i'];
-        
-        let result = '';
-        let num = count;
-        
-        for (let i = 0; i < values.length; i++) {
-            while (num >= values[i]) {
-                result += symbols[i];
-                num -= values[i];
+        // Nếu lớn hơn 12, ghép các ký tự lại
+        if (count > 12) {
+            let result = '';
+            let remaining = count;
+            
+            // Sử dụng ⅻ (12) làm đơn vị lớn nhất
+            while (remaining > 12) {
+                result += romanNumerals[12]; // ⅻ
+                remaining -= 12;
             }
+            
+            // Thêm phần dư
+            if (remaining > 0) {
+                result += romanNumerals[remaining];
+            }
+            
+            return result;
         }
         
-        return result;
+        return '';
     }
 
     // Generate number based on indentation level and previous numbers
