@@ -3136,7 +3136,6 @@ def auto_create_todos_for_week():
         # Get schedule data
         cursor.execute('''
             SELECT id, 案件名, 要件引継, 設計開始, 設計完了, 設計書送付, 開発開始, 開発完了, "PJNo.", 案件番号, 
-                   "テスト開始日", "テスト完了日", 
                    テスト開始日, テスト完了日, FB完了予定日, SE納品, SE, PH, "開発工数（h）"
             FROM projects WHERE 不要 = 0
         ''')
