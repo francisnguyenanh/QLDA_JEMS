@@ -3114,24 +3114,6 @@ def auto_create_todos_for_week():
         conn = sqlite3.connect(DB_FILE)
         cursor = conn.cursor()
         
-        # Check if todos already exist for this week
-        cursor.execute('''
-            SELECT COUNT(*) FROM todos 
-            WHERE date >= ? AND date <= ? 
-            AND title LIKE '[%' -- Only count auto-generated todos (start with [TaskName])
-        ''', (week_start.strftime('%Y-%m-%d'), week_end.strftime('%Y-%m-%d')))
-        
-        existing_count = cursor.fetchone()[0]
-        
-        # If todos already exist for this week, skip creation
-        if existing_count > 0:
-            conn.close()
-            return jsonify({
-                'success': True,
-                'todos_created': 0,
-                'todos_skipped': existing_count,
-                'message': f'この週は既に{existing_count}件のTODOが存在します。'
-            })
         
         # Get schedule data
         cursor.execute('''
@@ -3174,11 +3156,11 @@ def auto_create_todos_for_week():
         current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         
         for project in projects:
-            # Handle regular milestones
+            # --- 1. Tạo set milestone hợp lệ theo dữ liệu hiện tại ---
+            valid_todos = set()
             for date_col in date_columns:
                 if date_col == '設計開始':
-                    continue  # Skip here, will handle separately below
-                
+                    continue
                 date_str = project.get(date_col)
                 if date_str and isinstance(date_str, str):
                     try:
@@ -3186,83 +3168,100 @@ def auto_create_todos_for_week():
                         if week_start.date() <= date_obj.date() <= week_end.date():
                             task_name = task_mapping.get(date_col, date_col)
                             project_name = project['案件名'] or f"PJ-{project['id']}"
-                            se_name = project['SE'] or ''
                             ph = project['PH'] or ''
-                            
                             ph_text = f" PH{ph}" if ph else ""
                             pjno = str(project.get('PJNo.') or project.get('案件番号') or '').strip()
                             pjno_text = f" (PJ {pjno})" if pjno else ""
                             todo_title = f"[{task_name}] {project_name}{pjno_text}{ph_text}"
-                            
                             todo_date = date_obj.strftime('%Y-%m-%d')
-                            priority = priority_mapping.get(date_col, 'medium')
-                            
-                            cursor.execute(
-                                "INSERT INTO todos (project_id, title, date, priority, created_at) VALUES (?, ?, ?, ?, ?)",
-                                (project['id'], todo_title, todo_date, priority, current_time)
-                            )
-                            todos_created += 1
-                                
+                            valid_todos.add((todo_title, todo_date))
                     except ValueError:
                         continue
-            
-            # Handle 設計開始 special case - create daily todos until 設計完了
+
+            # --- 2. Tạo set milestone TODO hiện có trong DB ---
+            cursor.execute(
+                "SELECT id, title, date FROM todos WHERE project_id = ? AND date >= ? AND date <= ? AND title LIKE '[%'",
+                (project['id'], week_start.strftime('%Y-%m-%d'), week_end.strftime('%Y-%m-%d'))
+            )
+            existing_todos = cursor.fetchall()
+            existing_todo_set = set((row[1], row[2]) for row in existing_todos)
+
+            # --- 3. Xóa TODO milestone thừa ---
+            for todo_id, title, date in existing_todos:
+                if (title, date) not in valid_todos:
+                    cursor.execute("DELETE FROM todos WHERE id = ?", (todo_id,))
+
+            # --- 4. Tạo TODO milestone còn thiếu ---
+            current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            for todo_title, todo_date in valid_todos:
+                if (todo_title, todo_date) not in existing_todo_set:
+                    priority = 'medium'
+                    for k, v in task_mapping.items():
+                        if v in todo_title:
+                            priority = priority_mapping.get(k, 'medium')
+                            break
+                    cursor.execute(
+                        "INSERT INTO todos (project_id, title, date, priority, created_at) VALUES (?, ?, ?, ?, ?)",
+                        (project['id'], todo_title, todo_date, priority, current_time)
+                    )
+                    todos_created += 1
+
+            # --- 5. Xử lý TODO thiết kế hàng ngày ---
+            # (Tương tự: tạo set valid_design_todos, xóa thừa, thêm thiếu)
             design_start_str = project.get('設計開始')
             design_end_str = project.get('設計完了')
-            
+            valid_design_todos = set()
             if design_start_str and isinstance(design_start_str, str):
                 try:
                     design_start_date = parse_date(design_start_str)
-                    
-                    # Determine end date for daily todos
                     if design_end_str and isinstance(design_end_str, str) and design_end_str.strip():
                         try:
-                            design_end_date = parse_date(design_end_str) - timedelta(days=1)  # End date - 1
+                            design_end_date = parse_date(design_end_str) - timedelta(days=1)
                         except ValueError:
-                            design_end_date = design_start_date  # Only create for start date if end date is invalid
+                            design_end_date = design_start_date
                     else:
-                        design_end_date = design_start_date  # Only create for start date if no end date
-                    
-                    # Create daily todos from start to end date - 1
+                        design_end_date = design_start_date
                     current_date = design_start_date
                     while current_date <= design_end_date:
-                        # Only create if the date falls within current week
                         if week_start.date() <= current_date.date() <= week_end.date():
                             project_name = project['案件名'] or f"PJ-{project['id']}"
-                            se_name = project['SE'] or ''
                             ph = project['PH'] or ''
-                            
                             ph_text = f" PH{ph}" if ph else ""
-                            pjno = str(project.get('PJNo.') or project.get('案件番号') or '').strip()                       
+                            pjno = str(project.get('PJNo.') or project.get('案件番号') or '').strip()
                             pjno_text = f" (PJ {pjno})" if pjno else ""
-                            
-                            # Different title format for daily design work
                             if current_date == design_start_date:
                                 todo_title = f"[設計開始] {project_name}{pjno_text}{ph_text}"
-                            elif current_date == design_end_date:
-                                todo_title = f"[設計中] {project_name}{pjno_text}{ph_text}"  # Changed to 設計中 since it's not the actual end
+                                priority = 'medium'
                             else:
                                 todo_title = f"[設計中] {project_name}{pjno_text}{ph_text}"
-                            
+                                priority = 'low'
                             todo_date = current_date.strftime('%Y-%m-%d')
-                            
-                            # Set priority based on task type
-                            if current_date == design_start_date:
-                                priority = 'medium'  # Start
-                            else:
-                                priority = 'low'  # Daily work
-                            
-                            cursor.execute('''
-                                INSERT INTO todos (project_id, title, date, priority, created_at)
-                                VALUES (?, ?, ?, ?, ?)
-                            ''', (project['id'], todo_title, todo_date, priority, current_time))
-                            todos_created += 1
-                        
-                        # Move to next day
+                            valid_design_todos.add((todo_title, todo_date, priority))
                         current_date += timedelta(days=1)
-                        
                 except ValueError:
-                    continue
+                    pass
+
+            # Lấy TODO thiết kế hiện có
+            cursor.execute(
+                "SELECT id, title, date FROM todos WHERE project_id = ? AND date >= ? AND date <= ? AND (title LIKE '[設計開始]%' OR title LIKE '[設計中]%')",
+                (project['id'], week_start.strftime('%Y-%m-%d'), week_end.strftime('%Y-%m-%d'))
+            )
+            existing_design_todos = cursor.fetchall()
+            existing_design_set = set((row[1], row[2]) for row in existing_design_todos)
+
+            # Xóa TODO thiết kế thừa
+            for todo_id, title, date in existing_design_todos:
+                if (title, date, 'medium') not in valid_design_todos and (title, date, 'low') not in valid_design_todos:
+                    cursor.execute("DELETE FROM todos WHERE id = ?", (todo_id,))
+
+            # Thêm TODO thiết kế còn thiếu
+            for todo_title, todo_date, priority in valid_design_todos:
+                if (todo_title, todo_date) not in existing_design_set:
+                    cursor.execute(
+                        "INSERT INTO todos (project_id, title, date, priority, created_at) VALUES (?, ?, ?, ?, ?)",
+                        (project['id'], todo_title, todo_date, priority, current_time)
+                    )
+                    todos_created += 1
         
         conn.commit()
         conn.close()
