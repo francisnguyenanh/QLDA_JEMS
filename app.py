@@ -890,8 +890,13 @@ def dashboard():
         ph = updates.get('PH', '')
         new_start = updates.get('設計開始', '')
         new_end = updates.get('設計完了', '')
+        
+        print("project keys:", project.keys())
+        print("project['PJNo.']:", project.get('PJNo.'), "project['案件番号']:", project.get('案件番号'))
+                            
+        pjno = str(project.get('PJNo.') or project.get('案件番号') or '').strip()
         if project_name and new_start and new_end:
-            sync_design_todo(project_id, project_name, ph, new_start, new_end)
+            sync_design_todo(project_id, project_name, ph, new_start, new_end, pjno)
         flash('プロジェクトが正常に更新されました', 'success')
         return redirect(url_for('dashboard'))
 
@@ -3130,7 +3135,8 @@ def auto_create_todos_for_week():
         
         # Get schedule data
         cursor.execute('''
-            SELECT id, 案件名, 要件引継, 設計開始, 設計完了, 設計書送付, 開発開始, 開発完了, 
+            SELECT id, 案件名, 要件引継, 設計開始, 設計完了, 設計書送付, 開発開始, 開発完了, "PJNo.", 案件番号, 
+                   "テスト開始日", "テスト完了日", 
                    テスト開始日, テスト完了日, FB完了予定日, SE納品, SE, PH, "開発工数（h）"
             FROM projects WHERE 不要 = 0
         ''')
@@ -3185,7 +3191,9 @@ def auto_create_todos_for_week():
                             ph = project['PH'] or ''
                             
                             ph_text = f" PH{ph}" if ph else ""
-                            todo_title = f"【{task_name}】 {project_name}{ph_text}"
+                            pjno = str(project.get('PJNo.') or project.get('案件番号') or '').strip()
+                            pjno_text = f" (PJ {pjno})" if pjno else ""
+                            todo_title = f"[{task_name}] {project_name}{pjno_text}{ph_text}"
                             
                             todo_date = date_obj.strftime('%Y-%m-%d')
                             priority = priority_mapping.get(date_col, 'medium')
@@ -3226,14 +3234,16 @@ def auto_create_todos_for_week():
                             ph = project['PH'] or ''
                             
                             ph_text = f" PH{ph}" if ph else ""
+                            pjno = str(project.get('PJNo.') or project.get('案件番号') or '').strip()                       
+                            pjno_text = f" (PJ {pjno})" if pjno else ""
                             
                             # Different title format for daily design work
                             if current_date == design_start_date:
-                                todo_title = f"[設計開始] {project_name}{ph_text}"
+                                todo_title = f"[設計開始] {project_name}{pjno_text}{ph_text}"
                             elif current_date == design_end_date:
-                                todo_title = f"[設計中] {project_name}{ph_text}"  # Changed to 設計中 since it's not the actual end
+                                todo_title = f"[設計中] {project_name}{pjno_text}{ph_text}"  # Changed to 設計中 since it's not the actual end
                             else:
-                                todo_title = f"[設計中] {project_name}{ph_text}"
+                                todo_title = f"[設計中] {project_name}{pjno_text}{ph_text}"
                             
                             todo_date = current_date.strftime('%Y-%m-%d')
                             
@@ -3244,9 +3254,9 @@ def auto_create_todos_for_week():
                                 priority = 'low'  # Daily work
                             
                             cursor.execute('''
-                                INSERT INTO todos (title, date, priority, created_at)
-                                VALUES (?, ?, ?, ?)
-                            ''', (todo_title, todo_date, priority, current_time))
+                                INSERT INTO todos (project_id, title, date, priority, created_at)
+                                VALUES (?, ?, ?, ?, ?)
+                            ''', (project['id'], todo_title, todo_date, priority, current_time))
                             todos_created += 1
                         
                         # Move to next day
@@ -3447,12 +3457,13 @@ def datetimeformat_jp(value):
     except Exception:
         return value
 
-def sync_design_todo(project_id, project_name, ph, new_start, new_end):
+def sync_design_todo(project_id, project_name, ph, new_start, new_end, pjno=None):
     """Đồng bộ TODO [設計中] cho dự án khi update ngày."""
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
     ph_text = f" PH{ph}" if ph else ""
-    todo_title = f"[設計中] {project_name}{ph_text}"
+    pjno_text = f" (PJ {pjno})" if pjno else ""
+    todo_title = f"[設計中] {project_name}{pjno_text}{ph_text}"
 
     if not new_start or not new_end:
         conn.close()
