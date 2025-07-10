@@ -41,7 +41,7 @@ DISPLAY_COLUMNS = [
     'ステータス', '案件名', 'PH','要件引継', '設計開始',
     '設計完了', '設計書送付', '開発開始', '開発完了', 'テスト開始日', 'テスト完了日',
     'FB完了予定日', 'SE納品', 'タスク', 'SE', 'SE(sub)', 'BSE', '案件番号', 'PJNo.', 
-    '開発工数（h）', '設計工数（h）', 'ページ数', '注文設計', '注文テスト', '注文FB', '注文BrSE', '備考'
+    '開発工数（h）', '設計工数（h）', 'ページ数', '注文設計', '注文テスト', '注文FB', '注文BrSE', '並行テスト', '備考'
 ]
 DATE_COLUMNS_DB = [
     '要件引継', '設計開始', '設計完了', '設計書送付', '開発開始', '開発完了',
@@ -152,6 +152,8 @@ def init_db():
         cursor.execute('ALTER TABLE projects ADD COLUMN user_edited_status INTEGER DEFAULT 0')
     if 'SE(sub)' not in columns:
         cursor.execute('ALTER TABLE projects ADD COLUMN "SE(sub)" TEXT')
+    if '並行テスト' not in columns:
+        cursor.execute('ALTER TABLE projects ADD COLUMN 並行テスト INTEGER DEFAULT 0')
 
     cursor.execute('''
             CREATE TABLE IF NOT EXISTS schedule_done_status (
@@ -297,7 +299,7 @@ def convert_nat_to_none(project_dict):
     """Convert NaT/NaN/None values to empty strings and handle specific data types."""
     for key, value in project_dict.items():
         if isna(value) or value is None:
-            project_dict[key] = '' if key not in ['不要', '注文設計', '注文テスト', '注文FB', '注文BrSE',
+            project_dict[key] = '' if key not in ['不要', '注文設計', '注文テスト', '注文FB', '注文BrSE', '並行テスト',
                                                   'user_edited_status'] else 0
         elif key == 'PJNo.':
             if isinstance(value, (float, int)):
@@ -307,7 +309,7 @@ def convert_nat_to_none(project_dict):
         elif isinstance(value, (float, int)) and key not in ['不要', '注文設計', '注文テスト', '注文FB', '注文BrSE',
                                                              'user_edited_status']:
             project_dict[key] = str(value)
-        elif key in ['注文設計', '注文テスト', '注文FB', '注文BrSE']:
+        elif key in ['注文設計', '注文テスト', '注文FB', '注文BrSE', '並行テスト']:
             project_dict[key] = '○' if value == 1 else ''
         if key == 'fb_late':
             project_dict[key] = bool(value)
@@ -516,11 +518,11 @@ def import_excel_to_sqlite(file_path):
 
 
         # Initialize missing columns
-        for col in ['ページ数', 'タスク', 'ステータス', '不要', '注文設計', '注文テスト', '注文FB', '注文BrSE',
+        for col in ['ページ数', 'タスク', 'ステータス', '不要', '注文設計', '注文テスト', '注文FB', '注文BrSE', '並行テスト',
                     'user_edited_status']:
             if col not in df.columns:
                 df[col] = '' if col != 'ステータス' else '要件引継待ち'
-                if col in ['不要', '注文設計', '注文テスト', '注文FB', '注文BrSE', 'user_edited_status']:
+                if col in ['不要', '注文設計', '注文テスト', '注文FB', '注文BrSE', '並行テスト', 'user_edited_status']:
                     df[col] = 0
 
         # Calculate status for each project
@@ -674,7 +676,7 @@ def update_project(project_id, updates):
     else:
         updates['タスク'] = ''
 
-    for field in ['不要', '注文設計', '注文テスト', '注文FB', '注文BrSE']:
+    for field in ['不要', '注文設計', '注文テスト', '注文FB', '注文BrSE', '並行テスト']:
         if field in updates:
             updates[field] = 1 if updates[field] == 'on' else 0
 
@@ -881,7 +883,7 @@ def dashboard():
                 else:
                     updates[col] = request.form[col]
             # Đảm bảo các trường checkbox luôn có mặt trong updates
-        for field in ['不要', '注文設計', '注文テスト', '注文FB', '注文BrSE']:
+        for field in ['不要', '注文設計', '注文テスト', '注文FB', '注文BrSE', '並行テスト']:
             if field not in updates:
                 updates[field] = 0
             
@@ -2837,7 +2839,7 @@ def copy_project():
                 continue
             elif key == 'タスク':
                 data[key] = request.form.get(key, '')
-            elif key in ['注文設計', '注文テスト', '注文FB', '注文BrSE']:
+            elif key in ['注文設計', '注文テスト', '注文FB', '注文BrSE', '並行テスト']:
                 data[key] = 1 if request.form.get(key) == '1' else 0
             elif key in ['開発工数（h）', '設計工数（h）']:
                 value = request.form.get(key, '')
@@ -2860,7 +2862,7 @@ def copy_project():
         values = []
         placeholders = []
         
-        for column in DISPLAY_COLUMNS + ['注文設計', '注文テスト', '注文FB', '注文BrSE']:
+        for column in DISPLAY_COLUMNS + ['注文設計', '注文テスト', '注文FB', '注文BrSE', '並行テスト']:
             if column in data and data[column] is not None and data[column] != '':
                 columns.append(f'"{column}"')
                 values.append(data[column])
@@ -3117,7 +3119,7 @@ def auto_create_todos_for_week():
         
         # Get schedule data
         cursor.execute('''
-            SELECT id, 案件名, 要件引継, 設計開始, 設計完了, 設計書送付, 開発開始, 開発完了, "PJNo.", 案件番号, 
+            SELECT id, 案件名, 要件引継, 設計開始, 設計完了, 設計書送付, 開発開始, 開発完了, "PJNo.", 案件番号, 並行テスト,
                    テスト開始日, テスト完了日, FB完了予定日, SE納品, SE, PH, "開発工数（h）"
             FROM projects WHERE 不要 = 0
         ''')
@@ -3155,9 +3157,12 @@ def auto_create_todos_for_week():
         todos_created = 0
         current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         
+
         for project in projects:
             # --- 1. Tạo set milestone hợp lệ theo dữ liệu hiện tại ---
             valid_todos = set()
+            parallel_test = project.get('並行テスト', 0) == 1 or project.get('並行テスト') == '1'
+            parallel_todos = set()  # (title, date)
             for date_col in date_columns:
                 if date_col == '設計開始':
                     continue
@@ -3175,6 +3180,10 @@ def auto_create_todos_for_week():
                             todo_title = f"[{task_name}] {project_name}{pjno_text}{ph_text}"
                             todo_date = date_obj.strftime('%Y-%m-%d')
                             valid_todos.add((todo_title, todo_date))
+                            # Nếu là テスト開始 và 並行テスト=ON, thêm SE納品(並行)
+                            if task_name == 'テスト開始' and parallel_test:
+                                parallel_title = f"[SE納品(並行)] {project_name}{pjno_text}{ph_text}"
+                                parallel_todos.add((parallel_title, todo_date))
                     except ValueError:
                         continue
 
@@ -3186,9 +3195,27 @@ def auto_create_todos_for_week():
             existing_todos = cursor.fetchall()
             existing_todo_set = set((row[1], row[2]) for row in existing_todos)
 
+            # Lấy các TODO SE納品(並行) hiện có
+            cursor.execute(
+                "SELECT id, title, date FROM todos WHERE project_id = ? AND date >= ? AND date <= ? AND title LIKE '[SE納品(並行)]%'",
+                (project['id'], week_start.strftime('%Y-%m-%d'), week_end.strftime('%Y-%m-%d'))
+            )
+            existing_parallel_todos = cursor.fetchall()
+            existing_parallel_set = set((row[1], row[2]) for row in existing_parallel_todos)
+
             # --- 3. Xóa TODO milestone thừa ---
             for todo_id, title, date in existing_todos:
                 if (title, date) not in valid_todos:
+                    # Nếu là テスト開始 và 並行テスト=ON, xóa luôn SE納品(並行) cùng ngày
+                    if title.startswith('[テスト開始]') and parallel_test:
+                        # Tìm và xóa SE納品(並行) cùng ngày
+                        parallel_title = title.replace('[テスト開始]', '[SE納品(並行)]')
+                        cursor.execute("DELETE FROM todos WHERE project_id = ? AND title = ? AND date = ?", (project['id'], parallel_title, date))
+                    cursor.execute("DELETE FROM todos WHERE id = ?", (todo_id,))
+
+            # Xóa SE納品(並行) thừa (chỉ giữ những cái đúng ngày テスト開始)
+            for todo_id, title, date in existing_parallel_todos:
+                if (title, date) not in parallel_todos:
                     cursor.execute("DELETE FROM todos WHERE id = ?", (todo_id,))
 
             # --- 4. Tạo TODO milestone còn thiếu ---
@@ -3203,6 +3230,24 @@ def auto_create_todos_for_week():
                     cursor.execute(
                         "INSERT INTO todos (project_id, title, date, priority, created_at) VALUES (?, ?, ?, ?, ?)",
                         (project['id'], todo_title, todo_date, priority, current_time)
+                    )
+                    todos_created += 1
+                    # Nếu là テスト開始 và 並行テスト=ON, tạo luôn SE納品(並行)
+                    if todo_title.startswith('[テスト開始]') and parallel_test:
+                        parallel_title = todo_title.replace('[テスト開始]', '[SE納品(並行)]')
+                        if (parallel_title, todo_date) not in existing_parallel_set:
+                            cursor.execute(
+                                "INSERT INTO todos (project_id, title, date, priority, created_at) VALUES (?, ?, ?, ?, ?)",
+                                (project['id'], parallel_title, todo_date, 'high', current_time)
+                            )
+                            todos_created += 1
+
+            # Thêm SE納品(並行) còn thiếu (nếu có)
+            for parallel_title, parallel_date in parallel_todos:
+                if (parallel_title, parallel_date) not in existing_parallel_set:
+                    cursor.execute(
+                        "INSERT INTO todos (project_id, title, date, priority, created_at) VALUES (?, ?, ?, ?, ?)",
+                        (project['id'], parallel_title, parallel_date, 'high', current_time)
                     )
                     todos_created += 1
 

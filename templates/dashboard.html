@@ -360,6 +360,9 @@ body {
 #dashboardTable.table-dashboard th:nth-child(31),
 #dashboardTable.table-dashboard td:nth-child(31) { width: 75px; min-width: 75px; }
 
+#dashboardTable.table-dashboard th:nth-child(32),
+#dashboardTable.table-dashboard td:nth-child(32) { width: 75px; min-width: 75px; }
+
 /* Dashboard Soft highlighting - giữ nguyên nhưng compact */
 #dashboardTable.table-dashboard .past-date { 
     background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%) !important;
@@ -1706,6 +1709,46 @@ body {
 #copyModal .order-checkboxes .form-check:hover {
     background: rgba(245, 158, 11, 0.1);
     border-radius: 4px;
+}
+
+/* Parallel Test checkbox styling */
+#editModal #edit_並行テスト,
+#copyModal #copy_並行テスト {
+    accent-color: #8b5cf6;
+    width: 18px;
+    height: 18px;
+    margin-top: 0;
+    cursor: pointer;
+}
+
+#editModal .form-check-label[for="edit_並行テスト"],
+#copyModal .form-check-label[for="copy_並行テスト"] {
+    color: #8b5cf6;
+    font-weight: 600;
+    cursor: pointer;
+    margin-bottom: 0;
+    font-size: 0.9rem;
+}
+
+#editModal .form-check:has(#edit_並行テスト),
+#copyModal .form-check:has(#copy_並行テスト) {
+    background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    padding: 0.75rem 1rem;
+    transition: all 0.3s ease;
+}
+
+#editModal .form-check:has(#edit_並行テスト):hover,
+#copyModal .form-check:has(#copy_並行テスト):hover {
+    background: linear-gradient(135deg, #e5e7eb 0%, #d1d5db 100%);
+    border-color: #8b5cf6;
+}
+
+#editModal #edit_並行テスト:checked + .form-check-label,
+#copyModal #copy_並行テスト:checked + .form-check-label {
+    color: #7c3aed;
+    font-weight: 700;
 }
 
 /* MAIL TEMPLATE MODAL SPECIFIC STYLES */
@@ -4695,6 +4738,12 @@ body {
                             <!-- Column 4 -->
                             <div class="col-12 col-md-3">
                                 <div class="mb-3">
+                                    <div class="form-check">
+                                        <input type="checkbox" name="並行テスト" id="edit_並行テスト" class="form-check-input">
+                                        <label class="form-check-label" for="edit_並行テスト">並行テスト</label>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
                                     <label class="form-label">テスト開始日</label>
                                     <input type="date" name="テスト開始日" id="edit_テスト開始日" class="form-control">
                                 </div>
@@ -4865,6 +4914,12 @@ body {
                             </div>
                             <!-- Column 4 -->
                             <div class="col-12 col-md-3">
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input type="checkbox" name="並行テスト" id="copy_並行テスト" class="form-check-input">
+                                        <label class="form-check-label" for="copy_並行テスト">並行テスト</label>
+                                    </div>
+                                </div>
                                 <div class="mb-3">
                                     <label class="form-label">テスト開始日</label>
                                     <input type="date" name="テスト開始日" id="copy_テスト開始日" class="form-control">
@@ -5250,7 +5305,7 @@ body {
             });
 
             // Fill order checkboxes
-            const orderCheckboxes = ['注文設計', '注文テスト', '注文FB', '注文BrSE'];
+            const orderCheckboxes = ['注文設計', '注文テスト', '注文FB', '注文BrSE', '並行テスト'];
             orderCheckboxes.forEach(order => {
                 const checkbox = document.getElementById(`copy_${order}`);
                 if (checkbox) {
@@ -5287,7 +5342,7 @@ body {
             formData.set('タスク', taskValues.join(','));
             
             // Handle order checkboxes
-            const orderFields = ['注文設計', '注文テスト', '注文FB', '注文BrSE'];
+            const orderFields = ['注文設計', '注文テスト', '注文FB', '注文BrSE', '並行テスト'];
             orderFields.forEach(field => {
                 const checkbox = document.getElementById(`copy_${field}`);
                 formData.set(field, checkbox && checkbox.checked ? '1' : '0');
@@ -5649,7 +5704,7 @@ body {
                 unnecessaryCheckbox.checked = project['不要'] === 1 || project['不要'] === '1';
             }
 
-            const orderCheckboxes = ['注文設計', '注文テスト', '注文FB', '注文BrSE'];
+            const orderCheckboxes = ['注文設計', '注文テスト', '注文FB', '注文BrSE', '並行テスト'];
             orderCheckboxes.forEach(order => {
                 const checkbox = document.getElementById(`edit_${order}`);
                 if (checkbox) {
