@@ -23,6 +23,7 @@ from dateutil.parser import parse as parse_date
 from dateutil.relativedelta import relativedelta
 from collections import OrderedDict
 from datetime import timedelta
+import utils
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
