@@ -13,6 +13,28 @@
         margin-top: 15px;
     }
     
+    .progress {
+        height: 25px;
+        border-radius: 8px;
+        background-color: #e9ecef;
+        overflow: hidden;
+    }
+    
+    .progress-bar {
+        background: linear-gradient(45deg, #007bff, #0056b3);
+        color: white;
+        font-weight: bold;
+        text-align: center;
+        line-height: 25px;
+        transition: width 0.6s ease;
+        border-radius: 8px;
+    }
+    
+    .progress-info .alert {
+        margin-bottom: 10px;
+        border-radius: 8px;
+    }
+    
     .file-input-group {
         margin-bottom: 20px;
     }
@@ -58,6 +80,12 @@
         color: #155724;
         background-color: #d4edda;
         border-color: #c3e6cb;
+    }
+    
+    .alert-warning {
+        color: #856404;
+        background-color: #fff3cd;
+        border-color: #ffeaa7;
     }
     
     .alert-danger {
@@ -345,6 +373,9 @@ document.addEventListener('DOMContentLoaded', function() {
         updateButtonStates();
         showProgress();
         
+        // Show initial progress
+        updateProgress(5, 'Uploading file and initializing...');
+        
         const formData = new FormData();
         formData.append('file', file);
         
@@ -356,18 +387,25 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(data => {
             if (data.success) {
                 currentFileName = data.filename;
+                updateProgress(100, 'Script generation completed!');
                 showResult('success', `Script generated successfully: ${data.filename}`);
                 loadFileList();
+                
+                // Hide progress after a short delay to show completion message
+                setTimeout(() => {
+                    hideProgress();
+                }, 2000);
             } else {
-                showResult('error', data.error || 'Failed to generate script');
+                showResult('error', '❌ ' + (data.error || 'Failed to generate script'));
+                hideProgress();
             }
         })
         .catch(error => {
-            showResult('error', 'Error: ' + error.message);
+            showResult('error', '❌ Error: ' + error.message);
+            hideProgress();
         })
         .finally(() => {
             isGenerating = false;
-            hideProgress();
             updateButtonStates();
         });
         
@@ -382,16 +420,24 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(response => response.json())
         .then(data => {
             if (data.current_sheet && data.total_sheets) {
-                const progress = (data.current_sheet / data.total_sheets) * 100;
-                updateProgress(progress, `Processing sheet ${data.sheet_name} (${data.current_sheet}/${data.total_sheets})`);
+                const progress = Math.min((data.current_sheet / data.total_sheets) * 95, 95); // Cap at 95% until completion
+                updateProgress(progress, `📄 Processing sheet "${data.sheet_name}" (${data.current_sheet}/${data.total_sheets})`);
                 
-                if (data.current_sheet < data.total_sheets) {
+                if (data.current_sheet < data.total_sheets && isGenerating) {
                     setTimeout(pollProgress, 1000);
                 }
+            } else if (isGenerating) {
+                // If no progress data, show generic progress
+                updateProgress(10, '⚙️ Processing Excel file...');
+                setTimeout(pollProgress, 1500);
             }
         })
         .catch(error => {
             console.error('Progress polling error:', error);
+            if (isGenerating) {
+                // Continue polling even if there's an error
+                setTimeout(pollProgress, 2000);
+            }
         });
     }
     
@@ -447,6 +493,15 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
+    function downloadScript(filename) {
+        const link = document.createElement('a');
+        link.href = `/api/download_script/${filename}`;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+    
     function updateButtonStates() {
         genScriptBtn.disabled = !docFile.files.length || isGenerating;
         downloadBtn.disabled = !currentFileName || isGenerating;
@@ -475,11 +530,16 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function showResult(type, message) {
-        const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
-        resultArea.innerHTML = `<div class="alert ${alertClass}">${message}</div>`;
+        const alertClass = type === 'success' ? 'alert-success' : 
+                          type === 'warning' ? 'alert-warning' : 'alert-danger';
+        const icon = type === 'success' ? '✅' : 
+                     type === 'warning' ? '⚠️' : '❌';
+        resultArea.innerHTML = `<div class="alert ${alertClass}"><strong>${icon} ${message}</strong></div>`;
+        
+        // Auto-hide after longer delay for better UX
         setTimeout(() => {
             resultArea.innerHTML = '';
-        }, 5000);
+        }, type === 'success' ? 8000 : 5000);
     }
     
     // Configuration functions
