@@ -1,0 +1,165 @@
+{
+  "MAPPING_VALUE_DICT": {
+    "項目定義書_帳票": "2",
+    "項目定義書_画面": "1",
+    "項目定義書_CSV": "5",
+    "項目定義書_IPO図": "4",
+    "項目定義書_ﾒﾆｭｰ": "3"
+  },
+  "KOUMOKU_TYPE_MAPPING": {
+    "ラベル": "101",
+    "タイトルラベル": "102",
+    "テキストボックス": "103",
+    "コンボボックス": "104",
+    "ラジオボタン": "105",
+    "チェックボックス": "106",
+    "チェックリスト": "107",
+    "ボタン": "108",
+    "ボタングループ": "109",
+    "メニュートゥール": "110",
+    "メニューツリー": "111",
+    "画像": "112"
+  },
+  "KOUMOKU_TYPE_MAPPING_RE": {
+    "ラベル": "101",
+    "タイトルラベル": "102",
+    "テキストボックス": "103",
+    "チェックボックス": "106",
+    "データグリッド": "107",
+    "処理": "114",
+    "レイアウト": "115",
+    "画像": "116"
+  },
+  "STOP_VALUES": [
+    "【帳票データ】",
+    "【ファンクション定義】",
+    "【メッセージ定義】",
+    "【タブインデックス定義】",
+    "【CSVデータ】",
+    "【備考】",
+    "【運用上の注意点】",
+    "【項目定義】",
+    "【一覧定義】",
+    "【表示位置定義】"
+  ],
+  "EXCLUDED_SHEETNAMES": [
+    "カスタマイズ設計書(鑑)",
+    "カスタマイズ設計書",
+    "はじめに",
+    "変更履歴"
+  ],
+  "MERGED_CELL_RANGES": {
+    "B_TO_BN": [2, 66],
+    "B_TO_C": [2, 3],
+    "E_TO_AZ": [5, 52],
+    "B_TO_D": [2, 4],
+    "B_TO_K": [2, 11],
+    "E_TO_BN": [5, 66],
+    "E_TO_BK": [5, 63],
+    "D_TO_O": [4, 15],
+    "D_TO_N": [4, 14]
+  },
+  "SKIP_CELL_VALUES": {
+    "SCREEN_NUMBER": ["画面", "番号"],
+    "MESSAGE_CODE": ["ﾒｯｾｰｼﾞ", "ｺｰﾄﾞ"],
+    "DEFINITION_LOCATION": ["定義場所"],
+    "DEFINITION_CATEGORY": ["定義区分"],
+    "IPO_HEADER": ["入力画面"]
+  },
+  "ROW_PROCESSOR_CONFIG": {
+    "koumoku": {
+      "table_name": "T_KIHON_PJ_KOUMOKU",
+      "logic_table_name": "T_KIHON_PJ_KOUMOKU_LOGIC",
+      "cell_b_value": "【項目定義】",
+      "column_value_processor": "koumoku_set_value",
+      "logic_processor": "koumoku_logic",
+      "seq_prefix": "SEQ_K"
+    },
+    "func": {
+      "table_name": "T_KIHON_PJ_FUNC",
+      "logic_table_name": "T_KIHON_PJ_FUNC_LOGIC",
+      "cell_b_value": "【ファンクション定義】",
+      "column_value_processor": "func_set_value",
+      "logic_processor": "func_logic",
+      "seq_prefix": "SEQ_F"
+    },
+    "re": {
+      "table_name": "T_KIHON_PJ_KOUMOKU_RE",
+      "logic_table_name": "T_KIHON_PJ_KOUMOKU_RE_LOGIC",
+      "cell_b_value": "【項目定義】",
+      "column_value_processor": "re_set_value",
+      "logic_processor": "re_logic",
+      "seq_prefix": "SEQ_RE"
+    },
+    "csv": {
+      "table_name": "T_KIHON_PJ_KOUMOKU_CSV",
+      "logic_table_name": "T_KIHON_PJ_KOUMOKU_CSV_LOGIC",
+      "cell_b_value": "【項目定義】",
+      "column_value_processor": "csv_set_value",
+      "logic_processor": "csv_logic",
+      "seq_prefix": "SEQ_CSV"
+    },
+    "message": {
+      "table_name": "T_KIHON_PJ_MESSAGE",
+      "cell_b_value": "【メッセージ定義】",
+      "column_value_processor": "message_set_value",
+      "seq_prefix": "SEQ_MS"
+    },
+    "tab": {
+      "table_name": "T_KIHON_PJ_TAB",
+      "cell_b_value": "【タブインデックス定義】",
+      "column_value_processor": "tab_set_value",
+      "seq_prefix": "SEQ_T"
+    },
+    "hyouji": {
+      "table_name": "T_KIHON_PJ_HYOUJI",
+      "cell_b_value": "【表示位置定義】",
+      "column_value_processor": "hyouji_set_value",
+      "seq_prefix": "SEQ_H"
+    },
+    "ichiran": {
+      "table_name": "T_KIHON_PJ_ICHIRAN",
+      "cell_b_value": "【一覧定義】",
+      "column_value_processor": "ichiran_set_value",
+      "seq_prefix": "SEQ_I"
+    },
+    "menu": {
+      "table_name": "T_KIHON_PJ_MENU",
+      "cell_b_value": "【メニュー定義】",
+      "column_value_processor": "menu_set_value",
+      "seq_prefix": "SEQ_M"
+    },
+    "ipo": {
+      "table_name": "T_KIHON_PJ_IPO",
+      "cell_b_value": "入力画面",
+      "column_value_processor": "ipo_set_value",
+      "seq_prefix": "SEQ_IPO"
+    }
+  },
+  "LOGIC_PROCESSOR_CONFIG": {
+    "koumoku_logic": {
+      "table_name": "T_KIHON_PJ_KOUMOKU_LOGIC",
+      "column_value_processor": "koumoku_set_value",
+      "seq_counter_name": "SEQ_K_L",
+      "cell_b_value": "【項目定義】"
+    },
+    "func_logic": {
+      "table_name": "T_KIHON_PJ_FUNC_LOGIC",
+      "column_value_processor": "func_set_value",
+      "seq_counter_name": "SEQ_F_L",
+      "cell_b_value": "【ファンクション定義】"
+    },
+    "re_logic": {
+      "table_name": "T_KIHON_PJ_KOUMOKU_RE_LOGIC",
+      "column_value_processor": "re_set_value",
+      "seq_counter_name": "SEQ_RE_L",
+      "cell_b_value": "【項目定義】"
+    },
+    "csv_logic": {
+      "table_name": "T_KIHON_PJ_KOUMOKU_CSV_LOGIC",
+      "column_value_processor": "csv_set_value",
+      "seq_counter_name": "SEQ_CSV_L",
+      "cell_b_value": "【項目定義】"
+    }
+  }
+}

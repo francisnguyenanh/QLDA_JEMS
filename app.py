@@ -1,6 +1,6 @@
 import sqlite3
 from datetime import datetime, timedelta
-from flask import render_template, redirect, url_for, flash
+from flask import json, render_template, redirect, url_for, flash
 import pandas as pd
 from pandas import isna
 import logging
@@ -24,6 +24,11 @@ from dateutil.relativedelta import relativedelta
 from collections import OrderedDict
 from datetime import timedelta
 import utils
+
+import genscript
+import zipfile
+import threading
+import time
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -54,6 +59,13 @@ VALID_STATUSES = [
 ]
 
 MAIL_DIR = 'mail'
+
+generation_progress = {
+    'current_sheet': 0,
+    'total_sheets': 0,
+    'sheet_name': '',
+    'is_generating': False
+}
 
 def init_db():
     """Initialize SQLite database with projects, copied_templates, and daily_hours tables."""
@@ -3538,6 +3550,626 @@ def sync_design_todo(project_id, project_name, ph, new_start, new_end, pjno=None
 
     conn.commit()
     conn.close()
+
+@app.route('/genscript')
+def genscript_page():
+    """Render GenScript page."""
+    if 'username' not in session:
+        return redirect(url_for('login'))
+    return render_template('genscript.html')
+
+@app.route('/api/generate_script', methods=['POST'])
+def generate_script():
+    """Generate SQL script from uploaded file."""
+    if 'username' not in session:
+        return jsonify({'success': False, 'error': 'Unauthorized'}), 401
+    
+    if 'file' not in request.files:
+        return jsonify({'success': False, 'error': 'No file provided'}), 400
+    
+    file = request.files['file']
+    if file.filename == '' or not file.filename.endswith(('.xlsx', '.xls')):
+        return jsonify({'success': False, 'error': 'Invalid file format'}), 400
+
+    try:
+        # Create necessary directories
+        if not os.path.exists('temp'):
+            os.makedirs('temp')
+        if not os.path.exists('gen_script'):
+            os.makedirs('gen_script')
+        
+        # Save uploaded file temporarily
+        temp_path = os.path.join('temp', file.filename)
+        file.save(temp_path)
+        
+        # Generate timestamp for output file
+        timestamp = datetime.now().strftime('%Y%m%d%H%M')
+        base_name, ext = os.path.splitext(file.filename)
+        safe_base_name = base_name.replace(' ', '_').replace('/', '_').replace('\\', '_')
+        output_filename = f'{safe_base_name}_{timestamp}.sql'
+        zip_filename = f'{safe_base_name}_{timestamp}.zip'
+        
+        # Start generation in background thread
+        def generate_background():
+            global generation_progress
+            try:
+                generation_progress['is_generating'] = True
+                generation_progress['current_sheet'] = 0
+                generation_progress['total_sheets'] = 0
+                generation_progress['sheet_name'] = ''
+                
+                # Call genscript function
+                insert_statements = genscript.all_tables_in_sequence_with_progress(
+                    temp_path, 
+                    'table_info.txt',
+                    output_filename,
+                    progress_callback=update_progress
+                )
+                
+                # Create ZIP file
+                zip_path = os.path.join('gen_script', zip_filename)
+                with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zf:
+                    zf.write(output_filename, output_filename)
+                
+                # Clean up temp files
+                if os.path.exists(temp_path):
+                    os.remove(temp_path)
+                if os.path.exists(output_filename):
+                    os.remove(output_filename)
+                    
+            except Exception as e:
+                logging.error(f"Error in background generation: {str(e)}")
+            finally:
+                generation_progress['is_generating'] = False
+        
+        def update_progress(current, total, sheet_name):
+            global generation_progress
+            generation_progress['current_sheet'] = current
+            generation_progress['total_sheets'] = total
+            generation_progress['sheet_name'] = sheet_name
+        
+        # Start background thread
+        thread = threading.Thread(target=generate_background)
+        thread.daemon = True
+        thread.start()
+        
+        return jsonify({
+            'success': True,
+            'filename': zip_filename,
+            'message': 'Script generation started'
+        })
+        
+    except Exception as e:
+        logging.error(f"Error generating script: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/generation_progress')
+def get_generation_progress():
+    """Get current generation progress."""
+    if 'username' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    global generation_progress
+    return jsonify(generation_progress)
+
+@app.route('/api/download_script/<filename>')
+def download_script(filename):
+    """Download generated script file."""
+    if 'username' not in session:
+        return redirect(url_for('login'))
+    
+    # Security check
+    if '..' in filename or filename.startswith('/') or filename.startswith('\\'):
+        return jsonify({'error': 'Invalid filename'}), 400
+    
+    file_path = os.path.join('gen_script', filename)
+    if not os.path.exists(file_path):
+        return jsonify({'error': 'File not found'}), 404
+    
+    try:
+        return send_file(file_path, as_attachment=True, download_name=filename)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/delete_all_scripts', methods=['DELETE'])
+def delete_all_scripts():
+    """Delete all generated script files."""
+    if 'username' not in session:
+        return jsonify({'success': False, 'error': 'Unauthorized'}), 401
+    
+    try:
+        gen_script_dir = 'gen_script'
+        if os.path.exists(gen_script_dir):
+            for filename in os.listdir(gen_script_dir):
+                file_path = os.path.join(gen_script_dir, filename)
+                if os.path.isfile(file_path):
+                    os.remove(file_path)
+        
+        return jsonify({'success': True, 'message': 'All scripts deleted successfully'})
+        
+    except Exception as e:
+        logging.error(f"Error deleting scripts: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/script_files')
+def get_script_files():
+    """Get list of generated script files."""
+    if 'username' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    try:
+        gen_script_dir = 'gen_script'
+        files = []
+        
+        if os.path.exists(gen_script_dir):
+            for filename in os.listdir(gen_script_dir):
+                file_path = os.path.join(gen_script_dir, filename)
+                if os.path.isfile(file_path) and filename.endswith('.zip'):
+                    files.append(filename)
+        
+        files.sort(reverse=True)  # Newest first
+        return jsonify({'files': files})
+        
+    except Exception as e:
+        logging.error(f"Error getting script files: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/get_configuration')
+def get_configuration():
+    """Get current configuration files content."""
+    if 'username' not in session:
+        return jsonify({'success': False, 'error': 'Unauthorized'}), 401
+    
+    try:
+        table_info_content = ''
+        gendoc_config_content = ''
+        
+        # Read table_info.txt
+        if os.path.exists('table_info.txt'):
+            with open('table_info.txt', 'r', encoding='utf-8') as f:
+                table_info_content = f.read()
+        
+        # Read gendoc_config.txt
+        if os.path.exists('gendoc_config.txt'):
+            with open('gendoc_config.txt', 'r', encoding='utf-8') as f:
+                gendoc_config_content = f.read()
+        
+        # Also parse for detailed view
+        config_data = {
+            'table_info': {},
+            'mapping_values': {},
+            'koumoku_mapping': {},
+            'koumoku_mapping_re': {},
+            'stop_values': [],
+            'excluded_sheets': [],
+            'merged_cells': {},
+            'skip_cells': [],
+            'row_processor': {},
+            'logic_processor': {}
+        }
+        
+        if table_info_content.strip():
+            try:
+                config_data['table_info'] = json.loads(table_info_content)
+            except json.JSONDecodeError:
+                pass
+        
+        if gendoc_config_content.strip():
+            try:
+                gendoc_config = json.loads(gendoc_config_content)
+                config_data['mapping_values'] = gendoc_config.get('MAPPING_VALUE_DICT', {})
+                config_data['koumoku_mapping'] = gendoc_config.get('KOUMOKU_TYPE_MAPPING', {})
+                config_data['koumoku_mapping_re'] = gendoc_config.get('KOUMOKU_TYPE_MAPPING_RE', {})
+                config_data['stop_values'] = gendoc_config.get('STOP_VALUES', [])
+                config_data['excluded_sheets'] = gendoc_config.get('EXCLUDED_SHEETNAMES', [])
+                config_data['merged_cells'] = gendoc_config.get('MERGED_CELL_RANGES', {})
+                config_data['skip_cells'] = gendoc_config.get('SKIP_CELL_VALUES', [])
+                config_data['row_processor'] = gendoc_config.get('ROW_PROCESSOR_CONFIG', {})
+                config_data['logic_processor'] = gendoc_config.get('LOGIC_PROCESSOR_CONFIG', {})
+            except json.JSONDecodeError:
+                pass
+        
+        return jsonify({
+            'success': True,
+            'table_info': table_info_content,
+            'gendoc_config': gendoc_config_content,
+            'detailed_config': config_data
+        })
+        
+    except Exception as e:
+        logging.error(f"Error getting configuration: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/update_configuration', methods=['POST'])
+def update_configuration():
+    """Update configuration files."""
+    if 'username' not in session:
+        return jsonify({'success': False, 'error': 'Unauthorized'}), 401
+    
+    try:
+        data = request.get_json()
+        table_info = data.get('table_info', '')
+        gendoc_config = data.get('gendoc_config', '')
+        
+        # Validate JSON format for gendoc_config
+        if gendoc_config.strip():
+            try:
+                json.loads(gendoc_config)
+            except json.JSONDecodeError as e:
+                return jsonify({'success': False, 'error': f'Invalid JSON in gendoc_config: {str(e)}'}), 400
+        
+        # Validate JSON format for table_info
+        if table_info.strip():
+            try:
+                json.loads(table_info)
+            except json.JSONDecodeError as e:
+                return jsonify({'success': False, 'error': f'Invalid JSON in table_info: {str(e)}'}), 400
+        
+        # Write table_info.txt
+        if table_info.strip():
+            with open('table_info.txt', 'w', encoding='utf-8') as f:
+                f.write(table_info)
+        
+        # Write gendoc_config.txt
+        if gendoc_config.strip():
+            with open('gendoc_config.txt', 'w', encoding='utf-8') as f:
+                f.write(gendoc_config)
+        
+        return jsonify({'success': True, 'message': 'Configuration updated successfully'})
+        
+    except Exception as e:
+        logging.error(f"Error updating configuration: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+# Thêm các routes mới để xử lý cấu hình theo nhóm
+
+@app.route('/api/get_detailed_configuration')
+def get_detailed_configuration():
+    """Get configuration broken down by sections for detailed editing."""
+    if 'username' not in session:
+        return jsonify({'success': False, 'error': 'Unauthorized'}), 401
+    
+    try:
+        config_data = {
+            'table_info': {},
+            'mapping_values': {},
+            'koumoku_mapping': {},
+            'koumoku_mapping_re': {},
+            'stop_values': [],
+            'excluded_sheets': [],
+            'merged_cells': {},
+            'skip_cells': [],
+            'row_processor': {},
+            'logic_processor': {}
+        }
+        
+        # Read table_info.txt
+        if os.path.exists('table_info.txt'):
+            try:
+                with open('table_info.txt', 'r', encoding='utf-8') as f:
+                    content = f.read().strip()
+                    if content:
+                        config_data['table_info'] = json.loads(content)
+            except (json.JSONDecodeError, Exception) as e:
+                logging.error(f"Error parsing table_info.txt: {str(e)}")
+        
+        # Read gendoc_config.txt
+        if os.path.exists('gendoc_config.txt'):
+            try:
+                with open('gendoc_config.txt', 'r', encoding='utf-8') as f:
+                    content = f.read().strip()
+                    if content:
+                        gendoc_config = json.loads(content)
+                        config_data['mapping_values'] = gendoc_config.get('MAPPING_VALUE_DICT', {})
+                        config_data['koumoku_mapping'] = gendoc_config.get('KOUMOKU_TYPE_MAPPING', {})
+                        config_data['koumoku_mapping_re'] = gendoc_config.get('KOUMOKU_TYPE_MAPPING_RE', {})
+                        config_data['stop_values'] = gendoc_config.get('STOP_VALUES', [])
+                        config_data['excluded_sheets'] = gendoc_config.get('EXCLUDED_SHEETNAMES', [])
+                        config_data['merged_cells'] = gendoc_config.get('MERGED_CELL_RANGES', {})
+                        config_data['skip_cells'] = gendoc_config.get('SKIP_CELL_VALUES', [])
+                        config_data['row_processor'] = gendoc_config.get('ROW_PROCESSOR_CONFIG', {})
+                        config_data['logic_processor'] = gendoc_config.get('LOGIC_PROCESSOR_CONFIG', {})
+            except (json.JSONDecodeError, Exception) as e:
+                logging.error(f"Error parsing gendoc_config.txt: {str(e)}")
+        
+        return jsonify({
+            'success': True,
+            'config': config_data
+        })
+        
+    except Exception as e:
+        logging.error(f"Error getting detailed configuration: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/update_detailed_configuration', methods=['POST'])
+def update_detailed_configuration():
+    """Update configuration from detailed form data."""
+    if 'username' not in session:
+        return jsonify({'success': False, 'error': 'Unauthorized'}), 401
+    
+    try:
+        data = request.get_json()
+        
+        # Extract configuration sections
+        table_info = data.get('table_info', {})
+        mapping_values = data.get('mapping_values', {})
+        koumoku_mapping = data.get('koumoku_mapping', {})
+        koumoku_mapping_re = data.get('koumoku_mapping_re', {})
+        stop_values = data.get('stop_values', [])
+        excluded_sheets = data.get('excluded_sheets', [])
+        merged_cells = data.get('merged_cells', {})
+        skip_cells = data.get('skip_cells', [])
+        row_processor = data.get('row_processor', {})
+        logic_processor = data.get('logic_processor', {})
+        
+        # Validate table_info JSON
+        if table_info:
+            try:
+                # Validate each table configuration
+                for table_name, table_config in table_info.items():
+                    if not isinstance(table_config, list):
+                        return jsonify({'success': False, 'error': f'Table {table_name} configuration must be an array'}), 400
+                    # Validate each column configuration
+                    for col_config in table_config:
+                        if not isinstance(col_config, dict):
+                            return jsonify({'success': False, 'error': f'Column configuration in table {table_name} must be an object'}), 400
+            except Exception as e:
+                return jsonify({'success': False, 'error': f'Invalid table_info format: {str(e)}'}), 400
+        
+        # Validate complex objects (row_processor, logic_processor)
+        for config_name, config_data in [('row_processor', row_processor), ('logic_processor', logic_processor)]:
+            if config_data:
+                try:
+                    # Ensure it's valid JSON-serializable
+                    json.dumps(config_data)
+                except Exception as e:
+                    return jsonify({'success': False, 'error': f'Invalid {config_name} format: {str(e)}'}), 400
+        
+        # Build gendoc_config
+        gendoc_config = {
+            'MAPPING_VALUE_DICT': mapping_values,
+            'KOUMOKU_TYPE_MAPPING': koumoku_mapping,
+            'KOUMOKU_TYPE_MAPPING_RE': koumoku_mapping_re,
+            'STOP_VALUES': stop_values,
+            'EXCLUDED_SHEETNAMES': excluded_sheets,
+            'MERGED_CELL_RANGES': merged_cells,
+            'SKIP_CELL_VALUES': skip_cells,
+            'ROW_PROCESSOR_CONFIG': row_processor,
+            'LOGIC_PROCESSOR_CONFIG': logic_processor
+        }
+        
+        # Write files
+        if table_info:
+            with open('table_info.txt', 'w', encoding='utf-8') as f:
+                json.dump(table_info, f, ensure_ascii=False, indent=2)
+        
+        with open('gendoc_config.txt', 'w', encoding='utf-8') as f:
+            json.dump(gendoc_config, f, ensure_ascii=False, indent=2)
+        
+        return jsonify({'success': True, 'message': 'Configuration updated successfully'})
+        
+    except Exception as e:
+        logging.error(f"Error updating detailed configuration: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/add_config_item', methods=['POST'])
+def add_config_item():
+    """Add a new configuration item to a specific section."""
+    if 'username' not in session:
+        return jsonify({'success': False, 'error': 'Unauthorized'}), 401
+    
+    try:
+        data = request.get_json()
+        section = data.get('section')
+        key = data.get('key', '').strip()
+        value = data.get('value', '')
+        
+        if not section or not key:
+            return jsonify({'success': False, 'error': 'Section and key are required'}), 400
+        
+        # Read current configuration
+        config_data = {}
+        if os.path.exists('gendoc_config.txt'):
+            with open('gendoc_config.txt', 'r', encoding='utf-8') as f:
+                content = f.read().strip()
+                if content:
+                    config_data = json.loads(content)
+        
+        # Add new item based on section type
+        if section in ['mapping_values', 'koumoku_mapping', 'koumoku_mapping_re', 'merged_cells']:
+            section_map = {
+                'mapping_values': 'MAPPING_VALUE_DICT',
+                'koumoku_mapping': 'KOUMOKU_TYPE_MAPPING',
+                'koumoku_mapping_re': 'KOUMOKU_TYPE_MAPPING_RE',
+                'merged_cells': 'MERGED_CELL_RANGES'
+            }
+            config_key = section_map[section]
+            if config_key not in config_data:
+                config_data[config_key] = {}
+            config_data[config_key][key] = value
+            
+        elif section in ['stop_values', 'excluded_sheets', 'skip_cells']:
+            section_map = {
+                'stop_values': 'STOP_VALUES',
+                'excluded_sheets': 'EXCLUDED_SHEETNAMES',
+                'skip_cells': 'SKIP_CELL_VALUES'
+            }
+            config_key = section_map[section]
+            if config_key not in config_data:
+                config_data[config_key] = []
+            if key not in config_data[config_key]:
+                config_data[config_key].append(key)
+                
+        elif section in ['row_processor', 'logic_processor']:
+            section_map = {
+                'row_processor': 'ROW_PROCESSOR_CONFIG',
+                'logic_processor': 'LOGIC_PROCESSOR_CONFIG'
+            }
+            config_key = section_map[section]
+            if config_key not in config_data:
+                config_data[config_key] = {}
+            # Try to parse value as JSON for complex objects
+            try:
+                parsed_value = json.loads(value) if isinstance(value, str) else value
+                config_data[config_key][key] = parsed_value
+            except json.JSONDecodeError:
+                config_data[config_key][key] = value
+        
+        # Write back to file
+        with open('gendoc_config.txt', 'w', encoding='utf-8') as f:
+            json.dump(config_data, f, ensure_ascii=False, indent=2)
+        
+        return jsonify({'success': True, 'message': f'Added {key} to {section}'})
+        
+    except Exception as e:
+        logging.error(f"Error adding config item: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/remove_config_item', methods=['POST'])
+def remove_config_item():
+    """Remove a configuration item from a specific section."""
+    if 'username' not in session:
+        return jsonify({'success': False, 'error': 'Unauthorized'}), 401
+    
+    try:
+        data = request.get_json()
+        section = data.get('section')
+        key = data.get('key', '').strip()
+        
+        if not section or not key:
+            return jsonify({'success': False, 'error': 'Section and key are required'}), 400
+        
+        # Read current configuration
+        config_data = {}
+        if os.path.exists('gendoc_config.txt'):
+            with open('gendoc_config.txt', 'r', encoding='utf-8') as f:
+                content = f.read().strip()
+                if content:
+                    config_data = json.loads(content)
+        
+        # Remove item based on section type
+        removed = False
+        if section in ['mapping_values', 'koumoku_mapping', 'koumoku_mapping_re', 'merged_cells']:
+            section_map = {
+                'mapping_values': 'MAPPING_VALUE_DICT',
+                'koumoku_mapping': 'KOUMOKU_TYPE_MAPPING',
+                'koumoku_mapping_re': 'KOUMOKU_TYPE_MAPPING_RE',
+                'merged_cells': 'MERGED_CELL_RANGES'
+            }
+            config_key = section_map[section]
+            if config_key in config_data and key in config_data[config_key]:
+                del config_data[config_key][key]
+                removed = True
+                
+        elif section in ['stop_values', 'excluded_sheets', 'skip_cells']:
+            section_map = {
+                'stop_values': 'STOP_VALUES',
+                'excluded_sheets': 'EXCLUDED_SHEETNAMES',
+                'skip_cells': 'SKIP_CELL_VALUES'
+            }
+            config_key = section_map[section]
+            if config_key in config_data and key in config_data[config_key]:
+                config_data[config_key].remove(key)
+                removed = True
+                
+        elif section in ['row_processor', 'logic_processor']:
+            section_map = {
+                'row_processor': 'ROW_PROCESSOR_CONFIG',
+                'logic_processor': 'LOGIC_PROCESSOR_CONFIG'
+            }
+            config_key = section_map[section]
+            if config_key in config_data and key in config_data[config_key]:
+                del config_data[config_key][key]
+                removed = True
+        
+        if not removed:
+            return jsonify({'success': False, 'error': f'Item {key} not found in {section}'}), 404
+        
+        # Write back to file
+        with open('gendoc_config.txt', 'w', encoding='utf-8') as f:
+            json.dump(config_data, f, ensure_ascii=False, indent=2)
+        
+        return jsonify({'success': True, 'message': f'Removed {key} from {section}'})
+        
+    except Exception as e:
+        logging.error(f"Error removing config item: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/add_table_config', methods=['POST'])
+def add_table_config():
+    """Add a new table configuration."""
+    if 'username' not in session:
+        return jsonify({'success': False, 'error': 'Unauthorized'}), 401
+    
+    try:
+        data = request.get_json()
+        table_name = data.get('table_name', '').strip()
+        table_config = data.get('table_config', [])
+        
+        if not table_name:
+            return jsonify({'success': False, 'error': 'Table name is required'}), 400
+        
+        # Validate table_config format
+        if not isinstance(table_config, list):
+            return jsonify({'success': False, 'error': 'Table configuration must be an array'}), 400
+        
+        # Read current table_info
+        table_info = {}
+        if os.path.exists('table_info.txt'):
+            with open('table_info.txt', 'r', encoding='utf-8') as f:
+                content = f.read().strip()
+                if content:
+                    table_info = json.loads(content)
+        
+        # Add new table
+        table_info[table_name] = table_config
+        
+        # Write back to file
+        with open('table_info.txt', 'w', encoding='utf-8') as f:
+            json.dump(table_info, f, ensure_ascii=False, indent=2)
+        
+        return jsonify({'success': True, 'message': f'Added table {table_name}'})
+        
+    except Exception as e:
+        logging.error(f"Error adding table config: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/remove_table_config', methods=['POST'])
+def remove_table_config():
+    """Remove a table configuration."""
+    if 'username' not in session:
+        return jsonify({'success': False, 'error': 'Unauthorized'}), 401
+    
+    try:
+        data = request.get_json()
+        table_name = data.get('table_name', '').strip()
+        
+        if not table_name:
+            return jsonify({'success': False, 'error': 'Table name is required'}), 400
+        
+        # Read current table_info
+        table_info = {}
+        if os.path.exists('table_info.txt'):
+            with open('table_info.txt', 'r', encoding='utf-8') as f:
+                content = f.read().strip()
+                if content:
+                    table_info = json.loads(content)
+        
+        # Remove table
+        if table_name not in table_info:
+            return jsonify({'success': False, 'error': f'Table {table_name} not found'}), 404
+        
+        del table_info[table_name]
+        
+        # Write back to file
+        with open('table_info.txt', 'w', encoding='utf-8') as f:
+            json.dump(table_info, f, ensure_ascii=False, indent=2)
+        
+        return jsonify({'success': True, 'message': f'Removed table {table_name}'})
+        
+    except Exception as e:
+        logging.error(f"Error removing table config: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500
     
 if __name__ == '__main__':
     app.run(debug=True)

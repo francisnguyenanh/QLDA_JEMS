@@ -1,0 +1,896 @@
+{% extends "layout.html" %}
+
+{% block title %}GenScript - SQL Generator{% endblock %}
+
+{% block extra_styles %}
+<style>
+    .tab-content {
+        margin-top: 20px;
+    }
+    
+    .progress-info {
+        display: none;
+        margin-top: 15px;
+    }
+    
+    .file-input-group {
+        margin-bottom: 20px;
+    }
+    
+    .btn-group-custom {
+        display: flex;
+        gap: 10px;
+        margin-top: 15px;
+    }
+    
+    .btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+    
+    .config-section {
+        margin-bottom: 30px;
+        padding: 20px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        background-color: #f9f9f9;
+    }
+    
+    .config-item {
+        margin-bottom: 15px;
+    }
+    
+    .config-item label {
+        font-weight: bold;
+        margin-bottom: 5px;
+        display: block;
+    }
+    
+    .config-item textarea,
+    .config-item input {
+        width: 100%;
+        padding: 8px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+    }
+    
+    .alert-success {
+        color: #155724;
+        background-color: #d4edda;
+        border-color: #c3e6cb;
+    }
+    
+    .alert-danger {
+        color: #721c24;
+        background-color: #f8d7da;
+        border-color: #f5c6cb;
+    }
+    .config-field {
+        margin-bottom: 15px;
+        padding: 15px;
+        border: 1px solid #e0e0e0;
+        border-radius: 6px;
+        background-color: #fafafa;
+    }
+    
+    .config-field-header {
+        display: flex;
+        justify-content: between;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+    
+    .config-field label {
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 5px;
+        display: block;
+    }
+    
+    .config-field input,
+    .config-field textarea {
+        width: 100%;
+        padding: 8px 12px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-family: 'Courier New', monospace;
+        font-size: 0.9rem;
+    }
+    
+    .config-field textarea {
+        min-height: 60px;
+        resize: vertical;
+    }
+    
+    .delete-field-btn {
+        padding: 2px 8px;
+        font-size: 0.8rem;
+    }
+    
+    .add-subfield-btn {
+        margin-top: 10px;
+        padding: 5px 10px;
+        font-size: 0.8rem;
+    }
+    
+    .field-type-indicator {
+        font-size: 0.8rem;
+        color: #666;
+        font-style: italic;
+    }
+    
+    .config-section h6 {
+        color: #495057;
+        border-bottom: 2px solid #dee2e6;
+        padding-bottom: 8px;
+        margin-bottom: 20px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <h2 class="text-primary mb-4">
+        <i class="bi bi-gear-fill me-2"></i>GenScript - SQL Generator
+    </h2>
+    
+    <!-- Nav tabs -->
+    <ul class="nav nav-tabs" id="genscriptTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="generator-tab" data-bs-toggle="tab" data-bs-target="#generator" type="button" role="tab">
+                <i class="bi bi-file-code me-1"></i>SQL Generator
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="settings-tab" data-bs-toggle="tab" data-bs-target="#settings" type="button" role="tab">
+                <i class="bi bi-gear me-1"></i>Settings
+            </button>
+        </li>
+    </ul>
+    
+    <!-- Tab content -->
+    <div class="tab-content" id="genscriptTabContent">
+        <!-- Generator Tab -->
+        <div class="tab-pane fade show active" id="generator" role="tabpanel">
+            <div class="row">
+                <div class="col-md-8">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">File Upload & Script Generation</h5>
+                        </div>
+                        <div class="card-body">
+                            <!-- File Upload -->
+                            <div class="file-input-group">
+                                <label for="docFile" class="form-label">Select Excel/Text File:</label>
+                                <input type="file" class="form-control" id="docFile" accept=".xlsx,.xls,.txt">
+                            </div>
+                            
+                            <!-- Buttons -->
+                            <div class="btn-group-custom">
+                                <button type="button" class="btn btn-primary" id="genScriptBtn" disabled>
+                                    <i class="bi bi-gear-fill me-1"></i>Generate Script
+                                </button>
+                                <button type="button" class="btn btn-success" id="downloadBtn" disabled>
+                                    <i class="bi bi-download me-1"></i>Download Script
+                                </button>
+                                <button type="button" class="btn btn-danger" id="deleteAllBtn" disabled>
+                                    <i class="bi bi-trash me-1"></i>Delete All Scripts
+                                </button>
+                            </div>
+                            
+                            <!-- Progress Info -->
+                            <div class="progress-info" id="progressInfo">
+                                <div class="alert alert-info">
+                                    <strong>Progress:</strong> <span id="progressText">Initializing...</span>
+                                </div>
+                                <div class="progress">
+                                    <div class="progress-bar" id="progressBar" role="progressbar" style="width: 0%">0%</div>
+                                </div>
+                            </div>
+                            
+                            <!-- Result -->
+                            <div id="resultArea" class="mt-3"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">Generated Files</h5>
+                        </div>
+                        <div class="card-body">
+                            <div id="fileList">
+                                <p class="text-muted">No files generated yet.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Settings Tab -->
+        <div class="tab-pane fade" id="settings" role="tabpanel">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Configuration Settings</h5>
+                </div>
+                <div class="card-body">
+                    <form id="settingsForm">
+                        <!-- Table Info Configuration -->
+                        <div class="config-section">
+                            <h6><i class="bi bi-table me-2"></i>Table Info Configuration</h6>
+                            <div id="tableInfoFields"></div>
+                        </div>
+                        
+                        <!-- Mapping Values -->
+                        <div class="config-section">
+                            <h6><i class="bi bi-arrow-left-right me-2"></i>Mapping Values</h6>
+                            <div id="mappingFields"></div>
+                        </div>
+                        
+                        <!-- Koumoku Type Mapping -->
+                        <div class="config-section">
+                            <h6><i class="bi bi-code-square me-2"></i>Koumoku Type Mapping</h6>
+                            <div id="koumokuFields"></div>
+                        </div>
+                        
+                        <!-- Stop Values -->
+                        <div class="config-section">
+                            <h6><i class="bi bi-stop-circle me-2"></i>Stop Values</h6>
+                            <div id="stopValuesFields"></div>
+                        </div>
+                        
+                        <!-- Excluded Sheet Names -->
+                        <div class="config-section">
+                            <h6><i class="bi bi-file-excel me-2"></i>Excluded Sheet Names</h6>
+                            <div id="excludedSheetsFields"></div>
+                        </div>
+                        
+                        <!-- Merged Cell Ranges -->
+                        <div class="config-section">
+                            <h6><i class="bi bi-grid-3x3-gap me-2"></i>Merged Cell Ranges</h6>
+                            <div id="mergedCellFields"></div>
+                        </div>
+                        
+                        <!-- Skip Cell Values -->
+                        <div class="config-section">
+                            <h6><i class="bi bi-skip-forward me-2"></i>Skip Cell Values</h6>
+                            <div id="skipCellFields"></div>
+                        </div>
+                        
+                        <!-- Row Processor Config -->
+                        <div class="config-section">
+                            <h6><i class="bi bi-gear me-2"></i>Row Processor Configuration</h6>
+                            <div id="rowProcessorFields"></div>
+                        </div>
+                        
+                        <!-- Logic Processor Config -->
+                        <div class="config-section">
+                            <h6><i class="bi bi-cpu me-2"></i>Logic Processor Configuration</h6>
+                            <div id="logicProcessorFields"></div>
+                        </div>
+                        
+                        <div class="btn-group-custom">
+                            <button type="button" class="btn btn-primary" id="updateConfigBtn">
+                                <i class="bi bi-save me-1"></i>Update Configuration
+                            </button>
+                            <button type="button" class="btn btn-secondary" id="reloadConfigBtn">
+                                <i class="bi bi-arrow-clockwise me-1"></i>Reload Configuration
+                            </button>
+                            <button type="button" class="btn btn-success" id="addFieldBtn">
+                                <i class="bi bi-plus-circle me-1"></i>Add Field
+                            </button>
+                        </div>
+                    </form>
+                    
+                    <div id="configResult" class="mt-3"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const docFile = document.getElementById('docFile');
+    const genScriptBtn = document.getElementById('genScriptBtn');
+    const downloadBtn = document.getElementById('downloadBtn');
+    const deleteAllBtn = document.getElementById('deleteAllBtn');
+    const progressInfo = document.getElementById('progressInfo');
+    const progressText = document.getElementById('progressText');
+    const progressBar = document.getElementById('progressBar');
+    const resultArea = document.getElementById('resultArea');
+    const fileList = document.getElementById('fileList');
+    
+    let currentFileName = null;
+    let isGenerating = false;
+    
+    // File selection handler
+    docFile.addEventListener('change', function() {
+        genScriptBtn.disabled = !this.files.length || isGenerating;
+    });
+    
+    // Load initial state
+    loadFileList();
+    loadConfiguration();
+    
+    // Generate Script
+    genScriptBtn.addEventListener('click', function() {
+        const file = docFile.files[0];
+        if (!file) {
+            alert('Please select a file first.');
+            return;
+        }
+        
+        generateScript(file);
+    });
+    
+    // Download Script
+    downloadBtn.addEventListener('click', function() {
+        if (currentFileName) {
+            downloadScript(currentFileName);
+        }
+    });
+    
+    // Delete All Scripts
+    deleteAllBtn.addEventListener('click', function() {
+        if (confirm('Are you sure you want to delete all generated scripts?')) {
+            deleteAllScripts();
+        }
+    });
+    
+    function generateScript(file) {
+        isGenerating = true;
+        updateButtonStates();
+        showProgress();
+        
+        const formData = new FormData();
+        formData.append('file', file);
+        
+        fetch('/api/generate_script', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                currentFileName = data.filename;
+                showResult('success', `Script generated successfully: ${data.filename}`);
+                loadFileList();
+            } else {
+                showResult('error', data.error || 'Failed to generate script');
+            }
+        })
+        .catch(error => {
+            showResult('error', 'Error: ' + error.message);
+        })
+        .finally(() => {
+            isGenerating = false;
+            hideProgress();
+            updateButtonStates();
+        });
+        
+        // Start progress polling
+        pollProgress();
+    }
+    
+    function pollProgress() {
+        if (!isGenerating) return;
+        
+        fetch('/api/generation_progress')
+        .then(response => response.json())
+        .then(data => {
+            if (data.current_sheet && data.total_sheets) {
+                const progress = (data.current_sheet / data.total_sheets) * 100;
+                updateProgress(progress, `Processing sheet ${data.sheet_name} (${data.current_sheet}/${data.total_sheets})`);
+                
+                if (data.current_sheet < data.total_sheets) {
+                    setTimeout(pollProgress, 1000);
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Progress polling error:', error);
+        });
+    }
+    
+    function downloadScript(filename) {
+        window.location.href = `/api/download_script/${filename}`;
+    }
+    
+    function deleteAllScripts() {
+        fetch('/api/delete_all_scripts', {
+            method: 'DELETE'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showResult('success', 'All scripts deleted successfully');
+                currentFileName = null;
+                loadFileList();
+            } else {
+                showResult('error', data.error || 'Failed to delete scripts');
+            }
+        })
+        .catch(error => {
+            showResult('error', 'Error: ' + error.message);
+        })
+        .finally(() => {
+            updateButtonStates();
+        });
+    }
+    
+    function loadFileList() {
+        fetch('/api/script_files')
+        .then(response => response.json())
+        .then(data => {
+            if (data.files && data.files.length > 0) {
+                let html = '<ul class="list-group">';
+                data.files.forEach(file => {
+                    html += `<li class="list-group-item d-flex justify-content-between align-items-center">
+                        ${file}
+                        <button class="btn btn-sm btn-outline-primary" onclick="downloadScript('${file}')">
+                            <i class="bi bi-download"></i>
+                        </button>
+                    </li>`;
+                });
+                html += '</ul>';
+                fileList.innerHTML = html;
+            } else {
+                fileList.innerHTML = '<p class="text-muted">No files generated yet.</p>';
+            }
+            updateButtonStates();
+        })
+        .catch(error => {
+            console.error('Error loading file list:', error);
+        });
+    }
+    
+    function updateButtonStates() {
+        genScriptBtn.disabled = !docFile.files.length || isGenerating;
+        downloadBtn.disabled = !currentFileName || isGenerating;
+        
+        // Check if there are any files for delete button
+        fetch('/api/script_files')
+        .then(response => response.json())
+        .then(data => {
+            deleteAllBtn.disabled = !data.files || data.files.length === 0 || isGenerating;
+        });
+    }
+    
+    function showProgress() {
+        progressInfo.style.display = 'block';
+        updateProgress(0, 'Initializing...');
+    }
+    
+    function hideProgress() {
+        progressInfo.style.display = 'none';
+    }
+    
+    function updateProgress(percent, text) {
+        progressBar.style.width = percent + '%';
+        progressBar.textContent = Math.round(percent) + '%';
+        progressText.textContent = text;
+    }
+    
+    function showResult(type, message) {
+        const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
+        resultArea.innerHTML = `<div class="alert ${alertClass}">${message}</div>`;
+        setTimeout(() => {
+            resultArea.innerHTML = '';
+        }, 5000);
+    }
+    
+    // Configuration functions
+    let currentConfig = {};
+    
+    function loadConfiguration() {
+        fetch('/api/get_configuration')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Parse table_info
+                try {
+                    const tableInfo = data.table_info ? JSON.parse(data.table_info) : {};
+                    renderTableInfoFields(tableInfo);
+                } catch (e) {
+                    console.error('Error parsing table_info:', e);
+                }
+                
+                // Parse gendoc_config
+                try {
+                    const gendocConfig = data.gendoc_config ? JSON.parse(data.gendoc_config) : {};
+                    currentConfig = gendocConfig;
+                    renderConfigFields(gendocConfig);
+                } catch (e) {
+                    console.error('Error parsing gendoc_config:', e);
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Error loading configuration:', error);
+        });
+    }
+    
+    function renderTableInfoFields(tableInfo) {
+        const container = document.getElementById('tableInfoFields');
+        container.innerHTML = '';
+        
+        Object.keys(tableInfo).forEach(tableName => {
+            const fieldDiv = document.createElement('div');
+            fieldDiv.className = 'config-field';
+            fieldDiv.innerHTML = `
+                <div class="config-field-header">
+                    <label>${tableName}</label>
+                    <button type="button" class="btn btn-outline-danger btn-sm delete-field-btn" onclick="deleteTableField('${tableName}')">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
+                <textarea name="table_${tableName}" placeholder="JSON array for table columns...">${JSON.stringify(tableInfo[tableName], null, 2)}</textarea>
+            `;
+            container.appendChild(fieldDiv);
+        });
+        
+        // Add button for new table
+        const addBtn = document.createElement('button');
+        addBtn.type = 'button';
+        addBtn.className = 'btn btn-outline-primary add-subfield-btn';
+        addBtn.innerHTML = '<i class="bi bi-plus me-1"></i>Add Table';
+        addBtn.onclick = () => addTableField();
+        container.appendChild(addBtn);
+    }
+    
+    function renderConfigFields(config) {
+        // Mapping Values
+        renderKeyValueFields('mappingFields', config.MAPPING_VALUE_DICT || {}, 'mapping');
+        
+        // Koumoku Type Mapping
+        renderKeyValueFields('koumokuFields', config.KOUMOKU_TYPE_MAPPING || {}, 'koumoku');
+        
+        // Stop Values
+        renderArrayFields('stopValuesFields', config.STOP_VALUES || [], 'stopValue');
+        
+        // Excluded Sheet Names
+        renderArrayFields('excludedSheetsFields', config.EXCLUDED_SHEETNAMES || [], 'excludedSheet');
+        
+        // Merged Cell Ranges
+        renderKeyValueFields('mergedCellFields', config.MERGED_CELL_RANGES || {}, 'mergedCell');
+        
+        // Skip Cell Values
+        renderArrayFields('skipCellFields', config.SKIP_CELL_VALUES || [], 'skipCell');
+        
+        // Row Processor Config
+        renderComplexFields('rowProcessorFields', config.ROW_PROCESSOR_CONFIG || {}, 'rowProcessor');
+        
+        // Logic Processor Config
+        renderComplexFields('logicProcessorFields', config.LOGIC_PROCESSOR_CONFIG || {}, 'logicProcessor');
+    }
+    
+    function renderKeyValueFields(containerId, data, prefix) {
+        const container = document.getElementById(containerId);
+        container.innerHTML = '';
+
+        // Tạo grid 3 cột
+        const grid = document.createElement('div');
+        grid.style.display = 'grid';
+        grid.style.gridTemplateColumns = '1fr 1fr 1fr';
+        grid.style.gap = '12px';
+
+        Object.keys(data).forEach(key => {
+            const fieldDiv = document.createElement('div');
+            fieldDiv.className = 'config-field';
+            fieldDiv.style.marginBottom = '0';
+            fieldDiv.innerHTML = `
+                <div class="config-field-header">
+                    <label>Key: ${key}</label>
+                    <button type="button" class="btn btn-outline-danger btn-sm delete-field-btn" onclick="deleteField('${containerId}', '${key}')">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
+                <input type="text" name="${prefix}_key_${key}" value="${key}" placeholder="Key">
+                <input type="text" name="${prefix}_value_${key}" value="${data[key]}" placeholder="Value" style="margin-top: 5px;">
+            `;
+            grid.appendChild(fieldDiv);
+        });
+
+        container.appendChild(grid);
+
+        // Add button
+        const addBtn = document.createElement('button');
+        addBtn.type = 'button';
+        addBtn.className = 'btn btn-outline-primary add-subfield-btn';
+        addBtn.innerHTML = '<i class="bi bi-plus me-1"></i>Add Entry';
+        addBtn.onclick = () => addKeyValueField(containerId, prefix);
+        container.appendChild(addBtn);
+    }
+    
+    function renderArrayFields(containerId, data, prefix) {
+        const container = document.getElementById(containerId);
+        container.innerHTML = '';
+        
+        data.forEach((value, index) => {
+            const fieldDiv = document.createElement('div');
+            fieldDiv.className = 'config-field';
+            fieldDiv.innerHTML = `
+                <div class="config-field-header">
+                    <label>Item ${index + 1}</label>
+                    <button type="button" class="btn btn-outline-danger btn-sm delete-field-btn" onclick="deleteArrayField('${containerId}', ${index})">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
+                <input type="text" name="${prefix}_${index}" value="${value}" placeholder="Value">
+            `;
+            container.appendChild(fieldDiv);
+        });
+        
+        // Add button
+        const addBtn = document.createElement('button');
+        addBtn.type = 'button';
+        addBtn.className = 'btn btn-outline-primary add-subfield-btn';
+        addBtn.innerHTML = '<i class="bi bi-plus me-1"></i>Add Item';
+        addBtn.onclick = () => addArrayField(containerId, prefix);
+        container.appendChild(addBtn);
+    }
+    
+    function renderComplexFields(containerId, data, prefix) {
+        const container = document.getElementById(containerId);
+        container.innerHTML = '';
+        
+        Object.keys(data).forEach(key => {
+            const fieldDiv = document.createElement('div');
+            fieldDiv.className = 'config-field';
+            fieldDiv.innerHTML = `
+                <div class="config-field-header">
+                    <label>${key}</label>
+                    <button type="button" class="btn btn-outline-danger btn-sm delete-field-btn" onclick="deleteField('${containerId}', '${key}')">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
+                <span class="field-type-indicator">Complex Object - JSON Format</span>
+                <textarea name="${prefix}_${key}" placeholder="JSON object...">${JSON.stringify(data[key], null, 2)}</textarea>
+            `;
+            container.appendChild(fieldDiv);
+        });
+        
+        // Add button
+        const addBtn = document.createElement('button');
+        addBtn.type = 'button';
+        addBtn.className = 'btn btn-outline-primary add-subfield-btn';
+        addBtn.innerHTML = '<i class="bi bi-plus me-1"></i>Add Entry';
+        addBtn.onclick = () => addComplexField(containerId, prefix);
+        container.appendChild(addBtn);
+    }
+    
+    // Helper functions for adding/deleting fields
+    function addKeyValueField(containerId, prefix) {
+        const key = prompt('Enter key:');
+        if (key) {
+            const container = document.getElementById(containerId);
+            const addBtn = container.querySelector('.add-subfield-btn');
+            
+            const fieldDiv = document.createElement('div');
+            fieldDiv.className = 'config-field';
+            fieldDiv.innerHTML = `
+                <div class="config-field-header">
+                    <label>Key: ${key}</label>
+                    <button type="button" class="btn btn-outline-danger btn-sm delete-field-btn" onclick="deleteField('${containerId}', '${key}')">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
+                <input type="text" name="${prefix}_key_${key}" value="${key}" placeholder="Key">
+                <input type="text" name="${prefix}_value_${key}" value="" placeholder="Value" style="margin-top: 5px;">
+            `;
+            container.insertBefore(fieldDiv, addBtn);
+        }
+    }
+    
+    function addArrayField(containerId, prefix) {
+        const container = document.getElementById(containerId);
+        const addBtn = container.querySelector('.add-subfield-btn');
+        const index = container.querySelectorAll('.config-field').length;
+        
+        const fieldDiv = document.createElement('div');
+        fieldDiv.className = 'config-field';
+        fieldDiv.innerHTML = `
+            <div class="config-field-header">
+                <label>Item ${index + 1}</label>
+                <button type="button" class="btn btn-outline-danger btn-sm delete-field-btn" onclick="deleteArrayField('${containerId}', ${index})">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </div>
+            <input type="text" name="${prefix}_${index}" value="" placeholder="Value">
+        `;
+        container.insertBefore(fieldDiv, addBtn);
+    }
+    
+    function addComplexField(containerId, prefix) {
+        const key = prompt('Enter key:');
+        if (key) {
+            const container = document.getElementById(containerId);
+            const addBtn = container.querySelector('.add-subfield-btn');
+            
+            const fieldDiv = document.createElement('div');
+            fieldDiv.className = 'config-field';
+            fieldDiv.innerHTML = `
+                <div class="config-field-header">
+                    <label>${key}</label>
+                    <button type="button" class="btn btn-outline-danger btn-sm delete-field-btn" onclick="deleteField('${containerId}', '${key}')">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
+                <span class="field-type-indicator">Complex Object - JSON Format</span>
+                <textarea name="${prefix}_${key}" placeholder="JSON object...">{}</textarea>
+            `;
+            container.insertBefore(fieldDiv, addBtn);
+        }
+    }
+    
+    function addTableField() {
+        const tableName = prompt('Enter table name:');
+        if (tableName) {
+            const container = document.getElementById('tableInfoFields');
+            const addBtn = container.querySelector('.add-subfield-btn');
+            
+            const fieldDiv = document.createElement('div');
+            fieldDiv.className = 'config-field';
+            fieldDiv.innerHTML = `
+                <div class="config-field-header">
+                    <label>${tableName}</label>
+                    <button type="button" class="btn btn-outline-danger btn-sm delete-field-btn" onclick="deleteTableField('${tableName}')">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
+                <textarea name="table_${tableName}" placeholder="JSON array for table columns...">[]</textarea>
+            `;
+            container.insertBefore(fieldDiv, addBtn);
+        }
+    }
+    
+    function deleteField(containerId, key) {
+        if (confirm(`Delete field "${key}"?`)) {
+            loadConfiguration(); // Reload to refresh
+        }
+    }
+    
+    function deleteArrayField(containerId, index) {
+        if (confirm(`Delete this item?`)) {
+            loadConfiguration(); // Reload to refresh
+        }
+    }
+    
+    function deleteTableField(tableName) {
+        if (confirm(`Delete table "${tableName}"?`)) {
+            loadConfiguration(); // Reload to refresh
+        }
+    }
+    
+    document.getElementById('updateConfigBtn').addEventListener('click', function() {
+        // Collect all form data
+        const formData = new FormData(document.getElementById('settingsForm'));
+        
+        // Build table_info
+        const tableInfo = {};
+        const gendocConfig = {};
+        
+        // Process table info
+        for (let [name, value] of formData.entries()) {
+            if (name.startsWith('table_')) {
+                const tableName = name.substring(6);
+                try {
+                    tableInfo[tableName] = JSON.parse(value);
+                } catch (e) {
+                    alert(`Invalid JSON for table ${tableName}: ${e.message}`);
+                    return;
+                }
+            }
+        }
+        
+        // Process other configs
+        const mappingDict = {};
+        const koumokuMapping = {};
+        const stopValues = [];
+        const excludedSheets = [];
+        const mergedCells = {};
+        const skipCells = [];
+        const rowProcessor = {};
+        const logicProcessor = {};
+        
+        for (let [name, value] of formData.entries()) {
+            if (name.startsWith('mapping_key_')) {
+                const key = value;
+                const valueField = name.replace('mapping_key_', 'mapping_value_');
+                const mappingValue = formData.get(valueField);
+                if (key && mappingValue) {
+                    mappingDict[key] = mappingValue;
+                }
+            } else if (name.startsWith('koumoku_key_')) {
+                const key = value;
+                const valueField = name.replace('koumoku_key_', 'koumoku_value_');
+                const koumokuValue = formData.get(valueField);
+                if (key && koumokuValue) {
+                    koumokuMapping[key] = koumokuValue;
+                }
+            } else if (name.startsWith('stopValue_')) {
+                if (value.trim()) stopValues.push(value);
+            } else if (name.startsWith('excludedSheet_')) {
+                if (value.trim()) excludedSheets.push(value);
+            } else if (name.startsWith('mergedCell_key_')) {
+                const key = value;
+                const valueField = name.replace('mergedCell_key_', 'mergedCell_value_');
+                const mergedValue = formData.get(valueField);
+                if (key && mergedValue) {
+                    mergedCells[key] = mergedValue;
+                }
+            } else if (name.startsWith('skipCell_')) {
+                if (value.trim()) skipCells.push(value);
+            } else if (name.startsWith('rowProcessor_')) {
+                const key = name.substring(13);
+                try {
+                    rowProcessor[key] = JSON.parse(value);
+                } catch (e) {
+                    alert(`Invalid JSON for row processor ${key}: ${e.message}`);
+                    return;
+                }
+            } else if (name.startsWith('logicProcessor_')) {
+                const key = name.substring(15);
+                try {
+                    logicProcessor[key] = JSON.parse(value);
+                } catch (e) {
+                    alert(`Invalid JSON for logic processor ${key}: ${e.message}`);
+                    return;
+                }
+            }
+        }
+        
+        // Build final config
+        gendocConfig.MAPPING_VALUE_DICT = mappingDict;
+        gendocConfig.KOUMOKU_TYPE_MAPPING = koumokuMapping;
+        gendocConfig.STOP_VALUES = stopValues;
+        gendocConfig.EXCLUDED_SHEETNAMES = excludedSheets;
+        gendocConfig.MERGED_CELL_RANGES = mergedCells;
+        gendocConfig.SKIP_CELL_VALUES = skipCells;
+        gendocConfig.ROW_PROCESSOR_CONFIG = rowProcessor;
+        gendocConfig.LOGIC_PROCESSOR_CONFIG = logicProcessor;
+        
+        // Send to server
+        fetch('/api/update_configuration', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                table_info: JSON.stringify(tableInfo, null, 2),
+                gendoc_config: JSON.stringify(gendocConfig, null, 2)
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            const resultDiv = document.getElementById('configResult');
+            if (data.success) {
+                resultDiv.innerHTML = '<div class="alert alert-success">Configuration updated successfully!</div>';
+            } else {
+                resultDiv.innerHTML = `<div class="alert alert-danger">Error: ${data.error}</div>`;
+            }
+            setTimeout(() => {
+                resultDiv.innerHTML = '';
+            }, 5000);
+        })
+        .catch(error => {
+            document.getElementById('configResult').innerHTML = `<div class="alert alert-danger">Error: ${error.message}</div>`;
+        });
+    });
+    
+    document.getElementById('reloadConfigBtn').addEventListener('click', function() {
+        loadConfiguration();
+        document.getElementById('configResult').innerHTML = '<div class="alert alert-info">Configuration reloaded!</div>';
+        setTimeout(() => {
+            document.getElementById('configResult').innerHTML = '';
+        }, 3000);
+    });
+    
+    // Global function for file list
+    window.downloadScript = downloadScript;
+});
+</script>
+{% endblock %}
