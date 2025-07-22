@@ -141,7 +141,7 @@ def initialize_workbook(excel_file):
             except Exception:
                 _sheet_b2_values_cache[sheet_name] = None
     
-    print(f"Initialized workbook with {len(sheetnames)} sheets and cached B2 values")
+    #print(f"Initialized workbook with {len(sheetnames)} sheets and cached B2 values")
 
 
 def initialize_table_info(table_info_file):
@@ -151,7 +151,7 @@ def initialize_table_info(table_info_file):
     """
     global table_info
     table_info = read_table_info(table_info_file)
-    print(f"Initialized table_info with {len(table_info)} tables")
+    #print(f"Initialized table_info with {len(table_info)} tables")
 
 
 def read_table_info(filename):
@@ -1109,7 +1109,7 @@ def all_tables_in_sequence(excel_file, table_info_file, output_file='insert_all.
 
         # Lồng logic tạo INSERT cho T_KIHON_PJ, chỉ thực hiện 1 lần cho sheet hợp lệ đầu tiên
         if not pj_inserted:
-            print("Processing T_KIHON_PJ...")
+            #print("Processing T_KIHON_PJ...")
             pj_inserts = generate_insert_statements_from_excel(sheet_idx, 'T_KIHON_PJ')
             all_insert_statements.extend(pj_inserts)
             pj_inserted = True
@@ -1136,7 +1136,7 @@ def all_tables_in_sequence(excel_file, table_info_file, output_file='insert_all.
         values_str = join_sql_values(row_data.values())
         sql = f"INSERT INTO T_KIHON_PJ_GAMEN ({columns_str}) VALUES ({values_str});"
         all_insert_statements.append(sql)
-        print(f"Processing sheet {sheet_idx}: {sheet_name} with SEQ {seq_value}")
+        #print(f"Processing sheet {sheet_idx}: {sheet_name} with SEQ {seq_value}")
 
         # Xử lý theo từng loại sheet_check_value
         if sheet_check_value == '項目定義書_帳票':
@@ -1203,7 +1203,7 @@ def all_tables_in_sequence(excel_file, table_info_file, output_file='insert_all.
     # Clear caches after processing to free memory
     clear_performance_caches()
     
-    print(f"All INSERT statements written to {output_file}")
+    #print(f"All INSERT statements written to {output_file}")
     return all_insert_statements
 
 
@@ -1237,7 +1237,7 @@ def gen_row_single_sheet(
     insert_statements = []
     seq_counter = 1
 
-    print(f"  Processing {table_name} data for sheet {sheet_idx}: {sheetnames[sheet_idx]}")
+    #print(f"  Processing {table_name} data for sheet {sheet_idx}: {sheetnames[sheet_idx]}")
     
     # Pre-calculate column names for better performance
     column_names = [col_info.get('COLUMN_NAME', '') for col_info in columns_info]
@@ -1304,7 +1304,7 @@ def gen_row_single_sheet(
                     logic_processed = False
                     batch_data.append(row_values)
                     seq_counter += 1
-                    print(f"    Created {table_name.split('_')[-1]} with Sheet SEQ {sheet_seq} {seq_prefix} {current_seq} at row {check_row}")
+                    #print(f"    Created {table_name.split('_')[-1]} with Sheet SEQ {sheet_seq} {seq_prefix} {current_seq} at row {check_row}")
                     check_row += 1
                     continue
                 elif should_stop == 'create_logic' and logic_table_name and logic_processor and not logic_processed:
@@ -1507,7 +1507,7 @@ def logic_data_generic(
                     row_values[youken_logic_idx] = "''"
             
             batch_data.append(row_values)
-            print(f"      Created {logic_type} with Sheet SEQ {sheet_seq} Parent SEQ {parent_seq_value} {seq_counter_name} {seq_counter} at row {check_row}")
+            #print(f"      Created {logic_type} with Sheet SEQ {sheet_seq} Parent SEQ {parent_seq_value} {seq_counter_name} {seq_counter} at row {check_row}")
             seq_counter += 1
             last_processed_row = check_row
     
@@ -1570,7 +1570,7 @@ def all_tables_in_sequence_with_progress(excel_file, table_info_file, output_fil
         
         # Lồng logic tạo INSERT cho T_KIHON_PJ, chỉ thực hiện 1 lần cho sheet hợp lệ đầu tiên
         if not pj_inserted:
-            print("Processing T_KIHON_PJ...")
+            #print("Processing T_KIHON_PJ...")
             pj_inserts = generate_insert_statements_from_excel(sheet_idx, 'T_KIHON_PJ')
             all_insert_statements.extend(pj_inserts)
             pj_inserted = True
@@ -1597,7 +1597,7 @@ def all_tables_in_sequence_with_progress(excel_file, table_info_file, output_fil
         values_str = join_sql_values(row_data.values())
         sql = f"INSERT INTO T_KIHON_PJ_GAMEN ({columns_str}) VALUES ({values_str});"
         all_insert_statements.append(sql)
-        print(f"Processing sheet {sheet_idx}: {sheet_name} with SEQ {seq_value}")
+        #print(f"Processing sheet {sheet_idx}: {sheet_name} with SEQ {seq_value}")
 
         # Xử lý theo từng loại sheet_check_value
         if sheet_check_value == '項目定義書_帳票':
@@ -1643,7 +1643,7 @@ def all_tables_in_sequence_with_progress(excel_file, table_info_file, output_fil
     # Clear caches after processing to free memory
     clear_performance_caches()
     
-    print(f"All INSERT statements written to {output_file}")
+    #print(f"All INSERT statements written to {output_file}")
     return all_insert_statements
 
 # if __name__ == "__main__":
