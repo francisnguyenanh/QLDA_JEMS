@@ -172,53 +172,6 @@
         padding-bottom: 8px;
         margin-bottom: 20px;
     }
-    
-    .sheet-selection {
-        display: none;
-        margin-top: 15px;
-        margin-bottom: 15px;
-    }
-    
-    .sheet-list {
-        max-height: 300px;
-        overflow-y: auto;
-        border: 1px solid #ddd;
-        border-radius: 6px;
-        padding: 10px;
-        background-color: #f8f9fa;
-    }
-    
-    .sheet-item {
-        display: flex;
-        align-items: center;
-        padding: 8px 0;
-        border-bottom: 1px solid #e9ecef;
-    }
-    
-    .sheet-item:last-child {
-        border-bottom: none;
-    }
-    
-    .sheet-checkbox {
-        margin-right: 10px;
-    }
-    
-    .sheet-name {
-        flex-grow: 1;
-        font-family: 'Courier New', monospace;
-        font-size: 0.9rem;
-    }
-    
-    .sheet-controls {
-        margin-bottom: 10px;
-        display: flex;
-        gap: 10px;
-    }
-    
-    .sheet-controls button {
-        font-size: 0.8rem;
-        padding: 4px 8px;
-    }
 </style>
 {% endblock %}
 
@@ -265,22 +218,6 @@
                                 <input type="text" class="form-control" id="systemId" placeholder="Enter numbers only (e.g., 123456)" pattern="[0-9]*" title="Only numbers are allowed">
                                 <div class="invalid-feedback">
                                     Please enter numbers only.
-                                </div>
-                            </div>
-                            
-                            <!-- Sheet Selection -->
-                            <div class="sheet-selection" id="sheetSelection">
-                                <label class="form-label">Select Sheets to Process <span class="text-danger">*</span>:</label>
-                                <div class="sheet-controls">
-                                    <button type="button" class="btn btn-outline-primary btn-sm" id="selectAllSheetsBtn">
-                                        <i class="bi bi-check-all"></i> Select All
-                                    </button>
-                                    <button type="button" class="btn btn-outline-secondary btn-sm" id="deselectAllSheetsBtn">
-                                        <i class="bi bi-x-square"></i> Deselect All
-                                    </button>
-                                </div>
-                                <div class="sheet-list" id="sheetList">
-                                    <p class="text-muted">No sheets available. Please select an Excel file first.</p>
                                 </div>
                             </div>
                             
@@ -422,22 +359,12 @@ document.addEventListener('DOMContentLoaded', function() {
     const progressBar = document.getElementById('progressBar');
     const resultArea = document.getElementById('resultArea');
     const fileList = document.getElementById('fileList');
-    const sheetSelection = document.getElementById('sheetSelection');
-    const sheetList = document.getElementById('sheetList');
-    const selectAllSheetsBtn = document.getElementById('selectAllSheetsBtn');
-    const deselectAllSheetsBtn = document.getElementById('deselectAllSheetsBtn');
     
     let currentFileName = null;
     let isGenerating = false;
-    let availableSheets = [];
     
     // File selection handler
     docFile.addEventListener('change', function() {
-        if (this.files.length > 0) {
-            loadSheets();
-        } else {
-            hideSheetSelection();
-        }
         updateGenerateButtonState();
     });
     
@@ -457,40 +384,20 @@ document.addEventListener('DOMContentLoaded', function() {
         updateGenerateButtonState();
     });
     
-    // Sheet selection handlers
-    selectAllSheetsBtn.addEventListener('click', function() {
-        const checkboxes = sheetList.querySelectorAll('input[type="checkbox"]');
-        checkboxes.forEach(cb => {
-            cb.checked = true;
-        });
-        updateGenerateButtonState();
-    });
-    
-    deselectAllSheetsBtn.addEventListener('click', function() {
-        const checkboxes = sheetList.querySelectorAll('input[type="checkbox"]');
-        checkboxes.forEach(cb => {
-            cb.checked = false;
-        });
-        updateGenerateButtonState();
-    });
-    
     function updateGenerateButtonState() {
         const hasFile = docFile.files.length > 0;
         const hasSystemId = systemId.value.trim().length > 0;
-        const hasSelectedSheets = getSelectedSheets().length > 0;
-        genScriptBtn.disabled = !hasFile || !hasSystemId || !hasSelectedSheets || isGenerating;
+        genScriptBtn.disabled = !hasFile || !hasSystemId || isGenerating;
     }
     
     // Load initial state
     loadFileList();
     loadConfiguration();
-    updateGenerateButtonState(); // Initial state check
     
     // Generate Script
     genScriptBtn.addEventListener('click', function() {
         const file = docFile.files[0];
         const systemIdValue = systemId.value.trim();
-        const selectedSheets = getSelectedSheets();
         
         if (!file) {
             alert('Please select a file first.');
@@ -509,74 +416,8 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         
-        if (selectedSheets.length === 0) {
-            alert('Please select at least one sheet to process.');
-            return;
-        }
-        
-        generateScript(file, systemIdValue, selectedSheets);
+        generateScript(file, systemIdValue);
     });
-    
-    function loadSheets() {
-        const file = docFile.files[0];
-        if (!file) return;
-        
-        const formData = new FormData();
-        formData.append('file', file);
-        
-        fetch('/api/get_sheets', {
-            method: 'POST',
-            body: formData
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                availableSheets = data.sheets;
-                displaySheets(data.sheets);
-                showSheetSelection();
-            } else {
-                showResult('error', '❌ Error loading sheets: ' + data.error);
-                hideSheetSelection();
-            }
-        })
-        .catch(error => {
-            showResult('error', '❌ Error loading sheets: ' + error.message);
-            hideSheetSelection();
-        });
-    }
-    
-    function displaySheets(sheets) {
-        if (!sheets || sheets.length === 0) {
-            sheetList.innerHTML = '<p class="text-muted">No available sheets found.</p>';
-            return;
-        }
-        
-        let html = '';
-        sheets.forEach((sheet, index) => {
-            html += `
-                <div class="sheet-item">
-                    <input type="checkbox" class="form-check-input sheet-checkbox" id="sheet_${index}" value="${sheet}" onchange="updateGenerateButtonState()">
-                    <label class="form-check-label sheet-name" for="sheet_${index}">${sheet}</label>
-                </div>
-            `;
-        });
-        
-        sheetList.innerHTML = html;
-    }
-    
-    function showSheetSelection() {
-        sheetSelection.style.display = 'block';
-    }
-    
-    function hideSheetSelection() {
-        sheetSelection.style.display = 'none';
-        availableSheets = [];
-    }
-    
-    function getSelectedSheets() {
-        const checkboxes = sheetList.querySelectorAll('input[type="checkbox"]:checked');
-        return Array.from(checkboxes).map(cb => cb.value);
-    }
     
     // Download Script
     downloadBtn.addEventListener('click', function() {
@@ -592,7 +433,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
-    function generateScript(file, systemIdValue, selectedSheets) {
+    function generateScript(file, systemIdValue) {
         isGenerating = true;
         updateButtonStates();
         showProgress();
@@ -604,11 +445,6 @@ document.addEventListener('DOMContentLoaded', function() {
         formData.append('file', file);
         formData.append('systemId', systemIdValue);
         
-        // Add selected sheets
-        selectedSheets.forEach(sheet => {
-            formData.append('selectedSheets', sheet);
-        });
-        
         fetch('/api/generate_script', {
             method: 'POST',
             body: formData
@@ -617,30 +453,24 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(data => {
             if (data.success) {
                 currentFileName = data.filename;
-                updateProgress(100, 'Script generation completed!');
-                showResult('success', `Script generated successfully: ${data.filename}`);
-                loadFileList();
+                // Don't show completion yet, wait for backend to finish
+                updateProgress(10, 'Starting script generation...');
                 
-                // Hide progress after a short delay to show completion message
-                setTimeout(() => {
-                    hideProgress();
-                }, 2000);
+                // Start progress polling - will handle completion when backend finishes
+                pollProgress();
             } else {
                 showResult('error', '❌ ' + (data.error || 'Failed to generate script'));
                 hideProgress();
+                isGenerating = false;
+                updateButtonStates();
             }
         })
         .catch(error => {
             showResult('error', '❌ Error: ' + error.message);
             hideProgress();
-        })
-        .finally(() => {
             isGenerating = false;
             updateButtonStates();
         });
-        
-        // Start progress polling
-        pollProgress();
     }
     
     function pollProgress() {
@@ -649,23 +479,42 @@ document.addEventListener('DOMContentLoaded', function() {
         fetch('/api/generation_progress')
         .then(response => response.json())
         .then(data => {
+            // Check if backend has finished generating
+            if (data.is_generating === false) {
+                // Backend has finished processing
+                updateProgress(100, 'Script generation completed!');
+                showResult('success', `Script generated successfully: ${currentFileName}`);
+                loadFileList();
+                
+                // Hide progress after a short delay to show completion message
+                setTimeout(() => {
+                    hideProgress();
+                }, 2000);
+                
+                // Stop the frontend generation state
+                isGenerating = false;
+                updateButtonStates();
+                return; // Stop polling
+            }
+            
+            // Backend is still generating
             if (data.current_sheet && data.total_sheets) {
                 const progress = Math.min((data.current_sheet / data.total_sheets) * 95, 95); // Cap at 95% until completion
-                updateProgress(progress, `📄 Processing sheet "${data.sheet_name}" (${data.current_sheet}/${data.total_sheets})`);
-                
-                if (data.current_sheet < data.total_sheets && isGenerating) {
-                    setTimeout(pollProgress, 1000);
-                }
-            } else if (isGenerating) {
+                updateProgress(progress, `📄"${data.sheet_name}" (${data.current_sheet}/${data.total_sheets})`);
+            } else {
                 // If no progress data, show generic progress
                 updateProgress(10, '⚙️ Processing Excel file...');
-                setTimeout(pollProgress, 1500);
+            }
+            
+            // Continue polling while backend is generating
+            if (isGenerating && data.is_generating !== false) {
+                setTimeout(pollProgress, 1000);
             }
         })
         .catch(error => {
             console.error('Progress polling error:', error);
             if (isGenerating) {
-                // Continue polling even if there's an error
+                // Continue polling even if there's an error, but with longer delay
                 setTimeout(pollProgress, 2000);
             }
         });
@@ -863,12 +712,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const container = document.getElementById(containerId);
         container.innerHTML = '';
 
-        // Ensure data is an object
-        if (!data || typeof data !== 'object' || Array.isArray(data)) {
-            console.warn(`Expected object for ${containerId}, got:`, data);
-            data = {};
-        }
-
         // Tạo grid 3 cột
         const grid = document.createElement('div');
         grid.style.display = 'grid';
@@ -907,12 +750,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const container = document.getElementById(containerId);
         container.innerHTML = '';
         
-        // Ensure data is an array
-        if (!Array.isArray(data)) {
-            console.warn(`Expected array for ${containerId}, got:`, data);
-            data = [];
-        }
-        
+        if (!Array.isArray(data)) data = [];
+
         data.forEach((value, index) => {
             const fieldDiv = document.createElement('div');
             fieldDiv.className = 'config-field';
@@ -1195,7 +1034,6 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Global function for file list
     window.downloadScript = downloadScript;
-    window.updateGenerateButtonState = updateGenerateButtonState;
 });
 </script>
 {% endblock %}

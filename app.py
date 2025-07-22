@@ -3558,59 +3558,6 @@ def genscript_page():
         return redirect(url_for('login'))
     return render_template('genscript.html')
 
-@app.route('/api/get_sheets', methods=['POST'])
-def get_sheets():
-    """Get sheet names from uploaded Excel file."""
-    if 'username' not in session:
-        return jsonify({'success': False, 'error': 'Unauthorized'}), 401
-    
-    if 'file' not in request.files:
-        return jsonify({'success': False, 'error': 'No file provided'}), 400
-    
-    file = request.files['file']
-    if file.filename == '' or not file.filename.endswith(('.xlsx', '.xls')):
-        return jsonify({'success': False, 'error': 'Invalid file format'}), 400
-
-    try:
-        import openpyxl
-        import tempfile
-        import os
-        
-        # Save file temporarily
-        with tempfile.NamedTemporaryFile(delete=False, suffix='.xlsx') as temp_file:
-            file.save(temp_file.name)
-            
-            # Load workbook and get sheet names
-            wb = openpyxl.load_workbook(temp_file.name, data_only=True)
-            all_sheets = wb.sheetnames
-            
-            # Get excluded sheets from config
-            excluded_sheets = set()
-            try:
-                if os.path.exists('gendoc_config.txt'):
-                    with open('gendoc_config.txt', 'r', encoding='utf-8') as f:
-                        import json
-                        config = json.load(f)
-                        excluded_sheets = set(config.get('EXCLUDED_SHEETNAMES', []))
-            except Exception as e:
-                logging.warning(f"Could not load excluded sheets config: {e}")
-            
-            # Filter out excluded sheets
-            available_sheets = [sheet for sheet in all_sheets if sheet not in excluded_sheets]
-            
-            # Clean up temp file
-            os.unlink(temp_file.name)
-            
-            return jsonify({
-                'success': True,
-                'sheets': available_sheets,
-                'excluded_sheets': list(excluded_sheets)
-            })
-            
-    except Exception as e:
-        logging.error(f"Error getting sheets: {str(e)}")
-        return jsonify({'success': False, 'error': str(e)}), 500
-
 @app.route('/api/generate_script', methods=['POST'])
 def generate_script():
     """Generate SQL script from uploaded file."""
@@ -3627,11 +3574,6 @@ def generate_script():
     
     if not system_id.isdigit():
         return jsonify({'success': False, 'error': 'System ID must contain numbers only'}), 400
-    
-    # Get selected sheets from form
-    selected_sheets = request.form.getlist('selectedSheets')
-    if not selected_sheets:
-        return jsonify({'success': False, 'error': 'At least one sheet must be selected'}), 400
     
     file = request.files['file']
     if file.filename == '' or not file.filename.endswith(('.xlsx', '.xls')):
@@ -3664,13 +3606,12 @@ def generate_script():
                 generation_progress['total_sheets'] = 0
                 generation_progress['sheet_name'] = ''
                 
-                # Call genscript function with systemId and selected sheets
+                # Call genscript function with systemId
                 insert_statements = genscript.all_tables_in_sequence_with_progress(
                     temp_path, 
                     'table_info.txt',
                     output_filename,
                     system_id=system_id,
-                    selected_sheets=selected_sheets,
                     progress_callback=update_progress
                 )
                 
