@@ -1520,7 +1520,7 @@ def logic_data_generic(
     
     return insert_statements, last_processed_row
 
-def all_tables_in_sequence_with_progress(excel_file, table_info_file, output_file='insert_all.sql', system_id=None, progress_callback=None):
+def all_tables_in_sequence_with_progress(excel_file, table_info_file, output_file='insert_all.sql', system_id=None, selected_sheets=None, progress_callback=None):
     """
     Process all tables in the correct sequence with progress tracking:
     1. Initialize workbook and table_info once
@@ -1542,6 +1542,16 @@ def all_tables_in_sequence_with_progress(excel_file, table_info_file, output_fil
     initialize_workbook(excel_file)
     initialize_table_info(table_info_file)
     
+    # Filter sheets if selected_sheets is provided
+    if selected_sheets:
+        # Only process selected sheets that exist in the workbook
+        filtered_sheetnames = [sheet for sheet in sheetnames if sheet in selected_sheets]
+        if not filtered_sheetnames:
+            raise ValueError("None of the selected sheets exist in the workbook")
+        processing_sheetnames = filtered_sheetnames
+    else:
+        processing_sheetnames = sheetnames
+    
     all_insert_statements = []
     
     pj_inserted = False
@@ -1551,7 +1561,7 @@ def all_tables_in_sequence_with_progress(excel_file, table_info_file, output_fil
     
     # Count total sheets for progress
     valid_sheets = []
-    for sheet_idx, sheet_name in enumerate(sheetnames):
+    for sheet_idx, sheet_name in enumerate(processing_sheetnames):
         if sheet_name in EXCLUDED_SHEETNAMES:
             continue
         sheet_check_value = _sheet_b2_values_cache.get(sheet_name)
