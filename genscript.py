@@ -1520,7 +1520,7 @@ def logic_data_generic(
     
     return insert_statements, last_processed_row
 
-def all_tables_in_sequence_with_progress(excel_file, table_info_file, output_file='insert_all.sql', progress_callback=None):
+def all_tables_in_sequence_with_progress(excel_file, table_info_file, output_file='insert_all.sql', system_id=None, progress_callback=None):
     """
     Process all tables in the correct sequence with progress tracking:
     1. Initialize workbook and table_info once
@@ -1528,7 +1528,15 @@ def all_tables_in_sequence_with_progress(excel_file, table_info_file, output_fil
     3. Iterate through sheets to create INSERT for T_KIHON_PJ_GAMEN
     4. For each new SEQ, process other tables
     """
-    global seq_per_sheet_dict, wb, sheetnames, table_info
+    global seq_per_sheet_dict, wb, sheetnames, table_info, systemid_value
+    
+    # Set systemid_value from parameter if provided
+    if system_id:
+        systemid_value = system_id
+    else:
+        # Use default (current time-based value)
+        now = datetime.datetime.now()
+        systemid_value = f"{now.hour:02d}{now.minute:02d}{now.second:02d}"
     
     # Initialize workbook and table_info once at the beginning
     initialize_workbook(excel_file)

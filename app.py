@@ -3567,6 +3567,14 @@ def generate_script():
     if 'file' not in request.files:
         return jsonify({'success': False, 'error': 'No file provided'}), 400
     
+    # Get systemId from form
+    system_id = request.form.get('systemId', '').strip()
+    if not system_id:
+        return jsonify({'success': False, 'error': 'System ID is required'}), 400
+    
+    if not system_id.isdigit():
+        return jsonify({'success': False, 'error': 'System ID must contain numbers only'}), 400
+    
     file = request.files['file']
     if file.filename == '' or not file.filename.endswith(('.xlsx', '.xls')):
         return jsonify({'success': False, 'error': 'Invalid file format'}), 400
@@ -3598,11 +3606,12 @@ def generate_script():
                 generation_progress['total_sheets'] = 0
                 generation_progress['sheet_name'] = ''
                 
-                # Call genscript function
+                # Call genscript function with systemId
                 insert_statements = genscript.all_tables_in_sequence_with_progress(
                     temp_path, 
                     'table_info.txt',
                     output_filename,
+                    system_id=system_id,
                     progress_callback=update_progress
                 )
                 

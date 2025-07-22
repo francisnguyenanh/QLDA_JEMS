@@ -39,6 +39,25 @@
         margin-bottom: 20px;
     }
     
+    .file-input-group label .text-danger {
+        font-weight: bold;
+    }
+    
+    .file-input-group input[type="text"] {
+        font-family: 'Courier New', monospace;
+        letter-spacing: 1px;
+    }
+    
+    .file-input-group input.is-invalid {
+        animation: shake 0.5s ease-in-out;
+    }
+    
+    @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        25% { transform: translateX(-5px); }
+        75% { transform: translateX(5px); }
+    }
+    
     .btn-group-custom {
         display: flex;
         gap: 10px;
@@ -193,6 +212,15 @@
                                 <input type="file" class="form-control" id="docFile" accept=".xlsx,.xls,.txt">
                             </div>
                             
+                            <!-- System ID Input -->
+                            <div class="file-input-group">
+                                <label for="systemId" class="form-label">System ID <span class="text-danger">*</span>:</label>
+                                <input type="text" class="form-control" id="systemId" placeholder="Enter numbers only (e.g., 123456)" pattern="[0-9]*" title="Only numbers are allowed">
+                                <div class="invalid-feedback">
+                                    Please enter numbers only.
+                                </div>
+                            </div>
+                            
                             <!-- Buttons -->
                             <div class="btn-group-custom">
                                 <button type="button" class="btn btn-primary" id="genScriptBtn" disabled>
@@ -322,6 +350,7 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const docFile = document.getElementById('docFile');
+    const systemId = document.getElementById('systemId');
     const genScriptBtn = document.getElementById('genScriptBtn');
     const downloadBtn = document.getElementById('downloadBtn');
     const deleteAllBtn = document.getElementById('deleteAllBtn');
@@ -336,8 +365,30 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // File selection handler
     docFile.addEventListener('change', function() {
-        genScriptBtn.disabled = !this.files.length || isGenerating;
+        updateGenerateButtonState();
     });
+    
+    // System ID input validation and handler
+    systemId.addEventListener('input', function() {
+        const value = this.value;
+        const numbersOnly = value.replace(/[^0-9]/g, '');
+        
+        if (value !== numbersOnly) {
+            this.value = numbersOnly;
+            this.classList.add('is-invalid');
+            setTimeout(() => {
+                this.classList.remove('is-invalid');
+            }, 2000);
+        }
+        
+        updateGenerateButtonState();
+    });
+    
+    function updateGenerateButtonState() {
+        const hasFile = docFile.files.length > 0;
+        const hasSystemId = systemId.value.trim().length > 0;
+        genScriptBtn.disabled = !hasFile || !hasSystemId || isGenerating;
+    }
     
     // Load initial state
     loadFileList();
@@ -346,12 +397,26 @@ document.addEventListener('DOMContentLoaded', function() {
     // Generate Script
     genScriptBtn.addEventListener('click', function() {
         const file = docFile.files[0];
+        const systemIdValue = systemId.value.trim();
+        
         if (!file) {
             alert('Please select a file first.');
             return;
         }
         
-        generateScript(file);
+        if (!systemIdValue) {
+            alert('Please enter System ID.');
+            systemId.focus();
+            return;
+        }
+        
+        if (!/^\d+$/.test(systemIdValue)) {
+            alert('System ID must contain numbers only.');
+            systemId.focus();
+            return;
+        }
+        
+        generateScript(file, systemIdValue);
     });
     
     // Download Script
@@ -368,7 +433,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
-    function generateScript(file) {
+    function generateScript(file, systemIdValue) {
         isGenerating = true;
         updateButtonStates();
         showProgress();
@@ -378,6 +443,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         const formData = new FormData();
         formData.append('file', file);
+        formData.append('systemId', systemIdValue);
         
         fetch('/api/generate_script', {
             method: 'POST',
@@ -503,7 +569,9 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function updateButtonStates() {
-        genScriptBtn.disabled = !docFile.files.length || isGenerating;
+        const hasFile = docFile.files.length > 0;
+        const hasSystemId = systemId.value.trim().length > 0;
+        genScriptBtn.disabled = !hasFile || !hasSystemId || isGenerating;
         downloadBtn.disabled = !currentFileName || isGenerating;
         
         // Check if there are any files for delete button
