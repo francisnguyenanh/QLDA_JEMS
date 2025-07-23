@@ -517,12 +517,12 @@ def _format_cell_value_by_type(cell_value, data_type, col_name=None, table_name=
     if cell_value is None or cell_value == '':
         return "''"
     
-    # Additional handling for specific columns in T_KIHON_PJ_KOUMOKU
-    if (
-        col_name in ['ZENKAKU_MOJI_SU', 'HANKAKU_MOJI_SU', 'SEISU_KETA', 'SYOUSU_KETA'] and
-        cell_value == "－"
-    ):
-        return "NULL"
+    # Nếu là các cột số ký tự mà value không phải số thì trả về NULL
+    if col_name in ['ZENKAKU_MOJI_SU', 'HANKAKU_MOJI_SU', 'SEISU_KETA', 'SYOUSU_KETA']:
+        try:
+            int(cell_value)
+        except (ValueError, TypeError):
+            return "NULL"
    
     # Numeric types: do not quote, return as int/float
     if data_type in ['int'] and cell_value != "NULL":
@@ -1297,10 +1297,32 @@ def gen_row_single_sheet(
                                 midashi_idx = i
                             elif col_name in ['IN_GAMEN_ID', 'IN_GAMEN_NAME', 'IN_BUHIN_CD', 'IN_BUHIN_NAME', 'OUT_BUHIN_CD', 'OUT_BUHIN_NAME', 'BIKOU']:
                                 special_cols_indices.append(i)
-                        
-                        if midashi_idx is not None and row_values[midashi_idx] == "'True'":
-                            for idx in special_cols_indices:
-                                row_values[idx] = 'NULL'
+                        # Logic mới: nếu MIDASHI, IN_BUHIN_NAME, IN_GAMEN_NAME, PROCESS giống nhau thì set NULL các cột đặc biệt và MIDASHI=True, ngược lại MIDASHI=False
+                        if midashi_idx is not None:
+                            # Tìm index các cột cần so sánh
+                            in_buhin_name_idx = None
+                            in_gamen_name_idx = None
+                            process_idx = None
+                            for i, col_name in enumerate(column_names):
+                                if col_name == 'IN_BUHIN_NAME':
+                                    in_buhin_name_idx = i
+                                elif col_name == 'IN_GAMEN_NAME':
+                                    in_gamen_name_idx = i
+                                elif col_name == 'PROCESS':
+                                    process_idx = i
+                            # Lấy value các cột
+                            in_buhin_name_val = row_values[in_buhin_name_idx] if in_buhin_name_idx is not None else None
+                            in_gamen_name_val = row_values[in_gamen_name_idx] if in_gamen_name_idx is not None else None
+                            process_val = row_values[process_idx] if process_idx is not None else None
+                            # So sánh (bỏ qua None)
+                            compare_vals = [in_buhin_name_val, in_gamen_name_val, process_val]
+                            # Chỉ so sánh nếu tất cả đều khác None
+                            if all(v is not None for v in compare_vals) and len(set(compare_vals)) == 1:
+                                for idx in special_cols_indices:
+                                    row_values[idx] = 'NULL'
+                                row_values[midashi_idx] = "'True'"
+                            else:
+                                row_values[midashi_idx] = "'False'"
                     logic_processed = False
                     batch_data.append(row_values)
                     seq_counter += 1
@@ -1648,7 +1670,7 @@ def all_tables_in_sequence_with_progress(excel_file, table_info_file, output_fil
 
 # if __name__ == "__main__":
 #     print("Starting processing all tables in sequence...")
-#     all_inserts = all_tables_in_sequence('docX.xlsx', 'table_info.txt', 'insert_all.sql')
+#     all_inserts = all_tables_in_sequence('doc.xlsx', 'table_info.txt', 'insert_all.sql')
 #     print(f"Generated {len(all_inserts)} INSERT statements in total.")
 
 
