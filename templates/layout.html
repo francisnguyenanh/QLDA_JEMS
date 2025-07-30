@@ -10,10 +10,10 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root {
-            --bg-color: #ffffff;
-            --text-color: #000000;
-            --card-bg: #f8f9fa;
-            --primary-color: #0d6efd;
+            --bg-color: #fafafa;
+            --text-color: #4a5568;
+            --card-bg: #f7fafc;
+            --primary-color: #6b73a8;
         }
         
         body {
@@ -74,15 +74,15 @@
         
         .days-alive {
             font-weight: bold;
-            color: #0d6efd;
+            color: #6b73a8;
             font-size: 1.1rem;
             padding: 0.5rem;
             border-radius: 5px;
-            background-color: #e7f1ff;
+            background-color: #edf2f7;
         }
         
         .days-alive:hover {
-            background-color: #d0e4ff;
+            background-color: #e2e8f0;
         }
         
         .nav-link i {
@@ -109,16 +109,16 @@
 
         /* Enhanced navbar styling */
         .navbar {
-            background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%) !important;
-            border-bottom: 1px solid #e2e8f0;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%) !important;
+            border-bottom: 1px solid #cbd5e0;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
             padding: 0.75rem 0;
         }
         
         .navbar .navbar-brand,
         .navbar .nav-link,
         .navbar .navbar-text {
-            color: #374151 !important;
+            color: #4a5568 !important;
             font-weight: 500;
             transition: all 0.3s ease;
         }
@@ -130,20 +130,20 @@
         }
         
         .navbar .nav-link:hover {
-            color: #3b82f6 !important;
-            background: rgba(59, 130, 246, 0.1);
+            color: #6b73a8 !important;
+            background: rgba(107, 115, 168, 0.08);
             transform: translateY(-1px);
         }
         
         .navbar .nav-link.active {
             color: #ffffff !important;
-            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            background: linear-gradient(135deg, #697dff 0%, #88d5ec 100%);
             font-weight: 600;
-            box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+            box-shadow: 0 2px 4px rgba(107, 115, 168, 0.2);
         }
         
         .navbar .nav-link.active:hover {
-            background: linear-gradient(135deg, #1d4ed8 0%, #1e3a8a 100%);
+            background: linear-gradient(135deg, #697dff 0%, #88d5ec 100%);
             transform: translateY(-1px);
         }
 
@@ -155,21 +155,21 @@
         }
         
         .navbar-toggler:focus {
-            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+            box-shadow: 0 0 0 2px rgba(107, 115, 168, 0.1);
         }
         
         .navbar-toggler:hover {
-            background: rgba(59, 130, 246, 0.1);
+            background: rgba(107, 115, 168, 0.08);
         }
 
         /* Dropdown for mobile */
         @media (max-width: 991px) {
             .navbar-collapse {
-                background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+                background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
                 border-radius: 8px;
                 margin-top: 0.5rem;
                 padding: 1rem;
-                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
             }
             
             .navbar .nav-link {
@@ -180,13 +180,13 @@
             .navbar .d-flex {
                 margin-top: 1rem;
                 padding-top: 1rem;
-                border-top: 1px solid #e2e8f0;
+                border-top: 1px solid #cbd5e0;
             }
         }
 
         /* Logout button styling */
         .btn-danger.btn-sm {
-            background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+            background: linear-gradient(135deg, #a0aec0 0%, #718096 100%);
             border: none;
             color: white;
             font-weight: 500;
@@ -196,9 +196,9 @@
         }
         
         .btn-danger.btn-sm:hover {
-            background: linear-gradient(135deg, #b91c1c 0%, #991b1b 100%);
+            background: linear-gradient(135deg, #718096 0%, #4a5568 100%);
             transform: translateY(-1px);
-            box-shadow: 0 3px 8px rgba(220, 38, 38, 0.3);
+            box-shadow: 0 3px 8px rgba(113, 128, 150, 0.2);
         }
         
         .btn-group-responsive {
