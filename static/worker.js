@@ -21,7 +21,7 @@ self.onmessage = function(e) {
             const createTicket = (sheetId, sheetName, prefix = '') => {
                 const title = String(sheetId).includes('999') 
                     ? `${prefix}${sheetName}`
-                    : `${sheetId}${prefix}${sheetName}`;
+                    : `${sheetId}\u3000${prefix}${sheetName}`;
                 return ['カスタマイズ', '新規', '通常', 'EDISON HCM', title, 'dinhcuong@e-mall.co.jp', version, ''];
             };
 
