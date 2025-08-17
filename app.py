@@ -1562,6 +1562,74 @@ def clear_temp_files():
         return jsonify({'error': str(e)}), 500
 
 
+@app.route('/get_template_content/<filename>', methods=['GET'])
+def get_template_content(filename):
+    """Get content of a template file for editing."""
+    if 'username' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    # Security check for filename
+    if '..' in filename or filename.startswith('/') or filename.startswith('\\'):
+        return jsonify({'error': 'Invalid filename'}), 400
+    
+    if not filename.endswith('.txt'):
+        return jsonify({'error': 'Invalid file type'}), 400
+    
+    file_path = os.path.join(MAIL_DIR, filename)
+    if not os.path.exists(file_path):
+        return jsonify({'error': 'File not found'}), 404
+    
+    try:
+        encoding = detect_file_encoding(file_path)
+        with open(file_path, 'r', encoding=encoding) as f:
+            content = f.read()
+        return jsonify({'success': True, 'content': content, 'encoding': encoding})
+    except Exception as e:
+        logging.error(f"Error reading template file {filename}: {str(e)}")
+        return jsonify({'error': f'Failed to read file: {str(e)}'}), 500
+
+
+@app.route('/save_template_content', methods=['POST'])
+def save_template_content():
+    """Save edited template content."""
+    if 'username' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    data = request.get_json()
+    filename = data.get('filename')
+    content = data.get('content')
+    
+    if not filename or content is None:
+        return jsonify({'error': 'Missing filename or content'}), 400
+    
+    # Security check for filename
+    if '..' in filename or filename.startswith('/') or filename.startswith('\\'):
+        return jsonify({'error': 'Invalid filename'}), 400
+    
+    if not filename.endswith('.txt'):
+        return jsonify({'error': 'Invalid file type'}), 400
+    
+    file_path = os.path.join(MAIL_DIR, filename)
+    if not os.path.exists(file_path):
+        return jsonify({'error': 'File not found'}), 404
+    
+    try:
+        # Try to save with Shift-JIS encoding, fallback to UTF-8
+        try:
+            with open(file_path, 'w', encoding='shift-jis') as f:
+                f.write(content)
+            encoding = 'shift-jis'
+        except UnicodeEncodeError:
+            with open(file_path, 'w', encoding='utf-8') as f:
+                f.write(content)
+            encoding = 'utf-8'
+        
+        return jsonify({'success': True, 'encoding': encoding})
+    except Exception as e:
+        logging.error(f"Error saving template file {filename}: {str(e)}")
+        return jsonify({'error': f'Failed to save file: {str(e)}'}), 500
+
+
 @app.route('/delete_mail_template', methods=['POST'])
 def delete_mail_template():
     """Delete a mail template file from the mail directory."""
@@ -1678,16 +1746,26 @@ def get_email_data():
         se_emails = []
         if os.path.exists(se_email_file):
             df = pd.read_csv(se_email_file, encoding='utf-8')
-            df = df.fillna({'email': ''})
+            # Replace NaN with empty string and ensure all values are strings
+            df = df.fillna('')
+            df['SE'] = df['SE'].astype(str)
+            df['email'] = df['email'].astype(str)
+            # Replace 'nan' string with empty string
+            df['email'] = df['email'].replace('nan', '')
+            
             existing_se = set(df['SE'].tolist())
             for se in all_se_names:
                 if se in existing_se:
                     email = df[df['SE'] == se]['email'].iloc[0]
+                    # Ensure email is string and not NaN
+                    email = str(email) if pd.notna(email) else ''
+                    if email == 'nan':
+                        email = ''
                 else:
                     email = ''
-                se_emails.append({'SE': se, 'email': email})
+                se_emails.append({'SE': str(se), 'email': email})
         else:
-            se_emails = [{'SE': se, 'email': ''} for se in all_se_names]
+            se_emails = [{'SE': str(se), 'email': ''} for se in all_se_names]
 
         # Read kanrisha.csv
         kanrisha_file = os.path.join(MAIL_DIR, 'kanrisha.csv')
@@ -1695,7 +1773,13 @@ def get_email_data():
         if os.path.exists(kanrisha_file):
             df = pd.read_csv(kanrisha_file, encoding='utf-8')
             if not df.empty:
-                manager = {'name': df['name'].iloc[0], 'email': df['email'].iloc[0]}
+                # Handle NaN values in manager data
+                name = df['name'].iloc[0] if pd.notna(df['name'].iloc[0]) else ''
+                email = df['email'].iloc[0] if pd.notna(df['email'].iloc[0]) else ''
+                # Convert to string and handle 'nan' string
+                name = str(name) if name != 'nan' else ''
+                email = str(email) if email != 'nan' else ''
+                manager = {'name': name, 'email': email}
 
         return jsonify({'se_emails': se_emails, 'manager': manager})
     except Exception as e:
@@ -1789,6 +1873,8 @@ def read_se_emails():
             for row in reader:
                 if row['email']:
                     se_emails[row['SE']] = row['email']
+                else:
+                    se_emails[row['SE']] = row['SE']
         return se_emails
     except Exception as e:
         #logging.error(f"Failed to read SE_email.csv: {e}")
@@ -1807,7 +1893,7 @@ def read_manager_email():
             if not reader.fieldnames:  # Kiểm tra nếu file rỗng
                 return ''
             for row in reader:
-                return row['email'] if row['email'] else ''  # Trả về email đầu tiên, nếu có
+                return row['email'] if row['email'] else row['name']  # Trả về email đầu tiên, nếu có
         return ''
     except Exception as e:
         #logging.error(f"Failed to read kanrisha.csv: {e}")
@@ -4179,6 +4265,44 @@ def remove_table_config():
     except Exception as e:
         logging.error(f"Error removing table config: {str(e)}")
         return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/get_placeholders_content', methods=['GET'])
+def get_placeholders_content():
+    """Get the content of placeholders.txt file."""
+    if 'username' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    try:
+        placeholders_file = 'placeholders.txt'
+        if os.path.exists(placeholders_file):
+            with open(placeholders_file, 'r', encoding='utf-8') as f:
+                content = f.read()
+            return jsonify({'content': content})
+        else:
+            return jsonify({'content': ''})
+    except Exception as e:
+        logging.error(f"Error reading placeholders.txt: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/save_placeholders_content', methods=['POST'])
+def save_placeholders_content():
+    """Save content to placeholders.txt file."""
+    if 'username' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    try:
+        data = request.json
+        content = data.get('content', '')
+        
+        placeholders_file = 'placeholders.txt'
+        with open(placeholders_file, 'w', encoding='utf-8') as f:
+            f.write(content)
+        
+        logging.info(f"Successfully saved placeholders.txt")
+        return jsonify({'success': True})
+    except Exception as e:
+        logging.error(f"Error saving placeholders.txt: {str(e)}")
+        return jsonify({'error': str(e)}), 500
     
 if __name__ == '__main__':
     app.run(debug=True)

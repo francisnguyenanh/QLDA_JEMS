@@ -1778,6 +1778,14 @@ body {
 .mail-modal .modal-body {
     flex: 1;
     padding: 0;
+}
+
+/* Template Content Textarea Styling */
+#templateContent {
+    height: 60%% !important;
+    min-height: 40%%;
+    resize: vertical;
+}
     display: flex;
     min-height: 0;
     background: linear-gradient(135deg, #f8f9fa 0%, #f8f9fa 100%);;
@@ -3495,6 +3503,51 @@ body {
     animation: mailEditModalFadeIn 0.4s ease-out;
 }
 
+/* Mail Edit Modal Tab Styles */
+.mail-edit-modal .nav-tabs {
+    border-bottom: 2px solid #dee2e6;
+    margin-bottom: 1rem;
+}
+
+.mail-edit-modal .nav-tabs .nav-link {
+    color: #495057;
+    border: none;
+    border-bottom: 3px solid transparent;
+    border-radius: 0;
+    padding: 0.75rem 1.5rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.mail-edit-modal .nav-tabs .nav-link:hover {
+    border-color: transparent;
+    background-color: #f8f9fa;
+    color: #007bff;
+}
+
+.mail-edit-modal .nav-tabs .nav-link.active {
+    color: #007bff;
+    background-color: transparent;
+    border-bottom-color: #007bff;
+}
+
+.mail-edit-modal .tab-content {
+    min-height: 400px;
+    margin-left: 20px;
+    margin-right: 20px;
+}
+
+.mail-edit-modal .tab-pane {
+    opacity: 0;
+    transform: translateY(10px);
+    transition: all 0.3s ease;
+}
+
+.mail-edit-modal .tab-pane.active {
+    opacity: 1;
+    transform: translateY(0);
+}
+
 @keyframes mailEditModalFadeIn {
     from {
         opacity: 0;
@@ -4956,19 +5009,21 @@ body {
                     </div>
                 </div>
                 <div class="modal-body">
-                    <div class="mail-buttons-container">
-                        <div class="mail-buttons">
-                            {% for full_name, display_name in mail_templates %}
-                                <button class="btn"
-                                        onclick="loadMailContent(currentProjectId, '{{ full_name }}', this)"
-                                        data-filename="{{ full_name }}">
-                                    {{ display_name }}
-                                </button>
-                            {% endfor %}
+                    <div class="d-flex h-100">
+                        <div class="mail-buttons-container">
+                            <div class="mail-buttons">
+                                {% for full_name, display_name in mail_templates %}
+                                    <button class="btn"
+                                            onclick="loadMailContent(currentProjectId, '{{ full_name }}', this)"
+                                            data-filename="{{ full_name }}">
+                                        {{ display_name }}
+                                    </button>
+                                {% endfor %}
+                            </div>
                         </div>
-                    </div>
-                    <div class="mail-content-container">
-                        <textarea id="mailContent" class="form-control" placeholder="テンプレートを選択してください"></textarea>
+                        <div class="mail-content-container">
+                            <textarea id="mailContent" class="form-control" placeholder="テンプレートを選択してください"></textarea>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -5033,26 +5088,131 @@ body {
 
     <!-- Update Mail Edit Modal Header -->
     <div class="modal fade mail-edit-modal" id="mailEditModal" tabindex="-1">
-        <div class="modal-dialog modal-dialog-scrollable">
+        <div class="modal-dialog modal-dialog-scrollable modal-xl">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">メールテンプレート編集</h5>
-                    <div class="d-flex align-items-center gap-2 flex-grow-1">
-                        <input type="file" class="form-control" id="mailEditFiles" name="files" accept=".txt" multiple onchange="uploadMailEditFiles()">
+                    <div>
+                        <button type="button" class="btn btn-primary me-2" onclick="saveAllChanges()">保存</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" onclick="clearTempFiles()">閉じる</button>
                     </div>
-                    <button type="button" class="btn btn-outline-primary me-2" onclick="openEmailAddressModal()">メールアドレス管理</button>
-                    <button type="button" class="btn btn-outline-primary me-2" onclick="openTemplateManagementModal()">テンプレート管理</button>
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" onclick="clearTempFiles()">閉じる</button>
                 </div>
                 <div class="modal-body">
-                    <div class="mail-content-container">
-                        <div class="uploaded-files-section">
-                            <h6>アップロードされたファイル</h6>
-                            <ul id="uploadedFilesList" class="list-group mb-3"></ul>
+                    <!-- Tab Navigation -->
+                    <ul class="nav nav-tabs" id="mailEditTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="file-processing-tab" data-bs-toggle="tab" data-bs-target="#file-processing" type="button" role="tab" aria-controls="file-processing" aria-selected="true">
+                                ファイル処理
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="template-management-tab" data-bs-toggle="tab" data-bs-target="#template-management" type="button" role="tab" aria-controls="template-management" aria-selected="false">
+                                テンプレート管理
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="email-management-tab" data-bs-toggle="tab" data-bs-target="#email-management" type="button" role="tab" aria-controls="email-management" aria-selected="false">
+                                メールアドレス管理
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="other-functions-tab" data-bs-toggle="tab" data-bs-target="#other-functions" type="button" role="tab" aria-controls="other-functions" aria-selected="false">
+                                その他機能
+                            </button>
+                        </li>
+                    </ul>
+
+                    <!-- Tab Content -->
+                    <div class="tab-content" id="mailEditTabContent">
+                        <!-- File Processing Tab -->
+                        <div class="tab-pane fade show active" id="file-processing" role="tabpanel" aria-labelledby="file-processing-tab">
+                            <div class="mt-3">
+                                <div class="d-flex align-items-center gap-2 mb-3">
+                                    <label class="form-label mb-0">ファイルアップロード:</label>
+                                    <input type="file" class="form-control" id="mailEditFiles" name="files" accept=".txt" multiple onchange="uploadMailEditFiles()">
+                                </div>
+                                <div class="mail-content-container">
+                                    <div class="uploaded-files-section">
+                                        <h6>アップロードされたファイル</h6>
+                                        <ul id="uploadedFilesList" class="list-group mb-3"></ul>
+                                    </div>
+                                    <div class="replaced-content-section">
+                                        <h6>リプレース結果</h6>
+                                        <textarea id="mailEditContent" class="form-control" placeholder="リプレース結果がここに表示されます" rows="15"></textarea>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                        <div class="replaced-content-section">
-                            <h6>リプレース結果</h6>
-                            <textarea id="mailEditContent" class="form-control" placeholder="リプレース結果がここに表示されます"></textarea>
+
+                        <!-- Template Management Tab -->
+                        <div class="tab-pane fade" id="template-management" role="tabpanel" aria-labelledby="template-management-tab">
+                            <div class="mt-3">
+                                <div class="row">
+                                    <!-- Template List -->
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <h6>テンプレートファイル管理</h6>
+                                            <ul id="templateFilesList" class="list-group"></ul>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Template Editor -->
+                                    <div class="col-md-6">
+                                        <div id="templateEditor" style="display: none;">
+                                            <h6>テンプレート編集</h6>
+                                            <div class="mb-2">
+                                                <span id="editingTemplateName" class="fw-bold"></span>
+                                            </div>
+                                            <textarea id="templateContent" class="form-control" rows="15" placeholder="テンプレートの内容がここに表示されます"></textarea>
+                                            <div class="mt-2 d-flex justify-content-end gap-2">
+                                                <button type="button" class="btn btn-secondary" onclick="cancelTemplateEdit()">キャンセル</button>
+                                                <button type="button" class="btn btn-success" onclick="saveTemplateEdit()">保存</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Email Management Tab -->
+                        <div class="tab-pane fade" id="email-management" role="tabpanel" aria-labelledby="email-management-tab">
+                            <div class="mt-3">
+                                <div class="mb-3">
+                                    <h6>SEおよびSE(sub)メールアドレス</h6>
+                                    <table class="table table-bordered" id="seEmailTable">
+                                        <thead>
+                                            <tr>
+                                                <th>名前 (SE/SE(sub))</th>
+                                                <th>メールアドレス</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="seEmailTableBody"></tbody>
+                                    </table>
+                                </div>
+                                <div class="mb-3">
+                                    <h6>管理者情報</h6>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <label for="managerName" class="form-label">管理者名</label>
+                                            <input type="text" class="form-control" id="managerName" placeholder="管理者名を入力">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label for="managerEmail" class="form-label">管理者メールアドレス</label>
+                                            <input type="text" class="form-control" id="managerEmail" placeholder="メールアドレスを入力">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Other Functions Tab -->
+                        <div class="tab-pane fade" id="other-functions" role="tabpanel" aria-labelledby="other-functions-tab">
+                            <div class="mt-3">
+                                <div class="mb-3">
+                                    <label for="placeholdersContent" class="form-label">プレースホルダー設定 (placeholders.txt)</label>
+                                    <textarea id="placeholdersContent" class="form-control" rows="20" placeholder="プレースホルダーの設定内容を編集してください..."></textarea>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -5060,65 +5220,9 @@ body {
         </div>
     </div>
 
-    <!-- New Email Address Modal -->
-    <div class="modal fade" id="emailAddressModal" tabindex="-1">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">メールアドレス管理</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <h6>SEおよびSE(sub)メールアドレス</h6>
-                        <table class="table table-bordered" id="seEmailTable">
-                            <thead>
-                                <tr>
-                                    <th>名前 (SE/SE(sub))</th>
-                                    <th>メールアドレス</th>
-                                </tr>
-                            </thead>
-                            <tbody id="seEmailTableBody"></tbody>
-                        </table>
-                    </div>
-                    <div class="mb-3">
-                        <h6>管理者情報</h6>
-                        <div class="row">
-                            <div class="col-md-6">
-                                <label for="managerName" class="form-label">管理者名</label>
-                                <input type="text" class="form-control" id="managerName" placeholder="管理者名を入力">
-                            </div>
-                            <div class="col-md-6">
-                                <label for="managerEmail" class="form-label">管理者メールアドレス</label>
-                                <input type="text" class="form-control" id="managerEmail" placeholder="メールアドレスを入力">
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-primary" onclick="saveEmailData()">保存</button>
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">閉じる</button>
-                </div>
-            </div>
-        </div>
-    </div>
 
-    <div class="modal fade" id="templateManagementModal" tabindex="-1" aria-labelledby="templateManagementModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="templateManagementModalLabel">メールテンプレート管理</h5>
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">閉じる</button>
-                </div>
-                <div class="modal-body">
-                    <ul id="templateFilesList" class="list-group"></ul>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-primary" onclick="saveTemplateChanges()">OK</button>
-                </div>
-            </div>
-        </div>
-    </div>
+
+
 
     <!-- Modal Overwrite -->
     <div class="modal fade" id="overwriteFileModal" tabindex="-1">
@@ -6020,6 +6124,160 @@ body {
             window.currentReplacedFilename = null;
             window.currentOverwriteContent = '';
             clearTempFiles(); // Clear temp files when opening modal
+            
+            // Ensure we start with the file processing tab active
+            setTimeout(() => {
+                switchToTab('file-processing');
+                // Load email data and template data when modal opens
+                loadEmailDataForTab();
+                loadTemplateDataForTab();
+            }, 100);
+        }
+
+        // Function to load email data for the email management tab
+        function loadEmailDataForTab() {
+            console.log('Loading email data for tab...');
+            
+            fetch('/get_email_data')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('Email data received:', data);
+                    
+                    if (data.error) {
+                        console.warn('Failed to load email data:', data.error);
+                        alert('エラー: メールデータの読み込みに失敗しました - ' + data.error);
+                        return;
+                    }
+                    
+                    // Populate SE and SE(sub) email table
+                    const tableBody = document.getElementById('seEmailTableBody');
+                    if (!tableBody) {
+                        console.error('seEmailTableBody element not found');
+                        return;
+                    }
+                    
+                    tableBody.innerHTML = '';
+                    
+                    if (data.se_emails && Array.isArray(data.se_emails)) {
+                        console.log('Loading', data.se_emails.length, 'SE emails');
+                        data.se_emails.forEach(se => {
+                            const row = document.createElement('tr');
+                            row.innerHTML = `
+                                <td>${se.SE || ''}</td>
+                                <td><input type="text" class="form-control" value="${se.email || ''}" data-se="${se.SE || ''}"></td>
+                            `;
+                            tableBody.appendChild(row);
+                        });
+                    } else {
+                        console.warn('No SE emails data found or invalid format');
+                    }
+                    
+                    // Populate manager fields
+                    const managerNameField = document.getElementById('managerName');
+                    const managerEmailField = document.getElementById('managerEmail');
+                    
+                    if (managerNameField) {
+                        managerNameField.value = data.manager?.name || '';
+                    } else {
+                        console.warn('managerName field not found');
+                    }
+                    
+                    if (managerEmailField) {
+                        managerEmailField.value = data.manager?.email || '';
+                    } else {
+                        console.warn('managerEmail field not found');
+                    }
+                    
+                    console.log('Email data loaded successfully');
+                })
+                .catch(error => {
+                    console.error('Error loading email data:', error);
+                    alert('エラー: メールデータの読み込みに失敗しました - ' + error.message);
+                });
+        }
+
+        // Function to load template data for the template management tab
+        function loadTemplateDataForTab() {
+            fetch('/get_mail_template_list')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        console.warn('Failed to load template data:', data.error);
+                        return;
+                    }
+                    const templateFilesList = document.getElementById('templateFilesList');
+                    templateFilesList.innerHTML = '';
+                    data.templates.forEach(template => {
+                        const li = document.createElement('li');
+                        li.className = 'list-group-item d-flex align-items-center';
+                        li.innerHTML = `
+                            <input type="text" class="form-control me-2" value="${template}" data-original="${template}">
+                            <div class="btn-group">
+                                <button class="btn btn-info btn-sm me-1" onclick="editTemplateContent('${template}')">編集</button>
+                                <button class="btn btn-danger btn-sm" onclick="deleteTemplateFile(this, '${template}')">削除</button>
+                            </div>
+                        `;
+                        templateFilesList.appendChild(li);
+                    });
+                })
+                .catch(error => {
+                    console.warn('Error loading template data:', error);
+                });
+        }
+
+        // Helper function to switch tabs
+        function switchToTab(tabId) {
+            // Remove active classes from all tabs
+            document.querySelectorAll('#mailEditTabs .nav-link').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('#mailEditTabContent .tab-pane').forEach(pane => {
+                pane.classList.remove('show', 'active');
+            });
+            
+            // Activate the specified tab
+            const targetTab = document.getElementById(tabId + '-tab');
+            const targetPane = document.getElementById(tabId);
+            
+            if (targetTab && targetPane) {
+                targetTab.classList.add('active');
+                targetPane.classList.add('show', 'active');
+                
+                // Load data when switching to specific tabs
+                if (tabId === 'email-management') {
+                    loadEmailDataForTab();
+                } else if (tabId === 'template-management') {
+                    loadTemplateDataForTab();
+                } else if (tabId === 'other-functions') {
+                    loadPlaceholders();
+                }
+            }
+        }
+
+        // Add event listeners for tab clicks
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add tab click event listeners
+            document.getElementById('email-management-tab').addEventListener('click', function() {
+                loadEmailDataForTab();
+            });
+            
+            document.getElementById('template-management-tab').addEventListener('click', function() {
+                loadTemplateDataForTab();
+            });
+            
+            document.getElementById('other-functions-tab').addEventListener('click', function() {
+                loadPlaceholders();
+            });
+        });
+
+        // Function to switch to other functions tab for file upload
+        function switchToOtherFunctionsTab() {
+            switchToTab('other-functions');
         }
 
 
@@ -6082,6 +6340,9 @@ body {
                             replaceMailContent(input.dataset.original);
                         });
                     });
+
+                    // Switch to file processing tab to show the uploaded files
+                    switchToTab('file-processing');
 
                 } else {
                     alert('エラー: ファイルのアップロードに失敗しました - ' + data.error);
@@ -6397,32 +6658,22 @@ body {
         }
 
         function openTemplateManagementModal() {
-            const templateFilesList = document.getElementById('templateFilesList');
-            templateFilesList.innerHTML = ''; // Clear existing list
-
-            fetch('/get_mail_template_list')
-                .then(response => response.json())
-                .then(data => {
-                    if (data.error) {
-                        alert('エラー: テンプレートリストの取得に失敗しました - ' + data.error);
-                        return;
-                    }
-                    data.templates.forEach(template => {
-                        const li = document.createElement('li');
-                        li.className = 'list-group-item d-flex align-items-center';
-                        li.innerHTML = `
-                            <input type="text" class="form-control me-2" value="${template}" data-original="${template}">
-                            <button class="btn btn-danger btn-sm" onclick="deleteTemplateFile(this, '${template}')">削除</button>
-                        `;
-                        templateFilesList.appendChild(li);
-                    });
-                })
-                .catch(error => {
-                    alert('エラー: テンプレートリストの取得に失敗しました - ' + error.message);
-                });
-
-            const modal = new bootstrap.Modal(document.getElementById('templateManagementModal'));
-            modal.show();
+            // Check if mail edit modal is already open
+            const mailEditModal = document.getElementById('mailEditModal');
+            if (mailEditModal.classList.contains('show')) {
+                // Just switch to template management tab and load data
+                switchToTab('template-management');
+                loadTemplateDataForTab();
+            } else {
+                // Open the mail edit modal and switch to template management tab
+                const modal = new bootstrap.Modal(mailEditModal);
+                modal.show();
+                
+                setTimeout(() => {
+                    switchToTab('template-management');
+                    loadTemplateDataForTab();
+                }, 200);
+            }
         }
 
         function deleteTemplateFile(button, filename) {
@@ -6493,14 +6744,137 @@ body {
                     } else {
                         alert('すべての変更が保存されました');
                     }
-                    const modal = bootstrap.Modal.getInstance(document.getElementById('templateManagementModal'));
-                    modal.hide();
+                    // Reload template data to reflect changes
+                    loadTemplateDataForTab();
                     updateMailTemplateList();
                 })
                 .catch(error => {
                     console.error('Save changes error:', error);
                     alert('エラー: 変更の保存に失敗しました - ' + error.message);
                 });
+        }
+
+        // Template editing functions
+        function editTemplateContent(filename) {
+            // Show the template editor
+            document.getElementById('templateEditor').style.display = 'block';
+            document.getElementById('editingTemplateName').textContent = filename;
+            document.getElementById('templateContent').value = 'Loading...';
+            document.getElementById('templateContent').dataset.filename = filename;
+            
+            // Load template content
+            fetch(`/get_template_content/${encodeURIComponent(filename)}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        document.getElementById('templateContent').value = data.content;
+                    } else {
+                        alert('エラー: テンプレートの読み込みに失敗しました - ' + data.error);
+                        document.getElementById('templateContent').value = '';
+                    }
+                })
+                .catch(error => {
+                    alert('エラー: テンプレートの読み込みに失敗しました - ' + error.message);
+                    document.getElementById('templateContent').value = '';
+                });
+        }
+
+        function saveTemplateEdit() {
+            const filename = document.getElementById('templateContent').dataset.filename;
+            const content = document.getElementById('templateContent').value;
+            
+            if (!filename) {
+                alert('エラー: ファイル名が見つかりません');
+                return;
+            }
+            
+            // Disable save button during save
+            const saveButton = document.querySelector('#templateEditor .btn-success');
+            const originalText = saveButton.textContent;
+            saveButton.disabled = true;
+            saveButton.textContent = '保存中...';
+            
+            fetch('/save_template_content', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    filename: filename, 
+                    content: content 
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('テンプレートが正常に保存されました');
+                    cancelTemplateEdit();
+                } else {
+                    alert('エラー: テンプレートの保存に失敗しました - ' + data.error);
+                }
+            })
+            .catch(error => {
+                alert('エラー: テンプレートの保存に失敗しました - ' + error.message);
+            })
+            .finally(() => {
+                // Re-enable save button
+                saveButton.disabled = false;
+                saveButton.textContent = originalText;
+            });
+        }
+
+        function cancelTemplateEdit() {
+            // Hide the template editor
+            document.getElementById('templateEditor').style.display = 'none';
+            document.getElementById('editingTemplateName').textContent = '';
+            document.getElementById('templateContent').value = '';
+            document.getElementById('templateContent').dataset.filename = '';
+        }
+
+        // Placeholders management functions
+        function loadPlaceholders() {
+            fetch('/get_placeholders_content')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        alert('エラー: プレースホルダーの読み込みに失敗しました - ' + data.error);
+                        return;
+                    }
+                    document.getElementById('placeholdersContent').value = data.content || '';
+                })
+                .catch(error => {
+                    alert('エラー: プレースホルダーの読み込みに失敗しました - ' + error.message);
+                });
+        }
+
+        function savePlaceholders() {
+            const content = document.getElementById('placeholdersContent').value;
+            
+            // Disable save button during save
+            const saveButton = event.target;
+            const originalText = saveButton.textContent;
+            saveButton.disabled = true;
+            saveButton.innerHTML = '<i class="bi bi-hourglass-split"></i> 保存中...';
+            
+            fetch('/save_placeholders_content', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ content: content })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('プレースホルダーが正常に保存されました');
+                } else {
+                    alert('エラー: プレースホルダーの保存に失敗しました - ' + data.error);
+                }
+            })
+            .catch(error => {
+                alert('エラー: プレースホルダーの保存に失敗しました - ' + error.message);
+            })
+            .finally(() => {
+                // Re-enable save button
+                saveButton.disabled = false;
+                saveButton.innerHTML = '<i class="bi bi-save"></i> 保存';
+            });
         }
 
         function showConfirmDialog(filename, callback) {
@@ -6727,7 +7101,7 @@ body {
             .then(data => {
                 if (data.success) {
                     alert('メールデータが正常に保存されました');
-                    bootstrap.Modal.getInstance(document.getElementById('emailAddressModal')).hide();
+                    // Data saved successfully, no need to close modal since it's now integrated in tabs
                 } else {
                     alert('エラー: ' + data.error);
                 }
@@ -6736,6 +7110,135 @@ body {
                 console.error('Error saving email data:', error);
                 alert('メールデータの保存に失敗しました');
             });
+        }
+
+        // Combined save function for both template and email data
+        function saveAllChanges() {
+            let hasErrors = false;
+            let savePromises = [];
+            
+            // Save template changes (rename files if needed)
+            const templateFilesList = document.getElementById('templateFilesList');
+            if (templateFilesList && templateFilesList.children.length > 0) {
+                const renamePromises = Array.from(templateFilesList.querySelectorAll('li')).map(li => {
+                    const input = li.querySelector('input');
+                    const originalFilename = input.dataset.original;
+                    const newFilename = input.value;
+
+                    if (originalFilename === newFilename) return Promise.resolve({ success: true });
+
+                    return fetch('/rename_mail_template', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ old_filename: originalFilename, new_filename: newFilename })
+                    })
+                    .then(response => response.text().then(text => ({ response, text })))
+                    .then(({ response, text }) => {
+                        if (!response.ok) {
+                            throw new Error(`HTTP error ${response.status}: ${text}`);
+                        }
+                        try {
+                            return { success: true };
+                        } catch (e) {
+                            throw new Error(`Invalid JSON: ${text}`);
+                        }
+                    });
+                });
+                savePromises.push(Promise.all(renamePromises));
+            }
+            
+            // Save email data
+            const seEmailTableBody = document.getElementById('seEmailTableBody');
+            if (seEmailTableBody && seEmailTableBody.children.length > 0) {
+                const seEmails = [];
+                const rows = document.querySelectorAll('#seEmailTableBody tr');
+                
+                // Validate emails first
+                for (const row of rows) {
+                    const se = row.cells[0].textContent;
+                    const email = row.cells[1].querySelector('input').value;
+                    if (email && !validateEmail(email)) {
+                        alert(`無効なメールアドレスです: ${se} のメールアドレスを確認してください`);
+                        hasErrors = true;
+                        return;
+                    }
+                    seEmails.push({ SE: se, email: email });
+                }
+                
+                const managerEmail = document.getElementById('managerEmail').value;
+                if (managerEmail && !validateEmail(managerEmail)) {
+                    alert('無効な管理者メールアドレスです。メールアドレスを確認してください');
+                    hasErrors = true;
+                    return;
+                }
+                
+                const manager = {
+                    name: document.getElementById('managerName').value,
+                    email: managerEmail
+                };
+                
+                const emailSavePromise = fetch('/save_email_data', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ se_emails: seEmails, manager: manager })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (!data.success) {
+                        throw new Error(data.error);
+                    }
+                    return { success: true, type: 'email' };
+                });
+                
+                savePromises.push(emailSavePromise);
+            }
+            
+            // Save placeholders data
+            const placeholdersContent = document.getElementById('placeholdersContent');
+            if (placeholdersContent) {
+                const content = placeholdersContent.value;
+                const placeholdersSavePromise = fetch('/save_placeholders_content', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ content: content })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (!data.success) {
+                        throw new Error(data.error);
+                    }
+                    return { success: true, type: 'placeholders' };
+                });
+                
+                savePromises.push(placeholdersSavePromise);
+            }
+            
+            if (hasErrors) return;
+            
+            // Execute all save operations
+            if (savePromises.length === 0) {
+                alert('保存するデータがありません');
+                return;
+            }
+            
+            Promise.all(savePromises)
+                .then(results => {
+                    const errors = results.flat().filter(r => !r.success).map(r => r.error);
+                    if (errors.length > 0) {
+                        alert('一部の変更に失敗しました:\n' + errors.join('\n'));
+                    } else {
+                        alert('すべての変更が正常に保存されました');
+                        // Reload data to reflect changes
+                        loadTemplateDataForTab();
+                        loadEmailDataForTab();
+                        loadPlaceholders();
+                        updateMailTemplateList();
+                    }
+                })
+                .catch(error => {
+                    console.error('Save all changes error:', error);
+                    alert('エラー: 変更の保存に失敗しました - ' + error.message);
+                });
         }
 
         let currentScheduleWeekStart = null;
