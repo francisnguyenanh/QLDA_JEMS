@@ -776,6 +776,69 @@ body {
     margin-left: 0;
 }
 
+/* Functions Dropdown Specific Styles */
+.btn-group-professional .dropdown {
+    display: inline-block;
+}
+
+.btn-group-professional .dropdown-toggle {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    color: white;
+    padding: 0.6rem 1rem;
+    font-size: 0.85rem;
+    font-weight: 500;
+    border-radius: 6px;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+}
+
+.btn-group-professional .dropdown-toggle:hover {
+    background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.btn-group-professional .dropdown-toggle:focus {
+    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+}
+
+.btn-group-professional .dropdown-menu {
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+    min-width: 180px;
+    padding: 0.5rem 0;
+}
+
+.btn-group-professional .dropdown-item {
+    padding: 0.6rem 1rem;
+    color: #475569;
+    font-size: 0.85rem;
+    font-weight: 500;
+    border: none;
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.btn-group-professional .dropdown-item:hover {
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    color: #334155;
+    padding-left: 1.2rem;
+}
+
+.btn-group-professional .dropdown-item i {
+    width: 18px;
+    text-align: center;
+    margin-right: 0.5rem;
+    color: #64748b;
+}
+
+.btn-group-professional .dropdown-item:hover i {
+    color: #475569;
+}
+
 /* Navbar Overrides */
 .navbar,
 .navbar .d-flex,
@@ -4406,50 +4469,61 @@ body {
             </form>
         </div>
         <div class="btn-group-professional">
-            <!-- Main Action Buttons -->
-            <button class="btn btn-professional btn-schedule" 
-                    data-bs-toggle="modal" 
-                    data-bs-target="#scheduleModal" 
-                    onclick="openScheduleModal()">
-                <i class="fas fa-calendar-alt"></i>
-                <span>予定</span>
-            </button>
+            <!-- Functions Dropdown Menu -->
+            <div class="dropdown">
+                <button class="btn btn-professional dropdown-toggle" type="button" id="functionsDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="fas fa-cogs"></i>
+                    <span>機能</span>
+                </button>
+                <ul class="dropdown-menu" aria-labelledby="functionsDropdown">
+                    <li>
+                        <a class="dropdown-item" href="#" 
+                           data-bs-toggle="modal" 
+                           data-bs-target="#scheduleModal" 
+                           onclick="openScheduleModal()">
+                            <i class="fas fa-calendar-alt"></i> 予定
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item" href="#" 
+                           data-bs-toggle="modal" 
+                           data-bs-target="#compareModal">
+                            <i class="fas fa-code-compare"></i> Compare Excel
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item" href="#" 
+                           data-bs-toggle="modal" 
+                           data-bs-target="#dailyReportModal" 
+                           onclick="openDailyReportModal()">
+                            <i class="fas fa-chart-bar"></i> 日報
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item" href="#" 
+                           data-bs-toggle="modal" 
+                           data-bs-target="#uploadModal">
+                            <i class="fas fa-file-excel"></i> 案件インポート
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item" href="#" 
+                           data-bs-toggle="modal" 
+                           data-bs-target="#mailEditModal">
+                            <i class="fas fa-envelope-open-text"></i> メール編集
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item" href="#" 
+                           data-bs-toggle="modal" 
+                           data-bs-target="#createTaskModal">
+                            <i class="fas fa-tasks"></i> チケット作成
+                        </a>
+                    </li>
+                </ul>
+            </div>
             
-            <button class="btn btn-professional btn-compare" 
-                    data-bs-toggle="modal" 
-                    data-bs-target="#compareModal">
-                <i class="fas fa-code-compare"></i>
-                <span>Compare</span>
-            </button>
-            
-            <button class="btn btn-professional btn-report" 
-                    data-bs-toggle="modal" 
-                    data-bs-target="#dailyReportModal" 
-                    onclick="openDailyReportModal()">
-                <i class="fas fa-chart-bar"></i>
-                <span>日報</span>
-            </button>
-            
-            <button class="btn btn-professional btn-excel" 
-                    data-bs-toggle="modal" 
-                    data-bs-target="#uploadModal">
-                <i class="fas fa-file-excel"></i>
-                <span>Excel</span>
-            </button>
-            
-            <button class="btn btn-professional btn-mail-edit" 
-                    data-bs-toggle="modal" 
-                    data-bs-target="#mailEditModal">
-                <i class="fas fa-envelope-open-text"></i>
-                <span>メール編集</span>
-            </button>
-            
-            <button class="btn btn-professional btn-task-create" 
-                    data-bs-toggle="modal" 
-                    data-bs-target="#createTaskModal">
-                <i class="fas fa-tasks"></i>
-                <span>チケット作成</span>
-            </button>
+            <!-- Settings Button - Keep separate -->
             <button class="btn btn-professional btn-settings" 
                     data-bs-toggle="modal" 
                     data-bs-target="#settingsModal">
