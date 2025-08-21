@@ -24,6 +24,9 @@ from dateutil.relativedelta import relativedelta
 from collections import OrderedDict
 from datetime import timedelta
 import utils
+import uuid
+from openpyxl import load_workbook
+from openpyxl.styles import PatternFill
 
 import genscript
 import zipfile
@@ -66,6 +69,9 @@ generation_progress = {
     'sheet_name': '',
     'is_generating': False
 }
+
+# Excel comparison tracking
+comparison_tasks = {}
 
 def init_db():
     """Initialize SQLite database with projects, copied_templates, and daily_hours tables."""
@@ -806,6 +812,8 @@ def dashboard():
         os.makedirs(PROJECT_DIR)
     if not os.path.exists(OLD_DIR):
         os.makedirs(OLD_DIR)
+    if not os.path.exists('temp_compare'):
+        os.makedirs('temp_compare')
 
     show_all = request.form.get('show_all') == 'on'
     show_unnecessary = request.form.get('show_unnecessary') == 'on'
@@ -4302,6 +4310,377 @@ def save_placeholders_content():
         return jsonify({'success': True})
     except Exception as e:
         logging.error(f"Error saving placeholders.txt: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+def compare_excel_files_background(task_id, old_file_path, new_file_path):
+    """Background function to compare Excel files"""
+    try:
+        # Create temp directory for comparison results
+        temp_dir = f'temp_compare_{task_id}'
+        os.makedirs(temp_dir, exist_ok=True)
+        
+        # Create output file paths
+        file_old_highlighted = os.path.join(temp_dir, 'old_highlighted.xlsx')
+        file_new_highlighted = os.path.join(temp_dir, 'new_highlighted.xlsx')
+        output_file = os.path.join(temp_dir, 'comparison_result.txt')
+        
+        # Initialize task status
+        comparison_tasks[task_id].update({
+            'current_sheet': 0,
+            'total_sheets': 0,
+            'current_sheet_name': '',
+            'status': 'Loading files...'
+        })
+        
+        # Create yellow fill for highlighting
+        yellow_fill = PatternFill(start_color='FFFF00', end_color='FFFF00', fill_type='solid')
+        
+        # Copy files to preserve format
+        shutil.copy2(old_file_path, file_old_highlighted)
+        shutil.copy2(new_file_path, file_new_highlighted)
+        
+        # Load workbooks
+        comparison_tasks[task_id]['status'] = 'Loading workbooks...'
+        wb_old = load_workbook(old_file_path, data_only=True)
+        wb_new = load_workbook(new_file_path, data_only=True)
+        wb_old_highlighted = load_workbook(file_old_highlighted)
+        wb_new_highlighted = load_workbook(file_new_highlighted)
+        
+        sheets_with_differences = []
+        
+        with open(output_file, 'w', encoding='utf-8') as f:
+            sheets_old = wb_old.sheetnames
+            sheets_new = wb_new.sheetnames
+            
+            # Update total sheets count
+            common_sheets = set(sheets_old) & set(sheets_new)
+            comparison_tasks[task_id]['total_sheets'] = len(common_sheets)
+            
+            # Write initial comparison info
+            if len(sheets_old) != len(sheets_new):
+                f.write("Số lượng sheet không giống nhau!\n")
+                f.write(f"File old có {len(sheets_old)} sheets: {', '.join(sheets_old)}\n")
+                f.write(f"File new có {len(sheets_new)} sheets: {', '.join(sheets_new)}\n\n")
+            else:
+                f.write("Số lượng sheet giống nhau. Kết quả so sánh:\n\n")
+                
+            only_in_old = set(sheets_old) - set(sheets_new)
+            only_in_new = set(sheets_new) - set(sheets_old)
+            if only_in_old:
+                f.write(f"Sheet chỉ có trong file old: {', '.join(only_in_old)}\n")
+            if only_in_new:
+                f.write(f"Sheet chỉ có trong file new: {', '.join(only_in_new)}\n")
+            if only_in_old or only_in_new:
+                f.write("\n")
+            
+            # Process each common sheet
+            for i, sheet_name in enumerate(common_sheets):
+                comparison_tasks[task_id].update({
+                    'current_sheet': i + 1,
+                    'current_sheet_name': sheet_name,
+                    'status': f'Processing sheet: {sheet_name}'
+                })
+                
+                try:
+                    ws_old = wb_old[sheet_name]
+                    ws_new = wb_new[sheet_name]
+                    ws_old_highlighted = wb_old_highlighted[sheet_name]
+                    ws_new_highlighted = wb_new_highlighted[sheet_name]
+                    
+                    max_row = max(ws_old.max_row, ws_new.max_row)
+                    max_col = max(ws_old.max_column, ws_new.max_column)
+                    different_cells = 0
+                    different_positions = []
+                    has_differences = False
+                    
+                    # Compare cells
+                    for row in range(1, max_row + 1):
+                        for col in range(1, max_col + 1):
+                            value_old = ws_old.cell(row=row, column=col).value
+                            value_new = ws_new.cell(row=row, column=col).value
+                            
+                            clean_value_old = str(value_old).strip() if value_old is not None else ''
+                            clean_value_new = str(value_new).strip() if value_new is not None else ''
+                            
+                            if clean_value_old != clean_value_new:
+                                different_cells += 1
+                                has_differences = True
+                                
+                                # Highlight different cells
+                                try:
+                                    cell_old = ws_old_highlighted.cell(row=row, column=col)
+                                    cell_new = ws_new_highlighted.cell(row=row, column=col)
+                                    
+                                    # Handle merged cells
+                                    merged_old = False
+                                    for merged_range in ws_old_highlighted.merged_cells.ranges:
+                                        if cell_old.coordinate in merged_range:
+                                            for merged_cell in merged_range.cells:
+                                                ws_old_highlighted.cell(row=merged_cell[0], column=merged_cell[1]).fill = yellow_fill
+                                            merged_old = True
+                                            break
+                                    if not merged_old:
+                                        cell_old.fill = yellow_fill
+                                    
+                                    merged_new = False
+                                    for merged_range in ws_new_highlighted.merged_cells.ranges:
+                                        if cell_new.coordinate in merged_range:
+                                            for merged_cell in merged_range.cells:
+                                                ws_new_highlighted.cell(row=merged_cell[0], column=merged_cell[1]).fill = yellow_fill
+                                            merged_new = True
+                                            break
+                                    if not merged_new:
+                                        cell_new.fill = yellow_fill
+                                        
+                                except Exception as e:
+                                    pass
+                                
+                                # Record difference
+                                if len(different_positions) < 20:
+                                    col_letter = ws_old.cell(row=row, column=col).column_letter
+                                    different_positions.append({
+                                        'position': f"{col_letter}{row}",
+                                        'value_old': clean_value_old if clean_value_old != '' else "NULL",
+                                        'value_new': clean_value_new if clean_value_new != '' else "NULL"
+                                    })
+                    
+                    # Collect all values for comparison
+                    values_old = set()
+                    values_new = set()
+                    non_empty_rows_old = 0
+                    non_empty_rows_new = 0
+                    
+                    for row in range(1, ws_old.max_row + 1):
+                        has_data = False
+                        for col in range(1, ws_old.max_column + 1):
+                            value = ws_old.cell(row=row, column=col).value
+                            if value is not None and str(value).strip() != '':
+                                clean_value = str(value).strip()
+                                values_old.add(clean_value)
+                                has_data = True
+                        if has_data:
+                            non_empty_rows_old += 1
+                    
+                    for row in range(1, ws_new.max_row + 1):
+                        has_data = False
+                        for col in range(1, ws_new.max_column + 1):
+                            value = ws_new.cell(row=row, column=col).value
+                            if value is not None and str(value).strip() != '':
+                                clean_value = str(value).strip()
+                                values_new.add(clean_value)
+                                has_data = True
+                        if has_data:
+                            non_empty_rows_new += 1
+                    
+                    # Write results
+                    if has_differences or values_old != values_new:
+                        sheets_with_differences.append(sheet_name)
+                        f.write(f"Sheet: {sheet_name}\n")
+                        f.write(f"Số dòng có dữ liệu trong file old: {non_empty_rows_old}\n")
+                        f.write(f"Số dòng có dữ liệu trong file new: {non_empty_rows_new}\n")
+                        f.write(f"Tổng số giá trị khác rỗng trong file old: {len(values_old)}\n")
+                        f.write(f"Tổng số giá trị khác rỗng trong file new: {len(values_new)}\n")
+                        f.write(f"Số ô có nội dung khác nhau: {different_cells}\n")
+                        
+                        if different_positions:
+                            f.write(f"Ví dụ {min(len(different_positions), 20)} vị trí khác nhau đầu tiên:\n")
+                            for pos in different_positions:
+                                f.write(f"  {pos['position']}: old='{pos['value_old']}' vs new='{pos['value_new']}'\n")
+                        
+                        only_in_old = values_old - values_new
+                        only_in_new = values_new - values_old
+                        
+                        if only_in_old:
+                            f.write(f"Giá trị chỉ có trong file old ({len(only_in_old)} giá trị):\n")
+                            for value in sorted(list(only_in_old)[:20]):
+                                f.write(f"  {value}\n")
+                            if len(only_in_old) > 20:
+                                f.write(f"  ... và {len(only_in_old) - 20} giá trị khác\n")
+                        
+                        if only_in_new:
+                            f.write(f"Giá trị chỉ có trong file new ({len(only_in_new)} giá trị):\n")
+                            for value in sorted(list(only_in_new)[:20]):
+                                f.write(f"  {value}\n")
+                            if len(only_in_new) > 20:
+                                f.write(f"  ... và {len(only_in_new) - 20} giá trị khác\n")
+                        
+                        f.write("\n" + "="*50 + "\n")
+                    else:
+                        f.write(f"Sheet: {sheet_name}\n")
+                        f.write("Nội dung giống hệt nhau (bỏ qua dòng trắng và cấu trúc).\n")
+                        f.write(f"Số ô có nội dung khác nhau: {different_cells}\n")
+                        f.write("\n" + "="*50 + "\n")
+                        
+                except Exception as e:
+                    f.write(f"Sheet: {sheet_name}\n")
+                    f.write(f"Lỗi khi xử lý sheet: {e}\n")
+                    f.write("\n" + "="*50 + "\n")
+        
+        # Remove sheets without differences from highlighted files
+        for sheet_name in list(wb_old_highlighted.sheetnames):
+            if sheet_name not in sheets_with_differences:
+                wb_old_highlighted.remove(wb_old_highlighted[sheet_name])
+        
+        for sheet_name in list(wb_new_highlighted.sheetnames):
+            if sheet_name not in sheets_with_differences:
+                wb_new_highlighted.remove(wb_new_highlighted[sheet_name])
+        
+        # Close original workbooks
+        wb_old.close()
+        wb_new.close()
+        
+        # Save highlighted files
+        result_files = {}
+        if sheets_with_differences:
+            wb_old_highlighted.save(file_old_highlighted)
+            wb_new_highlighted.save(file_new_highlighted)
+            result_files['old_highlighted'] = f'old_highlighted_{task_id}.xlsx'
+            result_files['new_highlighted'] = f'new_highlighted_{task_id}.xlsx'
+            
+            # Move files to a permanent location with task_id
+            shutil.move(file_old_highlighted, f'temp_compare/old_highlighted_{task_id}.xlsx')
+            shutil.move(file_new_highlighted, f'temp_compare/new_highlighted_{task_id}.xlsx')
+        
+        wb_old_highlighted.close()
+        wb_new_highlighted.close()
+        
+        # Move result file
+        result_files['comparison_result'] = f'comparison_result_{task_id}.txt'
+        os.makedirs('temp_compare', exist_ok=True)
+        shutil.move(output_file, f'temp_compare/comparison_result_{task_id}.txt')
+        
+        # Read result text for preview
+        with open(f'temp_compare/comparison_result_{task_id}.txt', 'r', encoding='utf-8') as f:
+            result_text = f.read()
+        
+        # Update task status
+        comparison_tasks[task_id].update({
+            'completed': True,
+            'status': 'Completed',
+            'result_text': result_text[:2000] + ('...' if len(result_text) > 2000 else ''),  # Truncate for display
+            'files': result_files,
+            'sheets_with_differences': len(sheets_with_differences)
+        })
+        
+        # Clean up temp directory
+        try:
+            shutil.rmtree(temp_dir)
+        except:
+            pass
+            
+    except Exception as e:
+        comparison_tasks[task_id].update({
+            'completed': True,
+            'status': 'Error',
+            'error': str(e)
+        })
+        logging.error(f"Error in compare_excel_files_background: {str(e)}")
+
+@app.route('/api/compare_excel', methods=['POST'])
+def compare_excel():
+    """Start Excel comparison process"""
+    try:
+        if 'old_file' not in request.files or 'new_file' not in request.files:
+            return jsonify({'error': 'Both files are required'}), 400
+        
+        old_file = request.files['old_file']
+        new_file = request.files['new_file']
+        
+        if old_file.filename == '' or new_file.filename == '':
+            return jsonify({'error': 'Both files must be selected'}), 400
+        
+        # Generate unique task ID
+        task_id = str(uuid.uuid4())
+        
+        # Save uploaded files temporarily
+        temp_dir = f'temp_upload_{task_id}'
+        os.makedirs(temp_dir, exist_ok=True)
+        
+        old_file_path = os.path.join(temp_dir, 'old.xlsx')
+        new_file_path = os.path.join(temp_dir, 'new.xlsx')
+        
+        old_file.save(old_file_path)
+        new_file.save(new_file_path)
+        
+        # Initialize task tracking
+        comparison_tasks[task_id] = {
+            'completed': False,
+            'current_sheet': 0,
+            'total_sheets': 0,
+            'current_sheet_name': '',
+            'status': 'Initializing...',
+            'temp_dir': temp_dir
+        }
+        
+        # Start background comparison
+        thread = threading.Thread(target=compare_excel_files_background, args=(task_id, old_file_path, new_file_path))
+        thread.daemon = True
+        thread.start()
+        
+        return jsonify({'success': True, 'task_id': task_id})
+        
+    except Exception as e:
+        logging.error(f"Error in compare_excel: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/compare_progress/<task_id>')
+def get_compare_progress(task_id):
+    """Get comparison progress"""
+    if task_id not in comparison_tasks:
+        return jsonify({'error': 'Task not found'}), 404
+    
+    task_data = comparison_tasks[task_id].copy()
+    
+    # Clean up completed tasks after some time
+    if task_data.get('completed', False):
+        # Clean up temp upload directory
+        temp_dir = task_data.get('temp_dir')
+        if temp_dir and os.path.exists(temp_dir):
+            try:
+                shutil.rmtree(temp_dir)
+            except:
+                pass
+    
+    return jsonify(task_data)
+
+@app.route('/api/download_compare_file/<filename>')
+def download_compare_file(filename):
+    """Download comparison result files"""
+    try:
+        file_path = os.path.join('temp_compare', filename)
+        if os.path.exists(file_path):
+            return send_file(file_path, as_attachment=True)
+        else:
+            return jsonify({'error': 'File not found'}), 404
+    except Exception as e:
+        logging.error(f"Error downloading file: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/clear_compare_files', methods=['POST'])
+def clear_compare_files():
+    """Clear all files in temp_compare directory"""
+    try:
+        temp_compare_dir = 'temp_compare'
+        if os.path.exists(temp_compare_dir):
+            # Remove all files in the directory
+            for filename in os.listdir(temp_compare_dir):
+                file_path = os.path.join(temp_compare_dir, filename)
+                try:
+                    if os.path.isfile(file_path):
+                        os.unlink(file_path)
+                    elif os.path.isdir(file_path):
+                        shutil.rmtree(file_path)
+                except Exception as e:
+                    logging.warning(f"Could not delete {file_path}: {str(e)}")
+        
+        # Clear comparison tasks
+        global comparison_tasks
+        comparison_tasks.clear()
+        
+        return jsonify({'success': True, 'message': 'All comparison files cleared'})
+        
+    except Exception as e:
+        logging.error(f"Error clearing compare files: {str(e)}")
         return jsonify({'error': str(e)}), 500
     
 if __name__ == '__main__':

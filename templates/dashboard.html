@@ -640,6 +640,17 @@ body {
     color: #2d3748;
 }
 
+.btn-compare {
+    background: linear-gradient(135deg, #fef5e7 0%, #fed7aa 100%);
+    color: #c05621;
+    border-color: #f6ad55;
+}
+
+.btn-compare:hover {
+    background: linear-gradient(135deg, #fed7aa 0%, #f6ad55 100%);
+    color: #9c4221;
+}
+
 .btn-mail-edit {
     background: linear-gradient(135deg, #e2e8f0 0%, #edf2f7 100%);
     color: #4a5568;
@@ -4404,6 +4415,13 @@ body {
                 <span>予定</span>
             </button>
             
+            <button class="btn btn-professional btn-compare" 
+                    data-bs-toggle="modal" 
+                    data-bs-target="#compareModal">
+                <i class="fas fa-code-compare"></i>
+                <span>Compare</span>
+            </button>
+            
             <button class="btn btn-professional btn-report" 
                     data-bs-toggle="modal" 
                     data-bs-target="#dailyReportModal" 
@@ -4587,6 +4605,77 @@ body {
                             </thead>
                             <tbody id="scheduleTableBody"></tbody>
                         </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Compare Excel Modal -->
+    <div class="modal fade" id="compareModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-scrollable modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Excel Compare</h5>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">閉じる</button>
+                    </div>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="oldExcelFile" class="form-label">Old Excel File</label>
+                                <input type="file" class="form-control" id="oldExcelFile" accept=".xlsx,.xls" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="newExcelFile" class="form-label">New Excel File</label>
+                                <input type="file" class="form-control" id="newExcelFile" accept=".xlsx,.xls" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-12">
+                            <button type="button" class="btn btn-primary" onclick="compareExcelFiles()">
+                                <i class="fas fa-code-compare"></i> Compare
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Progress Section -->
+                    <div id="compareProgress" class="mt-4" style="display: none;">
+                        <div class="alert alert-info">
+                            <h6>Comparing Excel Files...</h6>
+                            <div class="progress mb-2">
+                                <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" 
+                                     style="width: 0%" id="compareProgressBar"></div>
+                            </div>
+                            <small id="compareProgressText">Initializing...</small>
+                        </div>
+                    </div>
+                    
+                    <!-- Results Section -->
+                    <div id="compareResults" class="mt-4" style="display: none;">
+                        <h6>Comparison Results:</h6>
+                        <div class="alert alert-success">
+                            <pre id="compareResultText"></pre>
+                        </div>
+                        <div class="mt-3">
+                            <h6>Download Files:</h6>
+                            <div class="d-flex gap-2 flex-wrap">
+                                <button type="button" class="btn btn-outline-primary btn-sm" id="downloadOldHighlighted" style="display: none;">
+                                    <i class="fas fa-download"></i> Download Old Highlighted
+                                </button>
+                                <button type="button" class="btn btn-outline-primary btn-sm" id="downloadNewHighlighted" style="display: none;">
+                                    <i class="fas fa-download"></i> Download New Highlighted
+                                </button>
+                                <button type="button" class="btn btn-outline-success btn-sm" id="downloadComparisonResult" style="display: none;">
+                                    <i class="fas fa-download"></i> Download Comparison Result
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -7650,12 +7739,191 @@ function saveUserSettings() {
     });
 }
 
+// Compare Excel Files functionality
+let compareProgressInterval;
+
+function compareExcelFiles() {
+    const oldFile = document.getElementById('oldExcelFile').files[0];
+    const newFile = document.getElementById('newExcelFile').files[0];
+    
+    if (!oldFile || !newFile) {
+        alert('両方のExcelファイルを選択してください');
+        return;
+    }
+    
+    // Show progress
+    document.getElementById('compareProgress').style.display = 'block';
+    document.getElementById('compareResults').style.display = 'none';
+    document.getElementById('compareProgressBar').style.width = '10%';
+    document.getElementById('compareProgressText').textContent = 'ファイルを読み込み中...';
+    
+    // Create FormData
+    const formData = new FormData();
+    formData.append('old_file', oldFile);
+    formData.append('new_file', newFile);
+    
+    // Start comparison
+    fetch('/api/compare_excel', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Start monitoring progress
+            startCompareProgressMonitoring(data.task_id);
+        } else {
+            document.getElementById('compareProgress').style.display = 'none';
+            alert('エラー: ' + data.error);
+        }
+    })
+    .catch(error => {
+        document.getElementById('compareProgress').style.display = 'none';
+        console.error('Error:', error);
+        alert('比較処理でエラーが発生しました');
+    });
+}
+
+function startCompareProgressMonitoring(taskId) {
+    compareProgressInterval = setInterval(() => {
+        fetch(`/api/compare_progress/${taskId}`)
+        .then(response => response.json())
+        .then(data => {
+            updateCompareProgress(data);
+            
+            if (data.completed) {
+                clearInterval(compareProgressInterval);
+                showCompareResults(data);
+            }
+        })
+        .catch(error => {
+            clearInterval(compareProgressInterval);
+            console.error('Progress monitoring error:', error);
+        });
+    }, 1000);
+}
+
+function updateCompareProgress(data) {
+    const progressBar = document.getElementById('compareProgressBar');
+    const progressText = document.getElementById('compareProgressText');
+    
+    if (data.total_sheets > 0) {
+        const percentage = Math.round((data.current_sheet / data.total_sheets) * 100);
+        progressBar.style.width = percentage + '%';
+        
+        if (data.current_sheet_name) {
+            progressText.textContent = `Processing sheet: ${data.current_sheet_name} (${data.current_sheet}/${data.total_sheets})`;
+        } else {
+            progressText.textContent = `Progress: ${data.current_sheet}/${data.total_sheets} sheets`;
+        }
+    } else {
+        progressText.textContent = data.status || 'Processing...';
+    }
+}
+
+function showCompareResults(data) {
+    document.getElementById('compareProgress').style.display = 'none';
+    document.getElementById('compareResults').style.display = 'block';
+    
+    // Show results
+    document.getElementById('compareResultText').textContent = data.result_text || 'Comparison completed';
+    
+    // Show download buttons
+    if (data.files) {
+        if (data.files.old_highlighted) {
+            const btn = document.getElementById('downloadOldHighlighted');
+            btn.style.display = 'inline-block';
+            btn.onclick = () => downloadFile(data.files.old_highlighted, 'old_highlighted.xlsx');
+        }
+        
+        if (data.files.new_highlighted) {
+            const btn = document.getElementById('downloadNewHighlighted');
+            btn.style.display = 'inline-block';
+            btn.onclick = () => downloadFile(data.files.new_highlighted, 'new_highlighted.xlsx');
+        }
+        
+        if (data.files.comparison_result) {
+            const btn = document.getElementById('downloadComparisonResult');
+            btn.style.display = 'inline-block';
+            btn.onclick = () => downloadFile(data.files.comparison_result, 'comparison_result.txt');
+        }
+    }
+}
+
+function downloadFile(fileName, downloadName) {
+    const link = document.createElement('a');
+    link.href = `/api/download_compare_file/${fileName}`;
+    link.download = downloadName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
 // Add event listener to open settings modal
 document.addEventListener('DOMContentLoaded', function() {
     const settingsBtn = document.querySelector('.btn-settings');
     if (settingsBtn) {
         settingsBtn.addEventListener('click', openSettingsModal);
     }
+    
+    // Add event listener for compare modal close
+    const compareModal = document.getElementById('compareModal');
+    if (compareModal) {
+        compareModal.addEventListener('hidden.bs.modal', function() {
+            // Clear comparison files when modal is closed
+            clearCompareFiles();
+            
+            // Reset modal content
+            resetCompareModal();
+        });
+    }
 });
+
+// Function to clear comparison files
+function clearCompareFiles() {
+    fetch('/api/clear_compare_files', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            console.log('Comparison files cleared successfully');
+        } else {
+            console.error('Error clearing comparison files:', data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error clearing comparison files:', error);
+    });
+}
+
+// Function to reset compare modal content
+function resetCompareModal() {
+    // Clear file inputs
+    document.getElementById('oldExcelFile').value = '';
+    document.getElementById('newExcelFile').value = '';
+    
+    // Hide progress and results
+    document.getElementById('compareProgress').style.display = 'none';
+    document.getElementById('compareResults').style.display = 'none';
+    
+    // Reset progress bar
+    document.getElementById('compareProgressBar').style.width = '0%';
+    document.getElementById('compareProgressText').textContent = '';
+    
+    // Hide download buttons
+    document.getElementById('downloadOldHighlighted').style.display = 'none';
+    document.getElementById('downloadNewHighlighted').style.display = 'none';
+    document.getElementById('downloadComparisonResult').style.display = 'none';
+    
+    // Clear progress monitoring
+    if (compareProgressInterval) {
+        clearInterval(compareProgressInterval);
+        compareProgressInterval = null;
+    }
+}
     </script>
 {% endblock %}
