@@ -27,12 +27,127 @@
     box-shadow: 0 2px 10px rgba(0,0,0,0.1);
 }
 
+.view-mode-toggle {
+    margin-bottom: 0.5rem;
+}
+
+.view-mode-toggle .btn-group {
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
 .week-navigation {
     display: flex;
     justify-content: center;
     align-items: center;
     gap: 0.5rem;
     margin-bottom: 0.5rem;   /* Khoảng cách với week range */
+}
+
+/* =================
+   MONTH VIEW STYLES
+   ================= */
+.month-calendar {
+    background: #f8f9fa;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    padding: 1rem;
+    display: none; /* Hidden by default */
+}
+
+.month-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;     /* Căn giữa tất cả elements trong header như week-header */
+    margin-bottom: 0.5rem;
+    padding: 0.5rem 0;
+    background: linear-gradient(135deg, #d5d7e0 0%, #ffffff 100%);
+    color: black;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.month-navigation {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;   /* Khoảng cách với month title như week-header */
+}
+
+.month-title {
+    margin: 0;
+    text-align: center;      /* Đảm bảo text căn giữa */
+}
+
+.month-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 1px;
+    background: #dee2e6;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.month-day-header {
+    background: #6c757d;
+    color: white;
+    padding: 0.5rem;
+    text-align: center;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.month-day-cell {
+    background: white;
+    min-height: 80px;
+    padding: 0.25rem;
+    position: relative;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.month-day-cell:hover {
+    background: #f8f9fa;
+}
+
+.month-day-cell.other-month {
+    background: #f1f3f4;
+    color: #adb5bd;
+}
+
+.month-day-cell.today {
+    background: #e3f2fd;
+    border: 2px solid #2196f3;
+}
+
+.month-day-number {
+    font-size: 0.8rem;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+}
+
+.month-todo-indicator {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin: 1px;
+    display: inline-block;
+}
+
+.month-todo-tooltip {
+    position: absolute;
+    background: rgba(0,0,0,0.9);
+    color: white;
+    padding: 0.5rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    z-index: 1000;
+    max-width: 200px;
+    word-wrap: break-word;
+    display: none;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    pointer-events: none; /* Prevent tooltip from interfering with mouse events */
+    transition: opacity 0.2s ease;
 }
 
 /* =================
@@ -409,6 +524,14 @@
     <!-- Thêm wrapper để căn giữa như memo_list -->
     <div class="row justify-content-center">
         <div class="col-12">
+            <!-- View Mode Toggle - Always visible -->
+            <div class="view-mode-toggle text-center mb-3">
+                <div class="btn-group" role="group" aria-label="View mode">
+                    <button type="button" class="btn btn-primary" id="weekViewBtn">週表示</button>
+                    <button type="button" class="btn btn-outline-primary" id="monthViewBtn">月表示</button>
+                </div>
+            </div>
+            
             <div class="todo-calendar">
                 <!-- Week Header -->
                 <div class="week-header">
@@ -430,6 +553,26 @@
 
                 <!-- Days Grid -->
                 <div class="row g-2" id="daysGrid">
+                </div>
+            </div>
+            
+            <!-- Month Calendar (hidden by default) -->
+            <div class="month-calendar" id="monthCalendar">
+                <div class="month-header">
+                    <div class="month-navigation">
+                        <button class="btn btn-outline-primary btn-sm" id="prevMonth">
+                            <i class="bi bi-chevron-left"></i>
+                        </button>
+                        <button class="btn btn-primary btn-sm" id="thisMonth">
+                            This Month
+                        </button>
+                        <button class="btn btn-outline-primary btn-sm" id="nextMonth">
+                            <i class="bi bi-chevron-right"></i>
+                        </button>
+                    </div>
+                    <h5 class="month-title" id="monthTitle"></h5>
+                </div>
+                <div class="month-grid" id="monthGrid">
                 </div>
             </div>
         </div>
@@ -578,9 +721,11 @@
 <!-- Keep the existing JavaScript exactly the same -->
 <script>
 let currentWeekStart = new Date();
+let currentMonthStart = new Date();
 let todos = [];
 let selectedPriority = 'medium';
 let selectedRepeat = 'none';
+let isMonthView = false;
 
 function updateSaveButtonState() {
     const title = document.getElementById('todoTitle').value.trim();
@@ -610,7 +755,7 @@ async function loadTodos() {
         const weekEnd = new Date(currentWeekStart);
         weekEnd.setDate(weekEnd.getDate() + 6);
         
-        const response = await fetch(`/api/todos?start_date=${weekStart.toISOString().split('T')[0]}&end_date=${weekEnd.toISOString().split('T')[0]}`);
+        const response = await fetch(`/api/todos?start_date=${formatDateString(weekStart)}&end_date=${formatDateString(weekEnd)}`);
         const data = await response.json();
         console.log('Loaded todos:', data);
         if (response.ok) {
@@ -733,7 +878,12 @@ async function performSave(todoId, todoData, updateAll = false) {
         const result = await response.json();
         
         if (response.ok) {
-            loadTodos();
+            // Refresh appropriate view based on current mode
+            if (isMonthView) {
+                loadMonthTodos();
+            } else {
+                loadTodos();
+            }
             
             const todoModal = bootstrap.Modal.getInstance(document.getElementById('todoModal'));
             const updateModal = bootstrap.Modal.getInstance(document.getElementById('updateModal'));
@@ -1022,7 +1172,7 @@ function renderCalendar() {
         date.setDate(date.getDate() + i);
         
         let dayTodos = todos.filter(todo => 
-            todo.date === date.toISOString().split('T')[0]
+            todo.date === formatDateString(date)
         );
         
         // Sort todos: incomplete first, then by priority, then by title
@@ -1050,7 +1200,7 @@ function renderCalendar() {
         col.className = 'col-md col-sm-6';
         col.innerHTML = `
             <div class="day-column">
-                <div class="day-header" onclick="openTodoModal('${date.toISOString().split('T')[0]}')" style="--progress: ${progress}%">
+                <div class="day-header" onclick="openTodoModal('${date.toISOString().split('T')[0]}', null)" style="--progress: ${progress}%">
                     <div class="day-header-content">
                         <div class="day-name">${getDayName(date.getDay())}</div>
                         <div class="day-date">${date.getDate()}</div>
@@ -1243,7 +1393,12 @@ document.addEventListener('DOMContentLoaded', function() {
             });
             
             if (response.ok) {
-                loadTodos();
+                // Refresh appropriate view based on current mode
+                if (isMonthView) {
+                    loadMonthTodos();
+                } else {
+                    loadTodos();
+                }
                 bootstrap.Modal.getInstance(document.getElementById('deleteRepeatModal')).hide();
             } else {
                 const result = await response.json();
@@ -1267,7 +1422,12 @@ document.addEventListener('DOMContentLoaded', function() {
             });
             
             if (response.ok) {
-                loadTodos();
+                // Refresh appropriate view based on current mode
+                if (isMonthView) {
+                    loadMonthTodos();
+                } else {
+                    loadTodos();
+                }
                 bootstrap.Modal.getInstance(document.getElementById('deleteRepeatModal')).hide();
             } else {
                 const result = await response.json();
@@ -1291,7 +1451,12 @@ document.addEventListener('DOMContentLoaded', function() {
             });
             
             if (response.ok) {
-                loadTodos();
+                // Refresh appropriate view based on current mode
+                if (isMonthView) {
+                    loadMonthTodos();
+                } else {
+                    loadTodos();
+                }
                 bootstrap.Modal.getInstance(document.getElementById('deleteModal')).hide();
             } else {
                 const result = await response.json();
@@ -1304,6 +1469,300 @@ document.addEventListener('DOMContentLoaded', function() {
         
         todoToDelete = null;
     };
+    
+    // View mode toggle
+    document.getElementById('weekViewBtn').onclick = function() {
+        isMonthView = false;
+        document.getElementById('weekViewBtn').classList.add('btn-primary');
+        document.getElementById('weekViewBtn').classList.remove('btn-outline-primary');
+        document.getElementById('monthViewBtn').classList.remove('btn-primary');
+        document.getElementById('monthViewBtn').classList.add('btn-outline-primary');
+        
+        document.querySelector('.todo-calendar').style.display = 'block';
+        document.getElementById('monthCalendar').style.display = 'none';
+        loadTodos();
+    };
+    
+    document.getElementById('monthViewBtn').onclick = function() {
+        isMonthView = true;
+        document.getElementById('monthViewBtn').classList.add('btn-primary');
+        document.getElementById('monthViewBtn').classList.remove('btn-outline-primary');
+        document.getElementById('weekViewBtn').classList.remove('btn-primary');
+        document.getElementById('weekViewBtn').classList.add('btn-outline-primary');
+        
+        // Hide week calendar, show month calendar
+        document.querySelector('.todo-calendar').style.display = 'none';
+        document.getElementById('monthCalendar').style.display = 'block';
+        
+        currentMonthStart = new Date();
+        currentMonthStart.setDate(1); // Set to first day of current month
+        loadMonthTodos();
+    };
+    
+    // Month navigation
+    document.getElementById('prevMonth').onclick = function() {
+        currentMonthStart.setMonth(currentMonthStart.getMonth() - 1);
+        loadMonthTodos();
+    };
+    
+    document.getElementById('nextMonth').onclick = function() {
+        currentMonthStart.setMonth(currentMonthStart.getMonth() + 1);
+        loadMonthTodos();
+    };
+    
+    document.getElementById('thisMonth').onclick = function() {
+        currentMonthStart = new Date();
+        currentMonthStart.setDate(1);
+        loadMonthTodos();
+    };
 });
+
+// Helper function to get priority color
+function getPriorityColor(priority) {
+    switch(priority) {
+        case 'high':
+            return '#dc3545'; // Red
+        case 'medium':
+            return '#ffc107'; // Yellow/Orange
+        case 'low':
+            return '#28a745'; // Green
+        default:
+            return '#6c757d'; // Gray
+    }
+}
+
+// Helper function to format date to YYYY-MM-DD (local timezone)
+function formatDateString(date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
+// Month view functions
+async function loadMonthTodos() {
+    try {
+        const monthStart = new Date(currentMonthStart.getFullYear(), currentMonthStart.getMonth(), 1);
+        const monthEnd = new Date(currentMonthStart.getFullYear(), currentMonthStart.getMonth() + 1, 0);
+        
+        // Extend range to cover previous and next month dates shown in calendar
+        const calendarStart = new Date(monthStart);
+        const firstDayOfWeek = monthStart.getDay();
+        const mondayOffset = firstDayOfWeek === 0 ? -6 : 1 - firstDayOfWeek;
+        calendarStart.setDate(monthStart.getDate() + mondayOffset);
+        
+        const calendarEnd = new Date(calendarStart);
+        calendarEnd.setDate(calendarStart.getDate() + 41); // 6 weeks = 42 days
+        
+        console.log('Loading todos for month view:');
+        console.log('Month start:', formatDateString(monthStart));
+        console.log('Month end:', formatDateString(monthEnd));
+        console.log('Calendar start:', formatDateString(calendarStart));
+        console.log('Calendar end:', formatDateString(calendarEnd));
+        
+        const response = await fetch(`/api/todos?start_date=${formatDateString(calendarStart)}&end_date=${formatDateString(calendarEnd)}`);
+        const data = await response.json();
+        todos = data;
+        
+        console.log('Loaded todos:', todos.length);
+        
+        renderMonthCalendar();
+    } catch (error) {
+        console.error('Error loading month todos:', error);
+    }
+}
+
+function renderMonthCalendar() {
+    const monthTitle = document.getElementById('monthTitle');
+    const monthGrid = document.getElementById('monthGrid');
+    
+    // Set month title
+    const monthNames = ['1月', '2月', '3月', '4月', '5月', '6月', 
+                       '7月', '8月', '9月', '10月', '11月', '12月'];
+    monthTitle.textContent = `${currentMonthStart.getFullYear()}年 ${monthNames[currentMonthStart.getMonth()]}`;
+    
+    // Clear grid
+    monthGrid.innerHTML = '';
+    
+    // Add day headers
+    const dayHeaders = ['月', '火', '水', '木', '金', '土', '日'];
+    dayHeaders.forEach(day => {
+        const headerEl = document.createElement('div');
+        headerEl.className = 'month-day-header';
+        headerEl.textContent = day;
+        monthGrid.appendChild(headerEl);
+    });
+    
+    // Get first day of month and calculate start date to show
+    const firstDay = new Date(currentMonthStart.getFullYear(), currentMonthStart.getMonth(), 1);
+    const startDate = new Date(firstDay);
+    const dayOfWeek = firstDay.getDay();
+    const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+    startDate.setDate(firstDay.getDate() + mondayOffset);
+    
+    console.log('Month:', currentMonthStart.getMonth() + 1, 'Year:', currentMonthStart.getFullYear());
+    console.log('First day of month:', firstDay.toDateString());
+    console.log('Start date for calendar:', startDate.toDateString());
+    
+    // Render 6 weeks (42 days)
+    for (let i = 0; i < 42; i++) {
+        const date = new Date(startDate);
+        date.setDate(startDate.getDate() + i);
+        
+        const dayCell = document.createElement('div');
+        dayCell.className = 'month-day-cell';
+        
+        // Check if date is in current month
+        const isCurrentMonth = date.getMonth() === currentMonthStart.getMonth();
+        if (!isCurrentMonth) {
+            dayCell.classList.add('other-month');
+        }
+        
+        // Check if date is today
+        const today = new Date();
+        if (date.toDateString() === today.toDateString()) {
+            dayCell.classList.add('today');
+        }
+        
+        // Add day number
+        const dayNumber = document.createElement('div');
+        dayNumber.className = 'month-day-number';
+        dayNumber.textContent = date.getDate();
+        dayCell.appendChild(dayNumber);
+        
+        // Add todos for this date
+        const dateStr = formatDateString(date);
+        const dayTodos = todos.filter(todo => todo.date === dateStr);
+        
+        console.log(`Date ${dateStr}: ${dayTodos.length} todos`);
+        
+        // Add todo indicators
+        dayTodos.forEach((todo, index) => {
+            const indicator = document.createElement('div');
+            indicator.className = 'month-todo-indicator';
+            indicator.style.backgroundColor = getPriorityColor(todo.priority);
+            indicator.title = todo.title; // Add tooltip
+            dayCell.appendChild(indicator);
+        });
+        
+        // Add hover tooltip for multiple todos
+        if (dayTodos.length > 0) {
+            let tooltipTimeout;
+            
+            dayCell.addEventListener('mouseenter', function(e) {
+                tooltipTimeout = setTimeout(() => {
+                    showMonthTooltip(e, dayTodos);
+                }, 300); // Add 300ms delay
+            });
+            
+            dayCell.addEventListener('mouseleave', function() {
+                clearTimeout(tooltipTimeout);
+                hideMonthTooltip();
+            });
+        }
+        
+        // Add click handler to open modal for adding todo
+        dayCell.addEventListener('click', function() {
+            if (isCurrentMonth) {
+                openTodoModalMonth(dateStr);
+            }
+        });
+        
+        monthGrid.appendChild(dayCell);
+    }
+    
+    console.log('Rendered calendar grid with 42 day cells');
+}
+
+function showMonthTooltip(event, dayTodos) {
+    // Remove existing tooltip
+    hideMonthTooltip();
+    
+    const tooltip = document.createElement('div');
+    tooltip.className = 'month-todo-tooltip';
+    tooltip.id = 'monthTooltip';
+    
+    let content = '';
+    dayTodos.forEach(todo => {
+        content += `<div style="margin-bottom: 0.25rem;">
+            <span style="display: inline-block; width: 10px; height: 10px; background-color: ${getPriorityColor(todo.priority)}; border-radius: 50%; margin-right: 0.5rem;"></span>
+            ${todo.title}
+        </div>`;
+    });
+    
+    tooltip.innerHTML = content;
+    document.body.appendChild(tooltip);
+    
+    // Get the day cell position
+    const dayCell = event.target.closest('.month-day-cell');
+    const rect = dayCell.getBoundingClientRect();
+    const tooltipRect = tooltip.getBoundingClientRect();
+    
+    // Calculate position relative to viewport (accounts for scroll)
+    const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+    const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
+    
+    // Position tooltip just above the day cell (bottom edge of tooltip touches top of cell)
+    let top = rect.top + scrollTop - tooltipRect.height - 5;
+    let left = rect.left + scrollLeft;
+    
+    // If tooltip would go above viewport, position it below the cell
+    if (rect.top - tooltipRect.height - 5 < 0) {
+        top = rect.bottom + scrollTop + 5;
+    }
+    
+    // Keep tooltip within viewport horizontally
+    if (left + tooltipRect.width > window.innerWidth + scrollLeft) {
+        left = rect.right + scrollLeft - tooltipRect.width;
+    }
+    
+    // Ensure tooltip doesn't go off left edge
+    if (left < scrollLeft) {
+        left = scrollLeft + 5;
+    }
+    
+    tooltip.style.left = left + 'px';
+    tooltip.style.top = top + 'px';
+    tooltip.style.display = 'block';
+}
+
+function hideMonthTooltip() {
+    const tooltip = document.getElementById('monthTooltip');
+    if (tooltip) {
+        tooltip.remove();
+    }
+}
+
+function openTodoModalMonth(dateStr) {
+    document.getElementById('todoId').value = '';
+    document.getElementById('todoTitle').value = '';
+    document.getElementById('todoDate').value = dateStr;
+    
+    // Get elements to show/hide (same as week view)
+    const repeatSection = document.getElementById('repeatSection');
+    const endDateSection = document.getElementById('endDateSection');
+    const customRepeatSection = document.getElementById('customRepeatSection');
+    
+    // Creating new todo - reset form
+    document.getElementById('todoEndDate').value = '';
+    document.getElementById('customInterval').value = '1';
+    document.getElementById('customUnit').value = 'days';
+    
+    // Reset selections
+    selectedPriority = 'medium';
+    selectedRepeat = 'none';
+    
+    // Show repeat options when creating new
+    if (repeatSection) repeatSection.style.display = 'block';
+    endDateSection.style.display = 'none';
+    customRepeatSection.style.display = 'none';
+    
+    updatePrioritySelection();
+    updateRepeatSelection();
+    updateSaveButtonState();
+    
+    document.querySelector('#todoModal .modal-title').textContent = 'Add TODO';
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('todoModal')).show();
+}
 </script>
 {% endblock %}

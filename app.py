@@ -699,6 +699,11 @@ def update_project(project_id, updates):
         if field in updates:
             updates[field] = 1 if updates[field] == 'on' else 0
 
+    # If 不要 is set to ON (1), delete all todos for this project
+    if updates.get('不要') == 1:
+        cursor.execute('DELETE FROM todos WHERE project_id = ?', (project_id,))
+        logging.info(f"Deleted all todos for project {project_id} because 不要 was set to ON")
+
     # Handle ステータス and user_edited_status
     if 'ステータス' in updates and updates['ステータス'] in VALID_STATUSES:
         updates['user_edited_status'] = 1
@@ -3017,11 +3022,13 @@ def get_todos():
         conn = sqlite3.connect(DB_FILE)
         cursor = conn.cursor()
         cursor.execute('''
-            SELECT id, title, date, priority, completed, repeat_type, repeat_interval, 
-                   repeat_unit, end_date, parent_id, created_at
-            FROM todos 
-            WHERE date BETWEEN ? AND ?
-            ORDER BY date, priority DESC, created_at
+            SELECT t.id, t.title, t.date, t.priority, t.completed, t.repeat_type, t.repeat_interval, 
+                   t.repeat_unit, t.end_date, t.parent_id, t.created_at
+            FROM todos t
+            LEFT JOIN projects p ON t.project_id = p.id
+            WHERE t.date BETWEEN ? AND ?
+            AND (t.project_id IS NULL OR p.不要 != 1 OR p.不要 IS NULL)
+            ORDER BY t.date, t.priority DESC, t.created_at
         ''', (start_date, end_date))
         
         todos = []
