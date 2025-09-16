@@ -669,6 +669,51 @@ def message_set_value(col_info, ws, row_num, sheet_seq, seq_ms_value):
         primary_seq_value=seq_ms_value,
         seq_mappings=seq_mappings
     )
+    
+def youken_set_value(col_info, ws, row_num, sheet_seq, seq_yk_value):
+    # Không có ROW_NO, không có AOJI
+    seq_mappings = {
+        'SEQ_Y': seq_yk_value
+    }
+    
+    return set_value_generic(
+        col_info=col_info,
+        ws=ws,
+        row_num=row_num,
+        sheet_seq=sheet_seq,
+        primary_seq_value=seq_yk_value,
+        seq_mappings=seq_mappings
+    )
+
+def insert_youken_from_S7(ws, sheet_seq):
+    col_info_list = table_info['T_KIHON_PJ_GAMEN_YOUKEN']
+    s7_value = ws['S7'].value or ''
+    lines = [line.replace('_x000D_', '').strip() for line in str(s7_value).splitlines() if line.strip()]
+    insert_statements = []
+    for idx, line in enumerate(lines, 1):
+        # Tách line thành YOUKEN_NO và YOUKEN_GAIYOU
+        if ':' in line:
+            youken_no, youken_gaiyou = line.split(':', 1)
+        else:
+            youken_no, youken_gaiyou = '', line  # Nếu không có dấu :, coi toàn bộ là GAIYOU
+
+        row_data = {}
+        for col_info in col_info_list:
+            col_name = col_info['COLUMN_NAME']
+            if col_name == 'YOUKEN_NO':
+                val = f"N'{youken_no.strip()}'"
+                aoji = False
+            elif col_name == 'YOUKEN_GAIYOU':
+                val = f"N'{youken_gaiyou.strip()}'"
+                aoji = False
+            else:
+                val, aoji = youken_set_value(col_info, ws, 7, sheet_seq, idx)
+            row_data[col_name] = val
+        columns_str = ", ".join(row_data.keys())
+        values_str = join_sql_values(row_data.values())
+        sql = f"INSERT INTO T_KIHON_PJ_GAMEN_YOUKEN ({columns_str}) VALUES ({values_str});"
+        insert_statements.append(sql)
+    return insert_statements
 
 def hyouji_set_value(col_info, ws, row_num, sheet_seq, seq_hj_value):
     """Process column value for T_KIHON_PJ_HYOUJI table"""
@@ -1136,6 +1181,10 @@ def all_tables_in_sequence(excel_file, table_info_file, output_file='insert_all.
         values_str = join_sql_values(row_data.values())
         sql = f"INSERT INTO T_KIHON_PJ_GAMEN ({columns_str}) VALUES ({values_str});"
         all_insert_statements.append(sql)
+        
+        sql = insert_youken_from_S7(ws, seq_value)
+        print(f"Generated YOUKEN inserts for sheet {sheet_idx}: {sheet_name}, sql: {sql}")
+        all_insert_statements.append(sql)
         #print(f"Processing sheet {sheet_idx}: {sheet_name} with SEQ {seq_value}")
 
         # Xử lý theo từng loại sheet_check_value
@@ -1373,7 +1422,8 @@ def _get_processor_function(processor_name):
         'func_logic': func_logic,
         'csv_logic': csv_logic,
         're_set_value': re_set_value,
-        're_logic': re_logic
+        're_logic': re_logic,
+        'youken_set_value': youken_set_value,
     }
     return processor_map.get(processor_name)
 
@@ -1444,6 +1494,7 @@ hyouji_row = create_row_processor('hyouji')
 ichiran_row = create_row_processor('ichiran')
 menu_row = create_row_processor('menu')
 ipo_row = create_row_processor('ipo')
+youken_row = create_row_processor('youken')
 
 # Create all logic processors
 koumoku_logic = create_logic_processor('koumoku_logic')
@@ -1619,6 +1670,10 @@ def all_tables_in_sequence_with_progress(excel_file, table_info_file, output_fil
         values_str = join_sql_values(row_data.values())
         sql = f"INSERT INTO T_KIHON_PJ_GAMEN ({columns_str}) VALUES ({values_str});"
         all_insert_statements.append(sql)
+        
+        sql = insert_youken_from_S7(ws, seq_value)
+        all_insert_statements.append(sql)
+
         #print(f"Processing sheet {sheet_idx}: {sheet_name} with SEQ {seq_value}")
 
         # Xử lý theo từng loại sheet_check_value

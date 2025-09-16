@@ -15,10 +15,16 @@
     "チェックボックス": "106",
     "チェックリスト": "107",
     "ボタン": "108",
-    "ボタングループ": "109",
-    "メニュートゥール": "110",
-    "メニューツリー": "111",
-    "画像": "112"
+    "ファンクションボタン": "109",
+    "サブファンクションボタン": "110",
+    "タブコントロール": "111",
+    "画像": "116",
+    "リストボックス": "113",
+    "処理": "114",
+    "レイアウト": "115"
+
+    
+    
   },
   "KOUMOKU_TYPE_MAPPING_RE": {
     "ラベル": "101",
@@ -104,6 +110,11 @@
       "cell_b_value": "【メッセージ定義】",
       "column_value_processor": "message_set_value",
       "seq_prefix": "SEQ_MS"
+    },
+    "youken": {
+      "table_name": "T_KIHON_PJ_GAMEN_YOUKEN",
+      "column_value_processor": "youken_set_value",
+      "seq_prefix": "SEQ_Y"
     },
     "tab": {
       "table_name": "T_KIHON_PJ_TAB",

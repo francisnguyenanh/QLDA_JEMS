@@ -3655,6 +3655,116 @@
             "CSV": ""
         }
     ],
+    "T_KIHON_GAMEN_YOUKEN": [
+        {
+            "COLUMN_NAME": "SYSTEM_ID",
+            "DATA_TYPE": "bigint",
+            "CHARACTER_MAXIMUM_LENGTH": "",
+            "IS_NULLABLE": "NO",
+            "VALUE": "T_KIHON_GAMEN.SYSTEM_ID",
+            "CELL_FIX": "",
+            "CELL_LOGIC": "",
+            "SCREEN": "",
+            "REPORT": "",
+            "CSV": ""
+        },
+        {
+            "COLUMN_NAME": "SEQ",
+            "DATA_TYPE": "int",
+            "CHARACTER_MAXIMUM_LENGTH": "",
+            "IS_NULLABLE": "NO",
+            "VALUE": "T_KIHON_GAMEN.SEQ",
+            "CELL_FIX": "",
+            "CELL_LOGIC": "",
+            "SCREEN": "",
+            "REPORT": "",
+            "CSV": ""
+        },
+        {
+            "COLUMN_NAME": "SEQ_Y",
+            "DATA_TYPE": "int",
+            "CHARACTER_MAXIMUM_LENGTH": "",
+            "IS_NULLABLE": "NO",
+            "VALUE": "AUTO_ID",
+            "CELL_FIX": "",
+            "CELL_LOGIC": "",
+            "SCREEN": "",
+            "REPORT": "",
+            "CSV": ""
+        },
+        {
+            "COLUMN_NAME": "YOUKEN_NO",
+            "DATA_TYPE": "nvarchar",
+            "CHARACTER_MAXIMUM_LENGTH": "10",
+            "IS_NULLABLE": "YES",
+            "VALUE": "",
+            "CELL_FIX": "",
+            "CELL_LOGIC": "",
+            "SCREEN": "",
+            "REPORT": "",
+            "CSV": ""
+        },
+        {
+            "COLUMN_NAME": "YOUKEN_GAIYOU",
+            "DATA_TYPE": "nvarchar",
+            "CHARACTER_MAXIMUM_LENGTH": "-1",
+            "IS_NULLABLE": "YES",
+            "VALUE": "",
+            "CELL_FIX": "",
+            "CELL_LOGIC": "",
+            "SCREEN": "",
+            "REPORT": "",
+            "CSV": ""
+        },
+        {
+            "COLUMN_NAME": "YOUKEN_SYSTEM_ID",
+            "DATA_TYPE": "bigint",
+            "CHARACTER_MAXIMUM_LENGTH": "",
+            "IS_NULLABLE": "YES",
+            "VALUE": "T_KIHON_GAMEN.YOUKEN_SYSTEM_ID",
+            "CELL_FIX": "",
+            "CELL_LOGIC": "",
+            "SCREEN": "",
+            "REPORT": "",
+            "CSV": ""
+        },
+        {
+            "COLUMN_NAME": "YOUKEN_KBN",
+            "DATA_TYPE": "smallint",
+            "CHARACTER_MAXIMUM_LENGTH": "",
+            "IS_NULLABLE": "YES",
+            "VALUE": "",
+            "CELL_FIX": "",
+            "CELL_LOGIC": "",
+            "SCREEN": "",
+            "REPORT": "",
+            "CSV": ""
+        },
+        {
+            "COLUMN_NAME": "YOUKEN_SEQ",
+            "DATA_TYPE": "int",
+            "CHARACTER_MAXIMUM_LENGTH": "",
+            "IS_NULLABLE": "YES",
+            "VALUE": "AUTO_ID",
+            "CELL_FIX": "",
+            "CELL_LOGIC": "",
+            "SCREEN": "",
+            "REPORT": "",
+            "CSV": ""
+        },
+        {
+            "COLUMN_NAME": "TIME_STAMP",
+            "DATA_TYPE": "timestamp",
+            "CHARACTER_MAXIMUM_LENGTH": "",
+            "IS_NULLABLE": "NO",
+            "VALUE": "CURRENT_TIMESTAMP",
+            "CELL_FIX": "",
+            "CELL_LOGIC": "",
+            "SCREEN": "",
+            "REPORT": "",
+            "CSV": ""
+        }
+    ],
     "T_KIHON_PJ_HYOUJI": [
         {
             "COLUMN_NAME": "SYSTEM_ID",
