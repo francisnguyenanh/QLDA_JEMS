@@ -3715,6 +3715,7 @@ def generate_script():
                     system_id=system_id,
                     progress_callback=update_progress
                 )
+            
                 
                 # Create ZIP file
                 zip_path = os.path.join('gen_script', zip_filename)

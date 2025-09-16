@@ -1,3 +1,4 @@
+import os
 import re
 import pandas as pd
 import json
@@ -1182,9 +1183,8 @@ def all_tables_in_sequence(excel_file, table_info_file, output_file='insert_all.
         sql = f"INSERT INTO T_KIHON_PJ_GAMEN ({columns_str}) VALUES ({values_str});"
         all_insert_statements.append(sql)
         
-        sql = insert_youken_from_S7(ws, seq_value)
-        print(f"Generated YOUKEN inserts for sheet {sheet_idx}: {sheet_name}, sql: {sql}")
-        all_insert_statements.append(sql)
+        youken_inserts = insert_youken_from_S7(ws, seq_value)
+        all_insert_statements.extend(youken_inserts)
         #print(f"Processing sheet {sheet_idx}: {sheet_name} with SEQ {seq_value}")
 
         # Xử lý theo từng loại sheet_check_value
@@ -1671,8 +1671,8 @@ def all_tables_in_sequence_with_progress(excel_file, table_info_file, output_fil
         sql = f"INSERT INTO T_KIHON_PJ_GAMEN ({columns_str}) VALUES ({values_str});"
         all_insert_statements.append(sql)
         
-        sql = insert_youken_from_S7(ws, seq_value)
-        all_insert_statements.append(sql)
+        youken_inserts = insert_youken_from_S7(ws, seq_value)
+        all_insert_statements.extend(youken_inserts)
 
         #print(f"Processing sheet {sheet_idx}: {sheet_name} with SEQ {seq_value}")
 
@@ -1711,12 +1711,18 @@ def all_tables_in_sequence_with_progress(excel_file, table_info_file, output_fil
         seq_per_sheet += 1
     
     # Write all statements to file in batches for better I/O performance
+    
+    
     batch_size = 1000
     with open(output_file, 'w', encoding='utf-8') as f:
         for i in range(0, len(all_insert_statements), batch_size):
             batch = all_insert_statements[i:i + batch_size]
             f.write('\n'.join(batch) + '\n')
     
+    print(f"Check file exists: {os.path.exists(output_file)}")
+    print(f"File size: {os.path.getsize(output_file) if os.path.exists(output_file) else 0}")
+
+
     # Clear caches after processing to free memory
     clear_performance_caches()
     
