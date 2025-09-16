@@ -727,6 +727,31 @@ let selectedPriority = 'medium';
 let selectedRepeat = 'none';
 let isMonthView = false;
 
+async function ensureTodosForMonth(monthStart) {
+    // Tính ngày đầu và cuối tháng
+    const monthEnd = new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 0);
+    // Tìm tất cả các thứ 2 đầu tuần trong tháng (hoặc ngày đầu tuần theo logic của bạn)
+    let weeks = [];
+    let d = new Date(monthStart);
+    d.setDate(1);
+    // Đưa về thứ 2 đầu tiên của tháng
+    let day = d.getDay();
+    let mondayOffset = day === 0 ? -6 : 1 - day;
+    d.setDate(d.getDate() + mondayOffset);
+    while (d <= monthEnd) {
+        weeks.push(d.toISOString().split('T')[0]);
+        d.setDate(d.getDate() + 7);
+    }
+    // Gọi API auto_create_todos_for_week cho từng tuần
+    for (let weekStart of weeks) {
+        await fetch('/api/auto_create_todos_for_week', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({week_start: weekStart})
+        });
+    }
+}
+
 function updateSaveButtonState() {
     const title = document.getElementById('todoTitle').value.trim();
     const saveBtn = document.getElementById('saveTodo');
@@ -1483,7 +1508,7 @@ document.addEventListener('DOMContentLoaded', function() {
         loadTodos();
     };
     
-    document.getElementById('monthViewBtn').onclick = function() {
+    document.getElementById('monthViewBtn').onclick = async function() {
         isMonthView = true;
         document.getElementById('monthViewBtn').classList.add('btn-primary');
         document.getElementById('monthViewBtn').classList.remove('btn-outline-primary');
@@ -1496,23 +1521,27 @@ document.addEventListener('DOMContentLoaded', function() {
         
         currentMonthStart = new Date();
         currentMonthStart.setDate(1); // Set to first day of current month
+        await ensureTodosForMonth(currentMonthStart);
         loadMonthTodos();
     };
     
     // Month navigation
-    document.getElementById('prevMonth').onclick = function() {
+    document.getElementById('prevMonth').onclick = async function() {
         currentMonthStart.setMonth(currentMonthStart.getMonth() - 1);
+        await ensureTodosForMonth(currentMonthStart);
         loadMonthTodos();
     };
     
-    document.getElementById('nextMonth').onclick = function() {
+    document.getElementById('nextMonth').onclick = async function() {
         currentMonthStart.setMonth(currentMonthStart.getMonth() + 1);
+        await ensureTodosForMonth(currentMonthStart);
         loadMonthTodos();
     };
     
-    document.getElementById('thisMonth').onclick = function() {
+    document.getElementById('thisMonth').onclick = async function() {
         currentMonthStart = new Date();
         currentMonthStart.setDate(1);
+        await ensureTodosForMonth(currentMonthStart);
         loadMonthTodos();
     };
 });
