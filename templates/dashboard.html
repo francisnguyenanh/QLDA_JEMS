@@ -5406,6 +5406,30 @@ body {
             </div>
         </div>
     </div>
+
+    <!-- Duplicate Projects Modal -->
+    <div class="modal fade" id="duplicateProjectsModal" tabindex="-1" aria-labelledby="duplicateProjectsModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="duplicateProjectsModalLabel">重複したプロジェクトの処理</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle"></i> 
+                        以下のプロジェクトはデータベースに既に存在します。各プロジェクトの処理方法を選択してください。
+                    </div>
+                    <div id="duplicateProjectsList"></div>
+                </div>
+                <div class="modal-footer">
+                    <span id="duplicateProcessStatus" class="me-auto text-muted"></span>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">閉じる</button>
+                    <button type="button" class="btn btn-primary" onclick="finishDuplicateHandling()">完了してリロード</button>
+                </div>
+            </div>
+        </div>
+    </div>
  {% endblock %}
 {% block scripts %}
 <script src="https://cdn.jsdelivr.net/npm/encoding-japanese@2.0.0/encoding.min.js"></script>
@@ -6231,19 +6255,183 @@ body {
                 method: 'POST',
                 body: formData
             })
-            .then(response => {
-                if (response.ok) {
-                    window.location.reload();
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    if (data.has_duplicates) {
+                        // Show duplicate handling modal
+                        showDuplicateModal(data);
+                    } else {
+                        // No duplicates - just reload
+                        alert(data.message);
+                        window.location.reload();
+                    }
                 } else {
-                    return response.json().then(data => {
-                        throw new Error(data.error || 'アップロードに失敗しました');
-                    });
+                    alert('エラー: ' + (data.error || 'アップロードに失敗しました'));
                 }
             })
             .catch(error => {
                 alert('エラー: ' + error.message);
             });
         });
+
+        function showDuplicateModal(data) {
+            const duplicatesList = document.getElementById('duplicateProjectsList');
+            duplicatesList.innerHTML = '';
+            
+            // Build summary message
+            let summaryHtml = '<strong>インポート結果:</strong><br>';
+            if (data.imported_count > 0) {
+                summaryHtml += `新規追加: ${data.imported_count}件<br>`;
+            }
+            summaryHtml += `重複検出: ${data.duplicate_count}件`;
+            
+            const summary = document.createElement('div');
+            summary.className = 'alert alert-info mb-3';
+            summary.innerHTML = summaryHtml;
+            duplicatesList.appendChild(summary);
+            
+            // Store duplicates data globally for access in handlers
+            window.duplicatesData = data.duplicates;
+            
+            data.duplicates.forEach((dup, index) => {
+                const card = document.createElement('div');
+                card.className = 'card mb-3';
+                card.id = `duplicate-${index}`;
+                
+                let differencesHtml = '';
+                if (Object.keys(dup.differences).length > 0) {
+                    differencesHtml = '<table class="table table-sm table-bordered mt-2"><thead><tr><th>項目</th><th>DB値</th><th>Excel値</th></tr></thead><tbody>';
+                    for (const [field, values] of Object.entries(dup.differences)) {
+                        differencesHtml += `
+                            <tr>
+                                <td><strong>${field}</strong></td>
+                                <td>${values.old || '(空)'}</td>
+                                <td class="bg-warning bg-opacity-25">${values.new || '(空)'}</td>
+                            </tr>
+                        `;
+                    }
+                    differencesHtml += '</tbody></table>';
+                } else {
+                    differencesHtml = '<p class="text-muted">差異なし（完全一致）</p>';
+                }
+                
+                card.innerHTML = `
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>${dup.project_name || '(名前なし)'}</strong>
+                            <span class="badge bg-secondary ms-2">PH: ${dup.ph || 'N/A'}</span>
+                            <span class="badge bg-secondary">PJNo: ${dup.pjno || 'N/A'}</span>
+                        </div>
+                        <span class="badge bg-info" id="status-${index}">未処理</span>
+                    </div>
+                    <div class="card-body">
+                        ${differencesHtml}
+                        <div class="btn-group mt-2" role="group">
+                            <button type="button" class="btn btn-sm btn-secondary" onclick="handleDuplicate(${index}, 'skip')">
+                                <i class="bi bi-skip-forward"></i> スキップ
+                            </button>
+                            <button type="button" class="btn btn-sm btn-warning" onclick="handleDuplicate(${index}, 'update')">
+                                <i class="bi bi-arrow-repeat"></i> 更新 (上書き)
+                            </button>
+                            <button type="button" class="btn btn-sm btn-primary" onclick="handleDuplicate(${index}, 'import_new')">
+                                <i class="bi bi-plus-circle"></i> 新規追加
+                            </button>
+                        </div>
+                    </div>
+                `;
+                
+                duplicatesList.appendChild(card);
+            });
+            
+            // Show modal
+            const modal = new bootstrap.Modal(document.getElementById('duplicateProjectsModal'));
+            modal.show();
+            
+            updateDuplicateStatus();
+        }
+        
+        let duplicateHandlingResults = [];
+        
+        function handleDuplicate(index, action) {
+            // Get duplicate data from global storage
+            if (!window.duplicatesData || !window.duplicatesData[index]) {
+                alert('エラー: データが見つかりません');
+                return;
+            }
+            
+            const dup = window.duplicatesData[index];
+            const projectData = dup.new_data;
+            const existingId = dup.existing_id;
+            const differences = dup.differences;
+            
+            const statusBadge = document.getElementById(`status-${index}`);
+            const card = document.getElementById(`duplicate-${index}`);
+            const buttons = card.querySelectorAll('.btn-group button');
+            
+            // Disable all buttons for this card
+            buttons.forEach(btn => btn.disabled = true);
+            statusBadge.textContent = '処理中...';
+            statusBadge.className = 'badge bg-warning';
+            
+            fetch('/handle_duplicate_project', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: action,
+                    project_data: projectData,
+                    existing_id: existingId,
+                    differences: differences
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    duplicateHandlingResults.push({ index, action: data.action });
+                    
+                    if (action === 'skip') {
+                        statusBadge.textContent = 'スキップ済み';
+                        statusBadge.className = 'badge bg-secondary';
+                    } else if (action === 'update') {
+                        statusBadge.textContent = '更新済み';
+                        statusBadge.className = 'badge bg-success';
+                    } else if (action === 'import_new') {
+                        statusBadge.textContent = '新規追加済み';
+                        statusBadge.className = 'badge bg-primary';
+                    }
+                    
+                    updateDuplicateStatus();
+                } else {
+                    statusBadge.textContent = 'エラー';
+                    statusBadge.className = 'badge bg-danger';
+                    alert('エラー: ' + (data.error || '処理に失敗しました'));
+                    // Re-enable buttons on error
+                    buttons.forEach(btn => btn.disabled = false);
+                }
+            })
+            .catch(error => {
+                statusBadge.textContent = 'エラー';
+                statusBadge.className = 'badge bg-danger';
+                alert('エラー: ' + error.message);
+                // Re-enable buttons on error
+                buttons.forEach(btn => btn.disabled = false);
+            });
+        }
+        
+        function updateDuplicateStatus() {
+            const totalCards = document.querySelectorAll('[id^="duplicate-"]').length;
+            const processedCount = duplicateHandlingResults.length;
+            const statusText = document.getElementById('duplicateProcessStatus');
+            statusText.textContent = `処理済み: ${processedCount} / ${totalCards}`;
+        }
+        
+        function finishDuplicateHandling() {
+            const modal = bootstrap.Modal.getInstance(document.getElementById('duplicateProjectsModal'));
+            modal.hide();
+            duplicateHandlingResults = [];
+            window.location.reload();
+        }
+
 
         document.getElementById('uploadMailTemplateForm').addEventListener('submit', function(e) {
             e.preventDefault();

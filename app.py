@@ -239,9 +239,10 @@ def read_users():
     return users
 
 def project_exists(cursor, project):
-    return False
-    """Check if a project already exists based on 案件名, PH, PJNo."""
-    keys = ['案件名', 'PH', 'PJNo.']
+    """Check if a project already exists based on 案件名, PH, PJNo., 案件番号.
+    Returns the existing project data if found, None otherwise.
+    Excludes projects marked as 不要 (treated as deleted/ignored)."""
+    keys = ['案件名', 'PH', 'PJNo.', '案件番号']
     conditions = []
     values = []
 
@@ -253,18 +254,67 @@ def project_exists(cursor, project):
         values.append(str(value))
 
     if not conditions:
-        logging.debug("All keys (案件名, PH, PJNo.) are empty, treating as duplicate")
-        return True
+        logging.debug("All keys (案件名, PH, PJNo., 案件番号) are empty, treating as no duplicate")
+        return None
+
+    # Exclude projects marked as 不要 = ON (1 / "1" / "true")
+    exclude_unnecessary = " AND (不要 IS NULL OR 不要 = 0 OR 不要 = '0' OR 不要 = 'false' OR 不要 = 'False')"
 
     query = f'''
-        SELECT COUNT(*) FROM projects
-        WHERE {' AND '.join(conditions)}
+        SELECT * FROM projects
+        WHERE {' AND '.join(conditions)} {exclude_unnecessary}
     '''
+    
     logging.debug(f"Executing query: {query} with values: {values}")
     cursor.execute(query, values)
-    count = cursor.fetchone()[0]
-    logging.debug(f"Found {count} matching projects")
-    return count > 0
+    row = cursor.fetchone()
+    
+    if row:
+        columns = [description[0] for description in cursor.description]
+        existing_project = dict(zip(columns, row))
+        logging.debug(f"Found existing project with id: {existing_project.get('id')}")
+        return existing_project
+    
+    logging.debug("No matching project found")
+    return None
+
+def compare_projects(existing_project, new_project):
+    """Compare two projects and return differences.
+    Returns dict with field names as keys and {'old': value, 'new': value} as values."""
+    differences = {}
+    
+    # List of fields to compare (exclude id and internal fields)
+    fields_to_compare = [col for col in DISPLAY_COLUMNS if col in new_project]
+    
+    for field in fields_to_compare:
+        old_value = existing_project.get(field, '')
+        new_value = new_project.get(field, '')
+        
+        # Normalize values for comparison - handle NaN properly
+        if old_value is None or (isinstance(old_value, float) and pd.isna(old_value)):
+            old_value = ''
+        if new_value is None or (isinstance(new_value, float) and pd.isna(new_value)):
+            new_value = ''
+            
+        # Convert to string for comparison, handle 'nan' string
+        old_str = str(old_value).strip()
+        new_str = str(new_value).strip()
+        
+        # Clean up 'nan' strings that come from float conversion
+        if old_str.lower() == 'nan':
+            old_str = ''
+        if new_str.lower() == 'nan':
+            new_str = ''
+        
+        # Check if values are different
+        if old_str != new_str:
+            differences[field] = {
+                'old': old_str,
+                'new': new_str
+            }
+    
+    return differences
+
 
 def parse_date_from_db(date_str):
     """Parse date string from database (YYYY-MM-DD or YYYY/MM/DD) to datetime object."""
@@ -561,7 +611,10 @@ def import_excel_to_sqlite(file_path):
         for _, row in df.iterrows():
             try:
                 project = row.to_dict()
-                if not project_exists(cursor, project):
+                existing_project = project_exists(cursor, project)
+                
+                if not existing_project:
+                    # New project - insert directly
                     cursor.execute('''
                                 INSERT INTO projects (
                                     SE, "SE(sub)", 案件名, PH, "開発工数（h）", "設計工数（h）", 要件引継, 設計開始,
@@ -602,19 +655,48 @@ def import_excel_to_sqlite(file_path):
                     ))
                     imported_count += 1
                 else:
-                    duplicated_projects.append(project.get('案件名', '') or f"PJNo:{project.get('PJNo.', '')}")
+                    # Duplicate found - check if there are actual differences
+                    differences = compare_projects(existing_project, project)
+                    
+                    # Only add to duplicated_projects if there are differences
+                    if differences:
+                        # Clean project data - convert NaN to None/empty string for JSON serialization
+                        clean_project = {}
+                        for key, value in project.items():
+                            if pd.isna(value):
+                                # Use None for numeric fields, empty string for text fields
+                                if key in ['開発工数（h）', '設計工数（h）', 'ページ数']:
+                                    clean_project[key] = None
+                                elif key in ['不要', '注文設計', '注文テスト', '注文FB', '注文BrSE', '並行テスト', 'user_edited_status']:
+                                    clean_project[key] = 0
+                                else:
+                                    clean_project[key] = ''
+                            else:
+                                clean_project[key] = value
+                        
+                        duplicated_projects.append({
+                            'project_name': clean_project.get('案件名', ''),
+                            'ph': clean_project.get('PH', ''),
+                            'pjno': clean_project.get('PJNo.', ''),
+                            'existing_id': existing_project['id'],
+                            'differences': differences,
+                            'new_data': clean_project
+                        })
+                    else:
+                        # Duplicate but no differences - skip silently (already in DB)
+                        logging.debug(f"Skipping duplicate project with no differences: {project.get('案件名', '')} (PH: {project.get('PH', '')}, PJNo: {project.get('PJNo.', '')})")
             except Exception as e:
-                print("Lỗi ở dòng này:", e)
+                logging.error(f"Lỗi ở dòng import project: {e}")
                 
 
-        logging.info(f'duplicated_projects: {duplicated_projects}')
+        logging.info(f'Found {len(duplicated_projects)} duplicated projects')
         conn.commit()
         conn.close()
         logging.info(f"Imported {imported_count} new projects from {file_path}")
-        return True, duplicated_projects, total_projects
+        return True, duplicated_projects, total_projects, imported_count
     except Exception as e:
         #logging.error(f"Failed to import Excel file {file_path}: {e}")
-        return False, [], 0
+        return False, [], 0, 0
 
 def read_projects():
     """Read all projects from SQLite database with total hours worked."""
@@ -950,17 +1032,14 @@ def upload():
         return jsonify({'error': 'Unauthorized'}), 401
 
     if 'file' not in request.files:
-        flash('ファイルが選択されていません', 'danger')
-        return redirect(url_for('dashboard'))
+        return jsonify({'error': 'ファイルが選択されていません'}), 400
 
     file = request.files['file']
     if file.filename == '':
-        flash('ファイルが選択されていません', 'danger')
-        return redirect(url_for('dashboard'))
+        return jsonify({'error': 'ファイルが選択されていません'}), 400
 
     if not (file.filename.endswith('.xlsx') or file.filename.endswith('.xls')):
-        flash('許可されていないファイル形式です', 'danger')
-        return redirect(url_for('dashboard'))
+        return jsonify({'error': '許可されていないファイル形式です'}), 400
 
     try:
         if not os.path.exists(PROJECT_DIR):
@@ -977,22 +1056,153 @@ def upload():
                 if os.path.isfile(existing_file_path):
                     os.remove(existing_file_path)
 
-        result, duplicated_projects, total_projects = import_excel_to_sqlite(file_path)
+        result, duplicated_projects, total_projects, imported_count = import_excel_to_sqlite(file_path)
         os.remove(file_path)
+        
         if result:
             if duplicated_projects:
-                flash(f'アップロード成功: {total_projects - len(duplicated_projects)}件追加, {len(duplicated_projects)}件は重複: {", ".join(duplicated_projects)}', 'warning')
+                # Have duplicates with differences - return them for user to decide
+                return jsonify({
+                    'success': True,
+                    'has_duplicates': True,
+                    'imported_count': imported_count,
+                    'duplicate_count': len(duplicated_projects),
+                    'duplicates': duplicated_projects
+                })
             else:
-                flash('ファイルが正常にアップロードされました', 'success')
+                # No duplicates - all imported successfully
+                return jsonify({
+                    'success': True,
+                    'has_duplicates': False,
+                    'imported_count': imported_count,
+                    'message': 'ファイルが正常にアップロードされました'
+                })
         else:
-            flash('エラー: ファイルのインポートに失敗しました', 'danger')
+            return jsonify({'error': 'ファイルのインポートに失敗しました'}), 500
 
     except Exception as e:
         if os.path.exists(file_path):
             os.remove(file_path)
-        flash(f'エラー: ファイルのアップロードに失敗しました: {str(e)}', 'danger')
+        return jsonify({'error': f'ファイルのアップロードに失敗しました: {str(e)}'}), 500
 
-    return redirect(url_for('dashboard'))
+@app.route('/handle_duplicate_project', methods=['POST'])
+def handle_duplicate_project():
+    """Handle actions for duplicate projects: skip, update, or import_new."""
+    if 'username' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    try:
+        data = request.get_json()
+        action = data.get('action')  # 'skip', 'update', or 'import_new'
+        project_data = data.get('project_data')
+        existing_id = data.get('existing_id')
+        differences = data.get('differences', {})
+
+        if not action or not project_data:
+            return jsonify({'error': 'Missing action or project_data'}), 400
+
+        conn = sqlite3.connect(DB_FILE)
+        cursor = conn.cursor()
+
+        if action == 'skip':
+            # Do nothing, just return success
+            conn.close()
+            return jsonify({'success': True, 'action': 'skipped'})
+
+        elif action == 'update':
+            # Update existing project with only changed fields
+            if not existing_id:
+                return jsonify({'error': 'Missing existing_id for update'}), 400
+
+            # Build UPDATE statement only for fields that have differences
+            set_clause_parts = []
+            values = []
+            
+            if differences:
+                # Only update fields that are different
+                for field in differences.keys():
+                    if field in project_data:
+                        set_clause_parts.append(f'"{field}" = ?')
+                        values.append(project_data[field])
+                
+                if not set_clause_parts:
+                    # No actual changes to make
+                    conn.close()
+                    return jsonify({'success': True, 'action': 'no_changes', 'project_id': existing_id})
+            else:
+                # Fallback: update all fields if differences not provided
+                for key, value in project_data.items():
+                    if key not in ['id']:  # Skip id field
+                        set_clause_parts.append(f'"{key}" = ?')
+                        values.append(value)
+            
+            set_clause = ', '.join(set_clause_parts)
+            values.append(existing_id)
+
+            sql = f'''
+                UPDATE projects
+                SET {set_clause}
+                WHERE id = ?
+            '''
+            cursor.execute(sql, values)
+            conn.commit()
+            conn.close()
+            
+            return jsonify({'success': True, 'action': 'updated', 'project_id': existing_id})
+
+        elif action == 'import_new':
+            # Insert as new project
+            cursor.execute('''
+                INSERT INTO projects (
+                    SE, "SE(sub)", 案件名, PH, "開発工数（h）", "設計工数（h）", 要件引継, 設計開始,
+                    設計完了, 設計書送付, 開発開始, 開発完了, SE納品, BSE, 案件番号, "PJNo.",
+                    備考, テスト開始日, テスト完了日, FB完了予定日, ページ数, タスク, ステータス,
+                    不要, 注文設計, 注文テスト, 注文FB, 注文BrSE, user_edited_status
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (
+                project_data.get('SE', ''),
+                project_data.get('SE(sub)', ''),
+                project_data.get('案件名', ''),
+                project_data.get('PH', ''),
+                project_data.get('開発工数（h）', None),
+                project_data.get('設計工数（h）', None),
+                project_data.get('要件引継', ''),
+                project_data.get('設計開始', ''),
+                project_data.get('設計完了', ''),
+                project_data.get('設計書送付', ''),
+                project_data.get('開発開始', ''),
+                project_data.get('開発完了', ''),
+                project_data.get('SE納品', ''),
+                project_data.get('BSE', ''),
+                project_data.get('案件番号', ''),
+                project_data.get('PJNo.', ''),
+                project_data.get('備考', ''),
+                project_data.get('テスト開始日', ''),
+                project_data.get('テスト完了日', ''),
+                project_data.get('FB完了予定日', ''),
+                project_data.get('ページ数', None),
+                project_data.get('タスク', ''),
+                project_data.get('ステータス', '要件引継待ち'),
+                project_data.get('不要', 0),
+                project_data.get('注文設計', 0),
+                project_data.get('注文テスト', 0),
+                project_data.get('注文FB', 0),
+                project_data.get('注文BrSE', 0),
+                project_data.get('user_edited_status', 0)
+            ))
+            new_id = cursor.lastrowid
+            conn.commit()
+            conn.close()
+            
+            return jsonify({'success': True, 'action': 'imported_new', 'project_id': new_id})
+
+        else:
+            conn.close()
+            return jsonify({'error': 'Invalid action'}), 400
+
+    except Exception as e:
+        logging.error(f"Error handling duplicate project: {str(e)}")
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/upload_mail_template', methods=['POST'])
 def upload_mail_template():
