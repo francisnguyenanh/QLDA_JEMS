@@ -50,7 +50,7 @@ DISPLAY_COLUMNS = [
     'ステータス', '案件名', 'PH','要件引継', '設計開始',
     '設計完了', '設計書送付', '開発開始', '開発完了', 'テスト開始日', 'テスト完了日',
     'FB完了予定日', 'SE納品', 'タスク', 'SE', 'SE(sub)', 'BSE', '案件番号', 'PJNo.', 
-    '開発工数（h）', '設計工数（h）', 'ページ数', '注文設計', '注文テスト', '注文FB', '注文BrSE', '並行テスト', '備考'
+    '開発工数（h）', '設計工数（h）', 'ページ数', '注文設計', '注文テスト', '注文FB', '注文BrSE', '並行テスト', '備考', '履歴'
 ]
 DATE_COLUMNS_DB = [
     '要件引継', '設計開始', '設計完了', '設計書送付', '開発開始', '開発完了',
@@ -219,6 +219,18 @@ def init_db():
             FOREIGN KEY (memo_id) REFERENCES memo(id)
         )
     ''')
+    
+    # Add project_history table for tracking all changes to projects
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS project_history (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            project_id INTEGER NOT NULL,
+            action_type TEXT NOT NULL,
+            action_details TEXT,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (project_id) REFERENCES projects(id)
+        )
+    ''')
 
 
     conn.commit()
@@ -237,6 +249,43 @@ def read_users():
             f.write('admin:admin123\n')
         users['admin'] = 'admin123'
     return users
+
+def add_project_history(project_id, action_type, action_details=''):
+    """Add or update history entry for a project (keeps only the latest entry per project).
+    
+    Args:
+        project_id: ID of the project
+        action_type: Type of action (e.g., 'created', 'updated', 'mail_sent', 'copied')
+        action_details: Details about the action (e.g., field names, template name)
+    """
+    try:
+        conn = sqlite3.connect(DB_FILE)
+        cursor = conn.cursor()
+        
+        # Check if history already exists for this project
+        cursor.execute('SELECT id FROM project_history WHERE project_id = ?', (project_id,))
+        existing = cursor.fetchone()
+        
+        if existing:
+            # Update existing history entry
+            cursor.execute('''
+                UPDATE project_history
+                SET action_type = ?, action_details = ?, created_at = datetime('now', 'localtime')
+                WHERE project_id = ?
+            ''', (action_type, action_details, project_id))
+            logging.info(f"Updated history for project {project_id}: {action_type} - {action_details}")
+        else:
+            # Insert new history entry
+            cursor.execute('''
+                INSERT INTO project_history (project_id, action_type, action_details, created_at)
+                VALUES (?, ?, ?, datetime('now', 'localtime'))
+            ''', (project_id, action_type, action_details))
+            logging.info(f"Added history for project {project_id}: {action_type} - {action_details}")
+        
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        logging.error(f"Error adding/updating project history: {e}")
 
 def project_exists(cursor, project):
     """Check if a project already exists based on 案件名, PH, PJNo., 案件番号.
@@ -691,6 +740,12 @@ def import_excel_to_sqlite(file_path):
                         project.get('注文BrSE', 0),
                         project.get('user_edited_status', 0)
                     ))
+                    new_project_id = cursor.lastrowid
+                    # Add history entry for new project
+                    cursor.execute('''
+                        INSERT INTO project_history (project_id, action_type, action_details, created_at)
+                        VALUES (?, 'created', 'Excelから新規作成', datetime('now', 'localtime'))
+                    ''', (new_project_id,))
                     imported_count += 1
                 else:
                     # Duplicate found - check if there are actual differences
@@ -738,7 +793,7 @@ def import_excel_to_sqlite(file_path):
         return False, [], 0, 0
 
 def read_projects():
-    """Read all projects from SQLite database with total hours worked."""
+    """Read all projects from SQLite database with total hours worked and latest history."""
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
     cursor.execute('SELECT * FROM projects')
@@ -748,6 +803,8 @@ def read_projects():
     projects = []
     for row in rows:
         project = dict(zip(columns, row))
+        
+        # Get total hours by task type
         cursor.execute('''
             SELECT task_type, SUM(hours) as total_hours
             FROM daily_hours
@@ -759,6 +816,35 @@ def read_projects():
         project['テスト実績'] = hours.get('テスト', 0)
         project['FB実績'] = hours.get('FB', 0)
         project['BrSE実績'] = hours.get('BrSE', 0)
+        
+        # Get latest history entry for this project
+        cursor.execute('''
+            SELECT action_type, action_details, created_at
+            FROM project_history
+            WHERE project_id = ?
+            ORDER BY created_at DESC
+            LIMIT 1
+        ''', (project['id'],))
+        history_row = cursor.fetchone()
+        
+        if history_row:
+            action_type, action_details, created_at = history_row
+            # Format history display based on action type
+            if action_type == 'created':
+                project['履歴'] = '新規作成'
+            elif action_type == 'updated':
+                project['履歴'] = f'{action_details}を更新' if action_details else '更新'
+            elif action_type == 'excel_updated':
+                project['履歴'] = f'{action_details}を更新 (Excel)'
+            elif action_type == 'mail_sent':
+                project['履歴'] = f'メール送信: {action_details}'
+            elif action_type == 'copied':
+                project['履歴'] = 'プロジェクトコピー'
+            else:
+                project['履歴'] = action_details or action_type
+        else:
+            project['履歴'] = ''
+        
         projects.append(project)
 
     conn.close()
@@ -874,6 +960,67 @@ def update_project(project_id, updates):
     if updates.get('user_edited_status', 0) == 0:
         updates['ステータス'] = calculate_status(updates, current_date)
 
+    # Get old values from database to compare
+    cursor.execute('SELECT * FROM projects WHERE id = ?', (project_id,))
+    row = cursor.fetchone()
+    if row:
+        columns = [description[0] for description in cursor.description]
+        old_project = dict(zip(columns, row))
+    else:
+        old_project = {}
+    
+    # Get list of actually changed fields (excluding internal fields)
+    excluded_fields = ['user_edited_status', 'ステータス', 'id']
+    numeric_fields = ['開発工数（h）', '設計工数（h）', 'ページ数']
+    checkbox_fields = ['不要', '注文設計', '注文テスト', '注文FB', '注文BrSE', '並行テスト']
+    changed_fields = []
+    
+    for key, new_value in updates.items():
+        if key in excluded_fields:
+            continue
+        
+        old_value = old_project.get(key, '')
+        
+        # Special handling for numeric fields
+        if key in numeric_fields:
+            # Convert both to float for comparison, treat None/empty as 0
+            try:
+                old_num = float(old_value) if old_value not in [None, '', 'None'] else 0
+            except (ValueError, TypeError):
+                old_num = 0
+            
+            try:
+                new_num = float(new_value) if new_value not in [None, '', 'None'] else 0
+            except (ValueError, TypeError):
+                new_num = 0
+            
+            if old_num != new_num:
+                changed_fields.append(key)
+        
+        # Special handling for checkbox fields
+        elif key in checkbox_fields:
+            old_bool = int(old_value) if old_value not in [None, '', 'None'] else 0
+            new_bool = int(new_value) if new_value not in [None, '', 'None'] else 0
+            
+            if old_bool != new_bool:
+                changed_fields.append(key)
+        
+        # Regular string comparison for other fields
+        else:
+            # Normalize values for comparison
+            if old_value is None or (isinstance(old_value, float) and pd.isna(old_value)):
+                old_value = ''
+            if new_value is None or (isinstance(new_value, float) and pd.isna(new_value)):
+                new_value = ''
+            
+            # Convert to string for comparison
+            old_str = str(old_value).strip() if old_value != '' else ''
+            new_str = str(new_value).strip() if new_value != '' else ''
+            
+            # Only add to changed_fields if values are actually different
+            if old_str != new_str:
+                changed_fields.append(key)
+    
     set_clause_parts = []
     values = []
     for key, value in updates.items():
@@ -890,6 +1037,32 @@ def update_project(project_id, updates):
     #logging.debug(f"Executing SQL: {sql} with values: {values}")
     print(sql)
     cursor.execute(sql, values)
+    
+    # Add or update history entry for updated fields
+    if changed_fields:
+        # Limit to first 5 fields for display
+        display_fields = changed_fields[:5]
+        if len(changed_fields) > 5:
+            action_details = ', '.join(display_fields) + f' 他{len(changed_fields) - 5}項目'
+        else:
+            action_details = ', '.join(display_fields)
+        
+        # Check if history exists and update or insert
+        cursor.execute('SELECT id FROM project_history WHERE project_id = ?', (project_id,))
+        existing = cursor.fetchone()
+        
+        if existing:
+            cursor.execute('''
+                UPDATE project_history
+                SET action_type = ?, action_details = ?, created_at = datetime('now', 'localtime')
+                WHERE project_id = ?
+            ''', ('updated', action_details, project_id))
+        else:
+            cursor.execute('''
+                INSERT INTO project_history (project_id, action_type, action_details, created_at)
+                VALUES (?, 'updated', ?, datetime('now', 'localtime'))
+            ''', (project_id, action_details))
+    
     conn.commit()
     conn.close()
 
@@ -1184,6 +1357,32 @@ def handle_duplicate_project():
                 WHERE id = ?
             '''
             cursor.execute(sql, values)
+            
+            # Add or update history entry for Excel update
+            if differences:
+                changed_fields = list(differences.keys())
+                display_fields = changed_fields[:5]
+                if len(changed_fields) > 5:
+                    action_details = ', '.join(display_fields) + f' 他{len(changed_fields) - 5}項目'
+                else:
+                    action_details = ', '.join(display_fields)
+                
+                # Check if history exists and update or insert
+                cursor.execute('SELECT id FROM project_history WHERE project_id = ?', (existing_id,))
+                existing_history = cursor.fetchone()
+                
+                if existing_history:
+                    cursor.execute('''
+                        UPDATE project_history
+                        SET action_type = ?, action_details = ?, created_at = datetime('now', 'localtime')
+                        WHERE project_id = ?
+                    ''', ('excel_updated', action_details, existing_id))
+                else:
+                    cursor.execute('''
+                        INSERT INTO project_history (project_id, action_type, action_details, created_at)
+                        VALUES (?, 'excel_updated', ?, datetime('now', 'localtime'))
+                    ''', (existing_id, action_details))
+            
             conn.commit()
             conn.close()
             
@@ -1230,6 +1429,13 @@ def handle_duplicate_project():
                 project_data.get('user_edited_status', 0)
             ))
             new_id = cursor.lastrowid
+            
+            # Add history entry for new project from duplicate modal
+            cursor.execute('''
+                INSERT INTO project_history (project_id, action_type, action_details, created_at)
+                VALUES (?, 'created', 'Excelから新規作成 (重複対応)', datetime('now', 'localtime'))
+            ''', (new_id,))
+            
             conn.commit()
             conn.close()
             
@@ -2291,6 +2497,27 @@ def save_copied_template():
             INSERT INTO copied_templates (project_id, filename, copied_at)
             VALUES (?, ?, ?)
         ''', (project_id, filename, datetime.now().strftime('%Y-%m-%d %H:%M:%S')))
+        
+        # Add or update history entry for mail template usage
+        # Remove .txt extension for display
+        template_name = filename.replace('.txt', '')
+        
+        # Check if history exists and update or insert
+        cursor.execute('SELECT id FROM project_history WHERE project_id = ?', (project_id,))
+        existing = cursor.fetchone()
+        
+        if existing:
+            cursor.execute('''
+                UPDATE project_history
+                SET action_type = ?, action_details = ?, created_at = datetime('now', 'localtime')
+                WHERE project_id = ?
+            ''', ('mail_sent', template_name, project_id))
+        else:
+            cursor.execute('''
+                INSERT INTO project_history (project_id, action_type, action_details, created_at)
+                VALUES (?, 'mail_sent', ?, datetime('now', 'localtime'))
+            ''', (project_id, template_name))
+        
         conn.commit()
         conn.close()
         #logging.debug(f"Saved copied template: project_id={project_id}, filename={filename}")
@@ -3236,8 +3463,15 @@ def copy_project():
             '''
             cursor.execute(query, values)
         
-        conn.commit()
         new_project_id = cursor.lastrowid
+        
+        # Add history entry for copied project
+        cursor.execute('''
+            INSERT INTO project_history (project_id, action_type, action_details, created_at)
+            VALUES (?, 'copied', 'プロジェクトコピーから作成', datetime('now', 'localtime'))
+        ''', (new_project_id,))
+        
+        conn.commit()
         conn.close()
         
         logging.info(f"Project copied successfully with ID: {new_project_id}, name: {project_name}")
