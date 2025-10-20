@@ -6299,6 +6299,26 @@ body {
                 card.className = 'card mb-3';
                 card.id = `duplicate-${index}`;
                 
+                // Get match level (default to 4 if not provided for backward compatibility)
+                const matchLevel = dup.match_level || 4;
+                
+                // Build match level badge
+                let matchLevelBadge = '';
+                let matchLevelText = '';
+                if (matchLevel === 4) {
+                    matchLevelBadge = '<span class="badge bg-success">完全一致 (4キー)</span>';
+                    matchLevelText = '';
+                } else if (matchLevel === 3) {
+                    matchLevelBadge = '<span class="badge bg-info">高一致 (3キー)</span>';
+                    matchLevelText = '';
+                } else if (matchLevel === 2) {
+                    matchLevelBadge = '<span class="badge bg-warning">部分一致 (2キー)</span>';
+                    matchLevelText = '<div class="alert alert-warning mt-2 mb-0"><small><i class="bi bi-exclamation-triangle"></i> 案件名とPHのみ一致。更新する際は注意してください。</small></div>';
+                } else if (matchLevel === 1) {
+                    matchLevelBadge = '<span class="badge bg-danger">弱一致 (1キー)</span>';
+                    matchLevelText = '<div class="alert alert-danger mt-2 mb-0"><small><i class="bi bi-exclamation-triangle-fill"></i> 1つのキーのみ一致。更新する際は注意してください。</small></div>';
+                }
+                
                 let differencesHtml = '';
                 if (Object.keys(dup.differences).length > 0) {
                     differencesHtml = '<table class="table table-sm table-bordered mt-2"><thead><tr><th>項目</th><th>DB値</th><th>Excel値</th></tr></thead><tbody>';
@@ -6322,11 +6342,13 @@ body {
                             <strong>${dup.project_name || '(名前なし)'}</strong>
                             <span class="badge bg-secondary ms-2">PH: ${dup.ph || 'N/A'}</span>
                             <span class="badge bg-secondary">PJNo: ${dup.pjno || 'N/A'}</span>
+                            ${matchLevelBadge}
                         </div>
                         <span class="badge bg-info" id="status-${index}">未処理</span>
                     </div>
                     <div class="card-body">
                         ${differencesHtml}
+                        ${matchLevelText}
                         <div class="btn-group mt-2" role="group">
                             <button type="button" class="btn btn-sm btn-secondary" onclick="handleDuplicate(${index}, 'skip')">
                                 <i class="bi bi-skip-forward"></i> スキップ

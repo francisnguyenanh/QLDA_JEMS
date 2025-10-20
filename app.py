@@ -240,51 +240,89 @@ def read_users():
 
 def project_exists(cursor, project):
     """Check if a project already exists based on 案件名, PH, PJNo., 案件番号.
-    Returns the existing project data if found, None otherwise.
+    Returns tuple (existing_project, match_level) if found, (None, 0) otherwise.
+    Match levels:
+    - 4: All 4 keys match (案件名, PH, PJNo., 案件番号) - Full match, Update allowed
+    - 3: 3 keys match (案件名, PH, PJNo.) - Good match, Update allowed
+    - 2: 2 keys match (案件名, PH) - Partial match, Update NOT allowed
+    - 1: Only 1 key matches - Weak match, Update NOT allowed
     Excludes projects marked as 不要 (treated as deleted/ignored)."""
-    keys = ['案件名', 'PH', 'PJNo.', '案件番号']
-    conditions = []
-    values = []
-
-    for key in keys:
+    
+    # Define key groups in priority order
+    all_keys = ['案件名', 'PH', 'PJNo.', '案件番号']
+    key_groups = [
+        (['案件名', 'PH', 'PJNo.', '案件番号'], 4),  # All 4 keys
+        (['案件名', 'PH', 'PJNo.'], 3),              # 3 keys
+        (['案件名', 'PH'], 2),                       # 2 keys
+    ]
+    
+    # Exclude projects marked as 不要 = ON (1 / "1" / "true")
+    exclude_unnecessary = " AND (不要 IS NULL OR 不要 = 0 OR 不要 = '0' OR 不要 = 'false' OR 不要 = 'False')"
+    
+    # Try matching with each key group in priority order
+    for keys, match_level in key_groups:
+        conditions = []
+        values = []
+        
+        for key in keys:
+            value = project.get(key, '')
+            if value is None or (isinstance(value, str) and value.strip() == '') or isna(value):
+                continue
+            conditions.append(f'"{key}" = ?')
+            values.append(str(value))
+        
+        # Skip this key group if not all keys are present
+        if len(conditions) != len(keys):
+            continue
+        
+        query = f'''
+            SELECT * FROM projects
+            WHERE {' AND '.join(conditions)} {exclude_unnecessary}
+        '''
+        
+        logging.debug(f"Trying match_level {match_level}: {query} with values: {values}")
+        cursor.execute(query, values)
+        row = cursor.fetchone()
+        
+        if row:
+            columns = [description[0] for description in cursor.description]
+            existing_project = dict(zip(columns, row))
+            logging.debug(f"Found existing project with id: {existing_project.get('id')} at match_level {match_level}")
+            return existing_project, match_level
+    
+    # Check for single key matches (match_level = 1)
+    for key in all_keys:
         value = project.get(key, '')
         if value is None or (isinstance(value, str) and value.strip() == '') or isna(value):
             continue
-        conditions.append(f'"{key}" = ?')
-        values.append(str(value))
-
-    if not conditions:
-        logging.debug("All keys (案件名, PH, PJNo., 案件番号) are empty, treating as no duplicate")
-        return None
-
-    # Exclude projects marked as 不要 = ON (1 / "1" / "true")
-    exclude_unnecessary = " AND (不要 IS NULL OR 不要 = 0 OR 不要 = '0' OR 不要 = 'false' OR 不要 = 'False')"
-
-    query = f'''
-        SELECT * FROM projects
-        WHERE {' AND '.join(conditions)} {exclude_unnecessary}
-    '''
-    
-    logging.debug(f"Executing query: {query} with values: {values}")
-    cursor.execute(query, values)
-    row = cursor.fetchone()
-    
-    if row:
-        columns = [description[0] for description in cursor.description]
-        existing_project = dict(zip(columns, row))
-        logging.debug(f"Found existing project with id: {existing_project.get('id')}")
-        return existing_project
+        
+        query = f'''
+            SELECT * FROM projects
+            WHERE "{key}" = ? {exclude_unnecessary}
+        '''
+        
+        logging.debug(f"Trying single key match for {key}: {query} with value: {value}")
+        cursor.execute(query, [str(value)])
+        row = cursor.fetchone()
+        
+        if row:
+            columns = [description[0] for description in cursor.description]
+            existing_project = dict(zip(columns, row))
+            logging.debug(f"Found existing project with id: {existing_project.get('id')} at match_level 1 (key: {key})")
+            return existing_project, 1
     
     logging.debug("No matching project found")
-    return None
+    return None, 0
 
 def compare_projects(existing_project, new_project):
     """Compare two projects and return differences.
     Returns dict with field names as keys and {'old': value, 'new': value} as values."""
     differences = {}
     
-    # List of fields to compare (exclude id and internal fields)
-    fields_to_compare = [col for col in DISPLAY_COLUMNS if col in new_project]
+    # List of fields to compare (exclude id, internal fields, and calculated fields)
+    # Exclude ステータス because it's calculated automatically, not from Excel
+    excluded_fields = ['id', 'user_edited_status', 'ステータス']
+    fields_to_compare = [col for col in DISPLAY_COLUMNS if col in new_project and col not in excluded_fields]
     
     for field in fields_to_compare:
         old_value = existing_project.get(field, '')
@@ -611,7 +649,7 @@ def import_excel_to_sqlite(file_path):
         for _, row in df.iterrows():
             try:
                 project = row.to_dict()
-                existing_project = project_exists(cursor, project)
+                existing_project, match_level = project_exists(cursor, project)
                 
                 if not existing_project:
                     # New project - insert directly
@@ -680,7 +718,8 @@ def import_excel_to_sqlite(file_path):
                             'pjno': clean_project.get('PJNo.', ''),
                             'existing_id': existing_project['id'],
                             'differences': differences,
-                            'new_data': clean_project
+                            'new_data': clean_project,
+                            'match_level': match_level  # Add match_level to frontend
                         })
                     else:
                         # Duplicate but no differences - skip silently (already in DB)
