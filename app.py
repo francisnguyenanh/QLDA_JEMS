@@ -1,4 +1,4 @@
-import sqlite3
+﻿import sqlite3
 from datetime import datetime, timedelta
 from flask import json, render_template, redirect, url_for, flash
 import pandas as pd
@@ -33,35 +33,31 @@ import zipfile
 import threading
 import time
 
-# Configure logging
+# ── Logging ───────────────────────────────────────────────────────────────────
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
+# ── Import centralized config (B6, E3) ────────────────────────────────────────
+from config import (
+    SECRET_KEY, DEBUG, PORT, DB_FILE, MAIL_DIR, PROJECT_DIR, OLD_DIR,
+    FILEUPLOAD_DIR, DISPLAY_COLUMNS, DATE_COLUMNS_DB, DATE_COLUMNS_DISPLAY,
+    VALID_STATUSES, STATUS_PRIORITY,
+)
+
 app = Flask(__name__)
-app.secret_key = 'your_secret_key'
+app.secret_key = SECRET_KEY
 
-# SQLite database setup
-DB_FILE = 'projects.db'
-MAIL_DIR = 'mail'
-PROJECT_DIR = 'project'
-OLD_DIR = 'old'
-FILEUPLOAD_DIR = 'fileupload'
+# ── Run DB migrations on startup (E4) ────────────────────────────────────────
+from migrations.migration_runner import run_migrations
+run_migrations(DB_FILE)
 
-DISPLAY_COLUMNS = [
-    'ステータス', '案件名', 'PH','要件引継', '設計開始',
-    '設計完了', '設計書送付', '開発開始', '開発完了', 'テスト開始日', 'テスト完了日',
-    'FB完了予定日', 'SE納品', 'タスク', 'SE', 'SE(sub)', 'BSE', '案件番号', 'PJNo.', 
-    '開発工数（h）', '設計工数（h）', 'ページ数', '注文設計', '注文テスト', '注文FB', '注文BrSE', '並行テスト', '備考', '履歴'
-]
-DATE_COLUMNS_DB = [
-    '要件引継', '設計開始', '設計完了', '設計書送付', '開発開始', '開発完了',
-    'テスト開始日', 'テスト完了日', 'FB完了予定日', 'SE納品'
-]
-DATE_COLUMNS_DISPLAY = DATE_COLUMNS_DB.copy()
-VALID_STATUSES = [
-    '要件引継待ち', '設計中', 'SE送付済', '開発中', 'テスト中', 'FB対応中', 'SE納品済'
-]
+# ── Register blueprints (B1) ──────────────────────────────────────────────────
+from blueprints.auth     import auth_bp
+from blueprints.editor   import editor_bp
+from blueprints.projects import projects_bp
 
-MAIL_DIR = 'mail'
+app.register_blueprint(auth_bp)
+app.register_blueprint(editor_bp)
+app.register_blueprint(projects_bp)
 
 generation_progress = {
     'current_sheet': 0,
@@ -1066,27 +1062,8 @@ def update_project(project_id, updates):
     conn.commit()
     conn.close()
 
-@app.route('/')
-def index():
-    """Redirect to dashboard if logged in, else to login."""
-    if 'username' in session:
-        return redirect(url_for('dashboard'))
-    return redirect(url_for('login'))
-
-@app.route('/login', methods=['GET', 'POST'])
-def login():
-    """Handle user login."""
-    if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password']
-        users = read_users()
-        if username in users and users[username] == password:
-            session['username'] = username
-            flash('ログイン成功', 'success')
-            return redirect(url_for('dashboard'))
-        else:
-            flash('ユーザー名またはパスワードが正しくありません', 'danger')
-    return render_template('login.html')
+# Routes moved to blueprints/auth.py and blueprints/projects.py (B1)
+# kept here as stubs so template url_for() still resolves during transition
 
 # Thêm từ điển ánh xạ trạng thái với mức độ ưu tiên
 STATUS_PRIORITY = {
@@ -1099,7 +1076,7 @@ STATUS_PRIORITY = {
     'SE納品済': 7
 }
 
-@app.route('/dashboard', methods=['GET', 'POST'])
+# [moved to blueprint] @app.route('/dashboard', methods=['GET', 'POST'])
 def dashboard():
     """Render dashboard with project data and handle project updates."""
     if 'username' not in session:
@@ -1237,7 +1214,7 @@ def dashboard():
                            valid_statuses=VALID_STATUSES,
                            working_days=working_days)
 
-@app.route('/upload', methods=['POST'])
+# [moved to blueprint] @app.route('/upload', methods=['POST'])
 def upload():
     """Handle Excel file upload."""
     if 'username' not in session:
@@ -1297,7 +1274,7 @@ def upload():
             os.remove(file_path)
         return jsonify({'error': f'ファイルのアップロードに失敗しました: {str(e)}'}), 500
 
-@app.route('/handle_duplicate_project', methods=['POST'])
+# [moved to blueprint] @app.route('/handle_duplicate_project', methods=['POST'])
 def handle_duplicate_project():
     """Handle actions for duplicate projects: skip, update, or import_new."""
     if 'username' not in session:
@@ -1491,7 +1468,7 @@ def upload_mail_template():
 
 
 
-@app.route('/calculate_test_dates', methods=['POST'])
+# [moved to blueprint] @app.route('/calculate_test_dates', methods=['POST'])
 def calculate_test_dates():
     try:
         data = request.get_json()
@@ -1536,7 +1513,7 @@ def calculate_test_dates():
         logging.error(f"Error calculating test dates: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
-@app.route('/sort_projects', methods=['POST'])
+# [moved to blueprint] @app.route('/sort_projects', methods=['POST'])
 def sort_projects():
     """Sort and filter projects based on column, direction, and search criteria."""
     if 'username' not in session:
@@ -1621,7 +1598,7 @@ def sort_projects():
         #logging.error(f"Error sorting projects: {e}")
         return jsonify({'error': str(e)}), 500
 
-@app.route('/get_daily_report_data', methods=['GET'])
+# [moved to blueprint] @app.route('/get_daily_report_data', methods=['GET'])
 def get_daily_report_data():
     """Lấy dữ liệu cho modal báo cáo hàng ngày."""
     if 'username' not in session:
@@ -1661,7 +1638,7 @@ def get_daily_report_data():
     except sqlite3.Error as e:
         return jsonify({'error': f'Database error: {str(e)}'}), 500
 
-@app.route('/save_daily_hours', methods=['POST'])
+# [moved to blueprint] @app.route('/save_daily_hours', methods=['POST'])
 def save_daily_hours():
     """Lưu số giờ làm việc hàng ngày vào cơ sở dữ liệu."""
     if 'username' not in session:
@@ -1695,7 +1672,7 @@ def save_daily_hours():
     except sqlite3.Error as e:
         return jsonify({'error': f'Database error: {str(e)}'}), 500
 
-@app.route('/delete_all_data', methods=['POST'])
+# [moved to blueprint] @app.route('/delete_all_data', methods=['POST'])
 def delete_all_data():
     data = request.get_json()
     password = data.get('password', '')
@@ -1720,7 +1697,7 @@ def delete_all_data():
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
 
-@app.route('/logout')
+# [moved to blueprint] @app.route('/logout')
 def logout():
     """Handle user logout."""
     session.pop('username', None)
@@ -2558,7 +2535,7 @@ def remove_copied_template():
         return jsonify({'error': 'Database error'}), 500
 
 
-@app.route('/get_schedule_data', methods=['GET'])
+# [moved to blueprint] @app.route('/get_schedule_data', methods=['GET'])
 def get_schedule_data():
     try:
         week_start_str = request.args.get('week_start')
@@ -2622,7 +2599,7 @@ def get_schedule_data():
         return jsonify({'error': str(e)}), 500
 
 
-@app.route('/save_schedule_done', methods=['POST'])
+# [moved to blueprint] @app.route('/save_schedule_done', methods=['POST'])
 def save_schedule_done():
     try:
         data = request.get_json()
@@ -2658,13 +2635,13 @@ def save_schedule_done():
         logging.error(f"Error saving schedule done status: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
-@app.route('/editor_list')
+# [moved to blueprint] @app.route('/editor_list')
 def editor_list():
     if 'username' not in session:
         return redirect(url_for('login'))
     return render_template('editor_list.html')
 
-@app.route('/editor')
+# [moved to blueprint] @app.route('/editor')
 def editor():
     if 'username' not in session:
         return redirect(url_for('login'))
@@ -2697,7 +2674,7 @@ def editor():
     
     return render_template('editor.html', document=document)
 
-@app.route('/api/editor_documents', methods=['GET'])
+# [moved to blueprint] @app.route('/api/editor_documents', methods=['GET'])
 def get_editor_documents():
     """Get all editor documents."""
     if 'username' not in session:
@@ -2726,7 +2703,7 @@ def get_editor_documents():
         logging.error(f"Error fetching editor documents: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
-@app.route('/api/editor_documents', methods=['POST'])
+# [moved to blueprint] @app.route('/api/editor_documents', methods=['POST'])
 def create_editor_document():
     """Create a new editor document."""
     if 'username' not in session:
@@ -2755,7 +2732,7 @@ def create_editor_document():
         logging.error(f"Error creating editor document: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
-@app.route('/api/editor_documents/<int:document_id>', methods=['GET'])
+# [moved to blueprint] @app.route('/api/editor_documents/<int:document_id>', methods=['GET'])
 def get_editor_document(document_id):
     """Get a specific editor document."""
     if 'username' not in session:
@@ -2787,7 +2764,7 @@ def get_editor_document(document_id):
         logging.error(f"Error fetching editor document: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
-@app.route('/api/editor_documents/<int:document_id>', methods=['PUT'])
+# [moved to blueprint] @app.route('/api/editor_documents/<int:document_id>', methods=['PUT'])
 def update_editor_document(document_id):
     """Update an existing editor document."""
     if 'username' not in session:
@@ -2821,7 +2798,7 @@ def update_editor_document(document_id):
         logging.error(f"Error updating editor document: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
-@app.route('/api/editor_documents/<int:document_id>', methods=['DELETE'])
+# [moved to blueprint] @app.route('/api/editor_documents/<int:document_id>', methods=['DELETE'])
 def delete_editor_document(document_id):
     """Delete an editor document."""
     if 'username' not in session:
@@ -3391,7 +3368,7 @@ def serve_memo_file(filename):
         return send_file(file_path, as_attachment=True)
 
 
-@app.route('/copy_project', methods=['POST'])
+# [moved to blueprint] @app.route('/copy_project', methods=['POST'])
 def copy_project():
     """Copy a project with new data."""
     if 'username' not in session:
@@ -5175,4 +5152,4 @@ def clear_compare_files():
         return jsonify({'error': str(e)}), 500
     
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=DEBUG, port=PORT)

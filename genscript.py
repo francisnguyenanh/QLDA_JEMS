@@ -1,15 +1,15 @@
 import os
 import re
-import pandas as pd
 import json
 import datetime
+import concurrent.futures  # P4: parallel sheet processing
+import threading
 
-import json
-from openpyxl import load_workbook
-import datetime
-import json
-import re
 import pandas as pd
+from openpyxl import load_workbook
+
+# P4: thread-safe lock for shared progress counter
+_progress_lock = threading.Lock()
 
 def join_sql_values(values):
     """
@@ -1711,23 +1711,141 @@ def all_tables_in_sequence_with_progress(excel_file, table_info_file, output_fil
         seq_per_sheet += 1
     
     # Write all statements to file in batches for better I/O performance
-    
-    
     batch_size = 1000
     with open(output_file, 'w', encoding='utf-8') as f:
         for i in range(0, len(all_insert_statements), batch_size):
             batch = all_insert_statements[i:i + batch_size]
             f.write('\n'.join(batch) + '\n')
-    
+
     print(f"Check file exists: {os.path.exists(output_file)}")
     print(f"File size: {os.path.getsize(output_file) if os.path.exists(output_file) else 0}")
 
-
-    # Clear caches after processing to free memory
     clear_performance_caches()
-    
-    #print(f"All INSERT statements written to {output_file}")
     return all_insert_statements
+
+
+# ── P4: Per-sheet processor for parallel execution ───────────────────────────
+
+def _process_sheet_parallel(args):
+    """
+    Process one sheet and return its INSERT statements (list[str]).
+    Called from a ThreadPoolExecutor worker — each call is independent.
+    args = (position, sheet_idx, sheet_name, sheet_check_value, seq_value, gamen_columns_info)
+    """
+    position, sheet_idx, sheet_name, sheet_check_value, seq_value, gamen_columns_info = args
+
+    stmts = []
+    ws = wb[sheet_name]
+
+    # T_KIHON_PJ_GAMEN
+    row_data   = {}
+    aoji_values = []
+    for col_info in gamen_columns_info:
+        col_name = col_info.get('COLUMN_NAME', '')
+        val, aoji = column_value(col_info, ws, systemid_value, system_date_value, seq_value, seq_value, sheet_check_value)
+        row_data[col_name] = val
+        aoji_values.append(aoji)
+
+    if 'AOJI' in row_data:
+        row_data['AOJI'] = f"'{'1' if any(aoji_values) else '0'}'"
+
+    cols_str = ', '.join(row_data.keys())
+    vals_str = join_sql_values(row_data.values())
+    stmts.append(f'INSERT INTO T_KIHON_PJ_GAMEN ({cols_str}) VALUES ({vals_str});')
+    stmts.extend(insert_youken_from_S7(ws, seq_value))
+
+    dispatch = {
+        '項目定義書_帳票': lambda: re_row(sheet_idx, seq_value),
+        '項目定義書_CSV':  lambda: csv_row(sheet_idx, seq_value),
+        '項目定義書_IPO図': lambda: ipo_row(sheet_idx, seq_value),
+        '項目定義書_ﾒﾆｭｰ': lambda: menu_row(sheet_idx, seq_value),
+    }
+    if sheet_check_value in dispatch:
+        stmts.extend(dispatch[sheet_check_value]())
+    elif sheet_check_value == '項目定義書_画面':
+        for fn in [koumoku_row, func_row, message_row, tab_row, ichiran_row, hyouji_row]:
+            stmts.extend(fn(sheet_idx, seq_value))
+
+    return position, stmts
+
+
+def all_tables_in_sequence_parallel(excel_file, table_info_file, output_file='insert_all.sql',
+                                    system_id=None, progress_callback=None, max_workers=4):
+    """
+    P4: Parallel version of all_tables_in_sequence_with_progress.
+    Processes each sheet in a thread pool; results are merged in order.
+    Falls back to sequential if max_workers=1 or only 1 valid sheet.
+    """
+    global seq_per_sheet_dict, wb, sheetnames, table_info, systemid_value
+
+    if system_id:
+        systemid_value = system_id
+    else:
+        now = datetime.datetime.now()
+        systemid_value = f'{now.hour:02d}{now.minute:02d}{now.second:02d}'
+
+    initialize_workbook(excel_file)
+    initialize_table_info(table_info_file)
+
+    gamen_columns_info = table_info.get('T_KIHON_PJ_GAMEN', [])
+    allowed_b2_values  = set(MAPPING_VALUE_DICT.keys())
+
+    valid_sheets = [
+        (idx, name, _sheet_b2_values_cache.get(name))
+        for idx, name in enumerate(sheetnames)
+        if name not in EXCLUDED_SHEETNAMES and _sheet_b2_values_cache.get(name) in allowed_b2_values
+    ]
+
+    total = len(valid_sheets)
+    if total == 0:
+        return []
+
+    # Pre-assign seq numbers and register in dict (sequential — fast)
+    sheet_work = []
+    for pos, (sheet_idx, sheet_name, sheet_check_value) in enumerate(valid_sheets):
+        seq_value = pos + 1
+        seq_per_sheet_dict[sheet_idx] = seq_value
+        sheet_work.append((pos, sheet_idx, sheet_name, sheet_check_value, seq_value, gamen_columns_info))
+
+    # T_KIHON_PJ from first sheet only
+    first_idx = valid_sheets[0][0]
+    pj_stmts = generate_insert_statements_from_excel(first_idx, 'T_KIHON_PJ')
+
+    # Progress tracking counter
+    _done = [0]
+
+    def _with_progress(args):
+        result = _process_sheet_parallel(args)
+        with _progress_lock:
+            _done[0] += 1
+            if progress_callback:
+                progress_callback(_done[0], total, args[2])
+        return result
+
+    # Parallel execution (IO-bound: threads are fine)
+    workers = min(max_workers, total, 8)
+    if workers <= 1:
+        ordered_results = [_with_progress(a) for a in sheet_work]
+    else:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as ex:
+            futures = [ex.submit(_with_progress, a) for a in sheet_work]
+            ordered_results = [f.result() for f in futures]
+
+    # Merge in order (sort by position, which is already 0-based)
+    ordered_results.sort(key=lambda r: r[0])
+    all_stmts = list(pj_stmts)
+    for _, sheet_stmts in ordered_results:
+        all_stmts.extend(sheet_stmts)
+
+    # Write output
+    batch_size = 1000
+    with open(output_file, 'w', encoding='utf-8') as f:
+        for i in range(0, len(all_stmts), batch_size):
+            f.write('\n'.join(all_stmts[i:i + batch_size]) + '\n')
+
+    print(f'[parallel] {total} sheets processed with {workers} workers → {len(all_stmts)} statements')
+    clear_performance_caches()
+    return all_stmts
 
 # if __name__ == "__main__":
 #     print("Starting processing all tables in sequence...")

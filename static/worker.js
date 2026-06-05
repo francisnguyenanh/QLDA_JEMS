@@ -14,7 +14,8 @@ self.onmessage = function(e) {
             const sheetTypeConfig = {
                 '項目定義書_画面': '',
                 '項目定義書_帳票': '（帳票）',
-                '項目定義書_CSV': '（CSV）'
+                '項目定義書_CSV': '（CSV）', 
+                '項目定義書_ﾒﾆｭｰ': ''
             };
 
             // Helper function tạo ticket

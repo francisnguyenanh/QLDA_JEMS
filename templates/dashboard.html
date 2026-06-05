@@ -5432,7 +5432,7 @@ body {
     </div>
  {% endblock %}
 {% block scripts %}
-<script src="https://cdn.jsdelivr.net/npm/encoding-japanese@2.0.0/encoding.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/encoding-japanese@2.0.0/encoding.min.js" crossorigin="anonymous"></script>
     <script>
         console.log('JavaScript loaded');
 
@@ -5440,6 +5440,42 @@ body {
         let sortColumn = null;
         let sortDirection = 'asc';
         let currentWeekStart = null;
+
+        /* ── F8: Persist table state to localStorage ──────────────────────── */
+        const TABLE_STATE_KEY = 'qlda-dashboard-state';
+
+        function saveTableState() {
+            const searchEl = document.getElementById('searchProjectName');
+            const unnecessaryEl = document.getElementById('showUnnecessary');
+            const state = {
+                sortColumn,
+                sortDirection,
+                search: searchEl ? searchEl.value.trim() : '',
+                showUnnecessary: unnecessaryEl ? unnecessaryEl.checked : false,
+            };
+            try { localStorage.setItem(TABLE_STATE_KEY, JSON.stringify(state)); } catch(_) {}
+        }
+
+        function restoreTableState() {
+            let state = null;
+            try { state = JSON.parse(localStorage.getItem(TABLE_STATE_KEY)); } catch(_) {}
+            if (!state) return;
+
+            // Restore UI controls
+            const searchEl = document.getElementById('searchProjectName');
+            const unnecessaryEl = document.getElementById('showUnnecessary');
+            if (searchEl && state.search) searchEl.value = state.search;
+            if (unnecessaryEl && state.showUnnecessary) unnecessaryEl.checked = true;
+
+            // Restore sort indicators
+            if (state.sortColumn) {
+                sortColumn    = state.sortColumn;
+                sortDirection = state.sortDirection || 'asc';
+                const header = document.querySelector(`.sortable[data-column="${CSS.escape(sortColumn)}"]`);
+                if (header) header.classList.add(`sort-${sortDirection}`);
+                fetchSortedData(sortColumn, sortDirection, state.search || '');
+            }
+        }
 
         // Thêm hàm normalizeDate vào đầu script section
         function normalizeDate(dateStr) {
@@ -5527,6 +5563,7 @@ body {
                     sortDirection = 'asc';
                 }
                 sortColumn = column;
+                saveTableState(); /* F8 */
                 document.querySelectorAll('.sortable').forEach(h => {
                     h.classList.remove('sort-asc', 'sort-desc');
                 });
@@ -5778,6 +5815,7 @@ body {
 
         function fetchSortedData(column, direction, searchProjectName = '') {
             const showUnnecessary = document.getElementById('showUnnecessary').checked;
+            saveTableState(); /* F8 */
             fetch('/sort_projects', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -6251,27 +6289,28 @@ body {
         document.getElementById('uploadForm').addEventListener('submit', function(e) {
             e.preventDefault();
             const formData = new FormData(this);
+            Loading.show('Excelをアップロード中...'); /* F3 */
             fetch('/upload', {
                 method: 'POST',
                 body: formData
             })
             .then(response => response.json())
             .then(data => {
+                Loading.hide(); /* F3 */
                 if (data.success) {
                     if (data.has_duplicates) {
-                        // Show duplicate handling modal
                         showDuplicateModal(data);
                     } else {
-                        // No duplicates - just reload
-                        alert(data.message);
+                        Toast.show(data.message || 'アップロード完了', 'success'); /* F4 replace alert */
                         window.location.reload();
                     }
                 } else {
-                    alert('エラー: ' + (data.error || 'アップロードに失敗しました'));
+                    Toast.show('エラー: ' + (data.error || 'アップロードに失敗しました'), 'danger');
                 }
             })
             .catch(error => {
-                alert('エラー: ' + error.message);
+                Loading.hide();
+                Toast.show('エラー: ' + error.message, 'danger');
             });
         });
 
@@ -7049,8 +7088,8 @@ body {
             }
         }
 
-        function deleteTemplateFile(button, filename) {
-            if (!confirm(`テンプレート ${filename} を削除しますか？`)) return;
+        async function deleteTemplateFile(button, filename) {
+            if (!await Confirm.ask(`テンプレート「${filename}」を削除しますか？`, '削除確認', '削除する', 'btn-danger')) return;
 
             fetch('/delete_mail_template', {
                 method: 'POST',
@@ -8202,12 +8241,17 @@ function resetCompareModal() {
     document.getElementById('downloadOldHighlighted').style.display = 'none';
     document.getElementById('downloadNewHighlighted').style.display = 'none';
     document.getElementById('downloadComparisonResult').style.display = 'none';
-    
+
     // Clear progress monitoring
     if (compareProgressInterval) {
         clearInterval(compareProgressInterval);
         compareProgressInterval = null;
     }
 }
+
+/* ── F8: Restore filter/sort state on page load ──────────────────────────── */
+document.addEventListener('DOMContentLoaded', function() {
+    restoreTableState();
+});
     </script>
 {% endblock %}
