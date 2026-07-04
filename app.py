@@ -1,4 +1,4 @@
-import sqlite3
+﻿import sqlite3
 from datetime import datetime, timedelta
 from flask import json, render_template, redirect, url_for, flash
 import pandas as pd
@@ -5175,4 +5175,4 @@ def clear_compare_files():
         return jsonify({'error': str(e)}), 500
     
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, port=5020)
