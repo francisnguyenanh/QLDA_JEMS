@@ -283,7 +283,7 @@
                         <button id="darkModeToggle" title="ダークモード切替">🌙</button>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('logout') if url_for else '/logout' }}">
+                        <a class="nav-link" href="{{ url_for('auth.logout') }}">
                             <i class="bi bi-box-arrow-right me-1"></i>Logout
                         </a>
                     </li>

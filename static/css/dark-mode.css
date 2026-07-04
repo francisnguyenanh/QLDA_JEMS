@@ -1,0 +1,219 @@
+/* ── Dark mode overrides (F7) ─────────────────────────────────────────────────
+   Applied when <html data-theme="dark"> is set by the toggle in layout.html.
+   Uses CSS custom properties so Bootstrap components inherit colours naturally.
+─────────────────────────────────────────────────────────────────────────────── */
+
+[data-theme="dark"] {
+    --bg-color:      #1a1d23;
+    --text-color:    #d1d5db;
+    --card-bg:       #22262f;
+    --border-color:  #374151;
+    --input-bg:      #2d3340;
+    --primary-color: #7c85d4;
+    --muted-color:   #6b7280;
+    --table-stripe:  #252933;
+    --table-hover:   #2a2f3d;
+    --header-bg:     #1e2230;
+    --shadow:        rgba(0,0,0,.4);
+}
+
+/* Body & containers */
+[data-theme="dark"] body {
+    background-color: var(--bg-color) !important;
+    color: var(--text-color) !important;
+}
+
+[data-theme="dark"] .container-fluid,
+[data-theme="dark"] .container {
+    background-color: var(--bg-color) !important;
+}
+
+/* Navbar */
+[data-theme="dark"] .navbar {
+    background: linear-gradient(135deg, #1e2230 0%, #252b3b 100%) !important;
+    border-bottom-color: var(--border-color) !important;
+}
+
+[data-theme="dark"] .navbar .navbar-brand,
+[data-theme="dark"] .navbar .nav-link,
+[data-theme="dark"] .navbar .navbar-text {
+    color: var(--text-color) !important;
+}
+
+[data-theme="dark"] .navbar .nav-link:hover {
+    color: var(--primary-color) !important;
+    background: rgba(124, 133, 212, 0.12) !important;
+}
+
+[data-theme="dark"] .navbar-collapse {
+    background: linear-gradient(135deg, #1e2230 0%, #252b3b 100%) !important;
+    border-color: var(--border-color) !important;
+}
+
+/* Cards */
+[data-theme="dark"] .card {
+    background-color: var(--card-bg) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-color) !important;
+}
+
+/* Modals */
+[data-theme="dark"] .modal-content {
+    background-color: var(--card-bg) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-color) !important;
+}
+
+[data-theme="dark"] .modal-header,
+[data-theme="dark"] .modal-footer {
+    border-color: var(--border-color) !important;
+}
+
+/* Forms */
+[data-theme="dark"] .form-control,
+[data-theme="dark"] .form-select {
+    background-color: var(--input-bg) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-color) !important;
+}
+
+[data-theme="dark"] .form-control:focus,
+[data-theme="dark"] .form-select:focus {
+    border-color: var(--primary-color) !important;
+    box-shadow: 0 0 0 3px rgba(124,133,212,.25) !important;
+}
+
+[data-theme="dark"] .input-group-text {
+    background-color: var(--input-bg) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-color) !important;
+}
+
+/* Tables */
+[data-theme="dark"] .table {
+    color: var(--text-color) !important;
+    border-color: var(--border-color) !important;
+}
+
+[data-theme="dark"] .table thead th {
+    background: linear-gradient(135deg, #252b3b 0%, #2d3444 100%) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-color) !important;
+}
+
+[data-theme="dark"] .table tbody td {
+    background-color: var(--card-bg) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-color) !important;
+}
+
+[data-theme="dark"] .table tbody tr:nth-child(even) td {
+    background-color: var(--table-stripe) !important;
+}
+
+[data-theme="dark"] .table tbody tr:hover td {
+    background-color: var(--table-hover) !important;
+}
+
+/* Dashboard table sticky columns */
+[data-theme="dark"] #dashboardTable.table-dashboard th:nth-child(1),
+[data-theme="dark"] #dashboardTable.table-dashboard td:nth-child(1) {
+    background: linear-gradient(135deg, #252b3b 0%, #2d3444 100%) !important;
+    color: #e2e8f0 !important;
+}
+
+[data-theme="dark"] #dashboardTable.table-dashboard th:nth-child(2),
+[data-theme="dark"] #dashboardTable.table-dashboard td:nth-child(2),
+[data-theme="dark"] #dashboardTable.table-dashboard th:nth-child(3),
+[data-theme="dark"] #dashboardTable.table-dashboard td:nth-child(3),
+[data-theme="dark"] #dashboardTable.table-dashboard th:nth-child(4),
+[data-theme="dark"] #dashboardTable.table-dashboard td:nth-child(4) {
+    background: var(--card-bg) !important;
+    color: var(--text-color) !important;
+}
+
+/* Dropdown menus */
+[data-theme="dark"] .dropdown-menu {
+    background-color: var(--card-bg) !important;
+    border-color: var(--border-color) !important;
+}
+
+[data-theme="dark"] .dropdown-item {
+    color: var(--text-color) !important;
+}
+
+[data-theme="dark"] .dropdown-item:hover {
+    background-color: var(--table-hover) !important;
+    color: var(--primary-color) !important;
+}
+
+/* Buttons */
+[data-theme="dark"] .btn-outline-secondary {
+    border-color: var(--border-color) !important;
+    color: var(--text-color) !important;
+}
+
+[data-theme="dark"] .btn-outline-secondary:hover {
+    background-color: var(--border-color) !important;
+    color: #fff !important;
+}
+
+/* Header control bar */
+[data-theme="dark"] .container-fluid.mb-3 {
+    background-color: var(--header-bg) !important;
+    border-color: var(--border-color) !important;
+}
+
+/* Alert */
+[data-theme="dark"] .alert {
+    border-color: var(--border-color) !important;
+}
+
+/* Scrollbar */
+[data-theme="dark"] ::-webkit-scrollbar { width: 8px; height: 8px; }
+[data-theme="dark"] ::-webkit-scrollbar-track { background: var(--bg-color); }
+[data-theme="dark"] ::-webkit-scrollbar-thumb { background: #4a5568; border-radius: 4px; }
+[data-theme="dark"] ::-webkit-scrollbar-thumb:hover { background: #6b7280; }
+
+/* ── Dark mode toggle button ─────────────────────────────────────────────────── */
+#darkModeToggle {
+    cursor: pointer;
+    border: none;
+    background: transparent;
+    padding: 0.4rem 0.6rem;
+    border-radius: 6px;
+    transition: background 0.2s;
+    font-size: 1.1rem;
+    line-height: 1;
+}
+#darkModeToggle:hover {
+    background: rgba(107,115,168,.12);
+}
+
+/* ── Loading overlay (F3) ────────────────────────────────────────────────────── */
+#loadingOverlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background: rgba(0,0,0,.45);
+    backdrop-filter: blur(2px);
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 1rem;
+}
+#loadingOverlay.active {
+    display: flex;
+}
+#loadingOverlay .spinner-border {
+    width: 3.5rem;
+    height: 3.5rem;
+    border-width: .35em;
+    color: #7c85d4;
+}
+#loadingOverlay .loading-text {
+    color: #fff;
+    font-size: 1rem;
+    font-weight: 500;
+}
